@@ -1,0 +1,22 @@
+===============
+django-roa todo
+===============
+
+Priority 1:
+-----------
+
+* Handle ForeignKey relations (top priority, required for admin auth)
+* Finish remoteauth application
+* Improve documentation
+* Write more specs
+* Support XML serialization
+
+
+Priority 2:
+-----------
+
+* Handle Q filters
+* Handle ManyToMany relations
+* Improve test server for production
+* Cascading changes/deletions
+* Improve debugging
