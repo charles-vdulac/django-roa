@@ -9,8 +9,14 @@ Tests
 How to run tests
 ----------------
 
-You need to launch ``test_projects/django_roa_server`` project on port 8081 in 
-order to test this suite with this command::
+First, you need to create the remote database, go to
+``test_projects/django_roa_server`` and run ``syncdb`` command to create a 
+superuser named "david"::
+
+    $ python manage.py syncdb
+
+Now you can launch the project's server on port 8081 in order to test this 
+suite with this command::
 
     $ python manage.py runserver 8081
 

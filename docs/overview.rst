@@ -13,7 +13,8 @@ objects as you've always done with Django's models.
 You can easily switch from local storage of data to remote one given a unique
 setting. That's very useful if you need to develop locally.
 
-Python 2.4 or more and Django 1.O or more are required.
+Python 2.4 or greater and Django 1.O or greater are required.
+Restclient 0.1 and Httplib2 2.0.4 are included.
 
 
 Installation
@@ -69,8 +70,14 @@ the ``resource_url*`` specified in model's ``Meta``.
 How to run tests
 ================
 
-You need to launch ``test_projects/django_roa_server`` project on port 8081 in 
-order to test this suite with this command::
+First, you need to create the remote database, go to
+``test_projects/django_roa_server`` and run ``syncdb`` command to create a 
+superuser named "david"::
+
+    $ python manage.py syncdb
+
+Now you can launch the project's server on port 8081 in order to test this 
+suite with this command::
 
     $ python manage.py runserver 8081
 

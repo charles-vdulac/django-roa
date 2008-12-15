@@ -2,6 +2,12 @@
 django-roa changelog
 ====================
 
+Version 0.2, 15 December 2008:
+------------------------------
+
+Include restclient dependency.
+
+
 Version 0.1, 12 December 2008:
 ------------------------------
 
