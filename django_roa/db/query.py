@@ -135,7 +135,7 @@ class RemoteQuerySet(query.QuerySet):
 
         try:
             # We must force iteration otherwise admin paginator does not work
-            return len(self.iterator())
+            return len(list(self.iterator()))
         except TypeError:
             # object of type 'generator' has no len()
             self.query.get_count()
