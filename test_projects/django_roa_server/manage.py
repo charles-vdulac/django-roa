@@ -1,5 +1,8 @@
 import sys, os
-sys.path = [os.path.join(os.getcwd(), '../../'), '../../../../lib/django_src'] + sys.path
+sys.path = [os.path.join(os.getcwd(), '../../'), ] + sys.path
+# TODO: find a better way to handle local version of Django
+if os.path.exists('../../../../lib/django_src'):
+    sys.path = [os.path.join(os.getcwd(), '../../../../lib/django_src'), ] + sys.path
 
 from django.core.management import execute_manager
 
