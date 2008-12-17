@@ -174,8 +174,12 @@ class MethodDispatcher(object):
             keys += dict_.keys()
         keys = Set(keys).intersection(Set([f.name for f in model._meta.fields]))
         for k in keys:
-            setattr(object, k, data[k])
+            field = getattr(object, k)
+            if isinstance(field, bool):
+                setattr(object, k, data[k]==u'True' or False)
+            else:
+                setattr(object, k, data[k])
         object.save()
         response = [object]
-        logger.debug(u'Object "%s" modified' % object)
+        logger.debug(u'Object "%s" modified with %s' % (object, data.items()))
         return response

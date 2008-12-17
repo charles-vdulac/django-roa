@@ -27,6 +27,7 @@ Then you can go to ``test_projects/django_roa_client`` and run this command::
 It should return no error and you will be able to see logs from the test
 server which confirm that it works as expected: remote requests are done.
 
+
 Initialization
 --------------
 
@@ -38,8 +39,9 @@ First of all, we verify that remote classes are called::
     >>> RemotePage.__class__
     <class 'django_roa.db.models.ResourceAsMetaModelBase'>
 
-API
----
+
+Base
+----
 
 Now, let's create, update, retrieve and delete a simple object::
 
@@ -48,19 +50,43 @@ Now, let's create, update, retrieve and delete a simple object::
     <RemotePage: A first remote page (1)>
     >>> page.title = 'Another title'
     >>> page.save()
-    >>> page = RemotePage.objects.get(title='Another title') # from cache (TODO!)
+    >>> page = RemotePage.objects.get(title='Another title')
     >>> page.title
     u'Another title'
     >>> pages = RemotePage.objects.all()
     >>> pages
     [<RemotePage: Another title (1)>]
-    >>> pages.count() # do not hit the remote web service (from cache)
+    >>> pages.count()
     1
     >>> page.delete()
     >>> RemotePage.objects.all()
     []
-    >>> RemotePage.objects.count() # hit the remote web service
+    >>> RemotePage.objects.count()
     0
+
+
+Fields
+------
+
+Boolean
+~~~~~~~
+
+    >>> page = RemotePage.objects.create(title='A published remote page', published=True)
+    >>> page.published
+    True
+    >>> page = RemotePage.objects.get(id=page.id)
+    >>> page.published
+    True
+    >>> page.published = False
+    >>> page.save()
+    >>> page = RemotePage.objects.get(id=page.id)
+    >>> page.published
+    False
+    >>> page.delete()
+
+
+QuerySet API
+------------
 
 Get or create::
 
