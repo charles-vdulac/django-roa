@@ -30,6 +30,16 @@ Available methods and limitations:
     * [start:end]: Returns a sliced QuerySet, useful for pagination
 
 
+Fields
+------
+
+Available fields (more to come):
+
+    * BooleanField
+    * CharField
+    * TextField
+
+
 Server
 ======
 
