@@ -54,7 +54,10 @@ class Query(object):
         
         # Ordering
         if self.order_by:
-            parameters['order_by'] = ','.join(self.order_by)
+            order_by = ','.join(self.order_by)
+            if 'remotemodel_ptr' in order_by:
+                order_by = order_by.replace('remotemodel_ptr', 'id')
+            parameters['order_by'] = order_by
         
         # Slicing
         if self.limit_start:
@@ -126,28 +129,23 @@ class RemoteQuerySet(query.QuerySet):
     def count(self):
         """
         Returns the number of records as an integer.
-
-        If the QuerySet is already fully cached this simply returns the length
-        of the cached results set to avoid multiple remote calls.
+        
+        The result is not cached nor comes from cache, cache must be handled
+        by the server.
         """
-        if self._result_cache is not None and not self._iter:
-            return len(self._result_cache)
-
+        self.query.get_count()
+        
+        resource = Resource(self.model._meta.resource_url_list)
+        
         try:
-            # We must force iteration otherwise admin paginator does not work
-            return len(list(self.iterator()))
-        except TypeError:
-            # object of type 'generator' has no len()
-            self.query.get_count()
-            
-            resource = Resource(self.model._meta.resource_url_list)
-            
-            try:
-                response = resource.get(**self.query.parameters)
-            except ResourceNotFound:
-                return 0
-            
-            return int(response)
+            response = resource.get(**self.query.parameters)
+        except ResourceNotFound:
+            response = 0
+        
+        # We must manually set count to False, self.query is shared
+        self.query.count = False
+        
+        return int(response)
 
     def latest(self, field_name=None):
         """
