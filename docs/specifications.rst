@@ -42,7 +42,8 @@ Required URLs and limitations:
     * /{resource}/{id}/: used for retrieving an object (GET), updating it 
       (PUT) or deleting (DELETE) it
 
-Note: URL id is required but you can choose a totally different URL scheme.
+Note: URL id is required but you can choose a totally different URL scheme
+given the ``resource_url_detail`` property.
 
 
 Parameters

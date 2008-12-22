@@ -27,6 +27,10 @@ Then you can go to ``test_projects/django_roa_client`` and run this command::
 It should return no error and you will be able to see logs from the test
 server which confirm that it works as expected: remote requests are done.
 
+Note: do not try to launch tests' projects if you put ``django_roa`` 
+application into your own project, otherwise it will fail. Django do not 
+handle very well projects inside projects.
+
 
 Initialization
 --------------
