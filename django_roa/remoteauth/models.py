@@ -55,8 +55,7 @@ class RemoteUser(Model):
     objects = RemoteUserManager()
 
     class Meta:
-        resource_url = 'http://127.0.0.1:8081/auth/user/'
-        resource_url_id = resource_url + '%(id)s/'
+        resource_url_list = u'http://127.0.0.1:8081/auth/user/'
 
     def __unicode__(self):
         return self.username
@@ -217,8 +216,7 @@ class RemoteMessage(Model):
     objects = Manager()
 
     class Meta:
-        resource_url = 'http://127.0.0.1:8081/auth/message/'
-        resource_url_id = resource_url + '%(id)s/'
+        resource_url_list = u'http://127.0.0.1:8081/auth/message/'
 
     def __unicode__(self):
         return self.message

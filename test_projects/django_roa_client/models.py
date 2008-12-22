@@ -10,8 +10,7 @@ class RemotePage(Model):
     objects = Manager()
     
     class Meta:
-        resource_url = 'http://127.0.0.1:8081/django_roa_server/remotepage/'
-        resource_url_id = resource_url + '%(id)s/'
+        resource_url_list = u'http://127.0.0.1:8081/django_roa_server/remotepage/'
     
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)

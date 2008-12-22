@@ -48,12 +48,13 @@ In order to use remote access with your models, there are 3 steps:
 
     * inherit from ``django_roa.Model`` for your models
     * add a custom default manager ``django_roa.Manager`` or inherit from it
-      for your managers
-    * define ``resource_url`` and ``resource_url_id`` Meta's variables in your
-      models to access your remote resource in a RESTful way. Use ``%(id)s``
-      pattern to define ``resource_url_id``, for instance::
+      for your own managers
+    * define ``resource_url_list`` Meta's variable in your
+      models to access your remote resource in a RESTful way. Optionally, use 
+      ``resource_url_detail`` property for your model in order to define your
+      own detail url, default is::
       
-          resource_url_id = 'http://example.com/foo/%(id)s/'
+          <resource_url_list><resource_url_detail>/
 
 You can take a look at what have been done in 
 ``test_projects.django_roa_client/server`` for examples of use.
@@ -64,7 +65,8 @@ How does it works
 
 Each time a request should be passed to the database, an HTTP request is done
 to the remote server with the rigth method (GET, POST, PUT or DELETE) given
-the ``resource_url*`` specified in model's ``Meta``.
+the ``resource_url_list`` specified in model's ``Meta`` and 
+``resource_url_detail`` property.
 
 
 How to run tests

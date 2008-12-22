@@ -105,7 +105,7 @@ class RemoteQuerySet(query.QuerySet):
         remote web service.
         """
         try:
-            resource = Resource(self.model._meta.resource_url)
+            resource = Resource(self.model._meta.resource_url_list)
         except AttributeError:
             raise Exception, self.model._meta.__repr__()
 
@@ -140,7 +140,7 @@ class RemoteQuerySet(query.QuerySet):
             # object of type 'generator' has no len()
             self.query.get_count()
             
-            resource = Resource(self.model._meta.resource_url)
+            resource = Resource(self.model._meta.resource_url_list)
             
             try:
                 response = resource.get(**self.query.parameters)

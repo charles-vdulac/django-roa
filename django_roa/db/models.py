@@ -19,7 +19,7 @@ from django_roa.db.managers import RemoteManager
 
 class ResourceAsMetaModelBase(ModelBase):
     """
-    Deal with the new Meta ``resource_url`` attribute in __new__.
+    Deal with the new Meta ``resource_url_list`` attribute in __new__.
     """
     def __new__(cls, name, bases, attrs):
         super_new = super(ModelBase, cls).__new__
@@ -49,17 +49,14 @@ class ResourceAsMetaModelBase(ModelBase):
 
         # Custom Meta, replace:
         # new_class.add_to_class('_meta', Options(meta, **kwargs))
-        resource_url = None
+        resource_url_list = None
         options = Options(meta, **kwargs)
         if hasattr(options, 'meta') and options.meta is not None:
-            resource_url = options.meta.__dict__['resource_url']
-            resource_url_id = options.meta.__dict__['resource_url_id']
-            del options.meta.__dict__['resource_url']
-            del options.meta.__dict__['resource_url_id']
+            resource_url_list = options.meta.__dict__['resource_url_list']
+            del options.meta.__dict__['resource_url_list']
         new_class.add_to_class('_meta', options)
-        if resource_url is not None:
-            setattr(new_class._meta, 'resource_url', resource_url)
-            setattr(new_class._meta, 'resource_url_id', resource_url_id)
+        if resource_url_list is not None:
+            setattr(new_class._meta, 'resource_url_list', resource_url_list)
         # /Custom Meta
 
         if not abstract:
@@ -179,6 +176,10 @@ class RemoteModel(models.Model):
     """
     __metaclass__ = ResourceAsMetaModelBase
     
+    @property
+    def resource_url_detail(self):
+        return u"%s%s/" % (self._meta.resource_url_list, self.pk)
+    
     def save_base(self, raw=False, cls=None, force_insert=False,
             force_update=False):
         assert not (force_insert and force_update)
@@ -218,10 +219,10 @@ class RemoteModel(models.Model):
         pk_set = pk_val is not None
 
         if force_update or pk_set and not self.id is None:
-            resource = Resource(meta.resource_url_id % {'id': self.id})
+            resource = Resource(self.resource_url_detail)
             response = resource.put(**args)
         else:
-            resource = Resource(meta.resource_url)
+            resource = Resource(meta.resource_url_list)
             response = resource.post(**args)
         
         result = serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response).next()
@@ -239,7 +240,7 @@ class RemoteModel(models.Model):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
 
         # TODO: Find all the objects that need to be deleted.
-        resource = Resource(self._meta.resource_url_id % {'id': self.id})
+        resource = Resource(self.resource_url_detail)
         response = resource.delete()
 
     delete.alters_data = True
@@ -247,7 +248,7 @@ class RemoteModel(models.Model):
 
 class DjangoModel(models.Model):
     """
-    Model which allows ``resource_url*`` as Meta attributes.
+    Model which allows ``resource_url_list`` as Meta attribute.
     """
     __metaclass__ = ResourceAsMetaModelBase
     
