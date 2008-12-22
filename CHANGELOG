@@ -2,6 +2,17 @@
 django-roa changelog
 ====================
 
+Version 0.3, 23 December 2008:
+------------------------------
+
+* Backward incompatible change: resource_url_id is no more defined in Meta 
+  class, now you can define your own resource_url_detail property in your
+  Model class. resource_url Meta attribute has been renamed as 
+  resource_url_list for consistency.
+* Bugfixes: RemoteQuerySet.count() and BooleanField works as expected.
+* Better documentation, still need improvements.
+
+
 Version 0.2, 15 December 2008:
 ------------------------------
 
