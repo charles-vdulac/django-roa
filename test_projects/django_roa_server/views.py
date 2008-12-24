@@ -130,9 +130,21 @@ class MethodDispatcher(object):
         keys = []
         for dict_ in data.dicts:
             keys += dict_.keys()
-        values = dict([(f.name, data.get(f.name, None)) \
-                            for f in model._meta.fields \
-                                if data.get(f.name) != 'None'])
+        
+        values = {}
+        for field in model._meta.fields:
+            field_data = data.get(field.name, None)
+            if field_data not in ('', 'None'):
+                if isinstance(field, models.fields.BooleanField):
+                    if field_data is not None:
+                        if field_data == u'True':
+                            field_data = True
+                        elif field_data == u'False':
+                            field_data = False
+                        else:
+                            field_data = None
+                values[field.name] = field_data
+        
         for key in keys:
             if key.endswith('_id') and key not in values:
                 values[str(key)] = int(data[key])
@@ -174,11 +186,17 @@ class MethodDispatcher(object):
             keys += dict_.keys()
         keys = Set(keys).intersection(Set([f.name for f in model._meta.fields]))
         for k in keys:
-            field = getattr(object, k)
-            if isinstance(field, bool):
-                setattr(object, k, data[k]==u'True' or False)
-            else:
-                setattr(object, k, data[k])
+            field_data = data[k]
+            if field_data not in ('', 'None'):
+                field = getattr(object, k)
+                if isinstance(field, bool):
+                    if field_data == u'True':
+                        field_data = True
+                    elif field_data == u'False':
+                        field_data = False
+                    else:
+                        field_data = None
+                setattr(object, k, field_data)
         object.save()
         response = [object]
         logger.debug(u'Object "%s" modified with %s' % (object, data.items()))

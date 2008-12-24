@@ -6,6 +6,7 @@ from django_roa import Model, Manager
 class RemotePage(Model):
     title = models.CharField(max_length=50, blank=True, null=True)
     published = models.BooleanField()
+    publication_date = models.DateTimeField(blank=True, null=True)
     
     objects = Manager()
     

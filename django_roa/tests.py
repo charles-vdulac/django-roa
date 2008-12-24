@@ -88,6 +88,28 @@ Boolean
     False
     >>> page.delete()
 
+DateTime
+~~~~~~~~
+
+    >>> from datetime import datetime
+    >>> page = RemotePage.objects.create(title='A published remote page', 
+    ...     publication_date=datetime(2008, 12, 24, 11, 53, 57))
+    >>> page.published
+    False
+    >>> page.publication_date
+    datetime.datetime(2008, 12, 24, 11, 53, 57)
+    >>> page = RemotePage.objects.get(id=page.id)
+    >>> page.published
+    False
+    >>> page.publication_date
+    datetime.datetime(2008, 12, 24, 11, 53, 57)
+    >>> page.publication_date = datetime(2008, 12, 25, 13, 20)
+    >>> page.save()
+    >>> page = RemotePage.objects.get(id=page.id)
+    >>> page.publication_date
+    datetime.datetime(2008, 12, 25, 13, 20)
+    >>> page.delete()
+
 
 QuerySet API
 ------------

@@ -38,6 +38,7 @@ Available fields (more to come):
     * BooleanField
     * CharField
     * TextField
+    * DateTimeField
 
 
 Server
