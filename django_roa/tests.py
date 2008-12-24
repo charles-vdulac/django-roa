@@ -191,10 +191,28 @@ Remote users are defined in ``django_roa.remoteauth`` application::
     >>> #alice.remotemessage_set.all()
 
 
+Custom slug
+-----------
+
+The default URL for a resource is ``/{resource_name}/{resource_id}/`` but you 
+can customize both parts, here is an example with the ``resource_id`` part 
+which contains both an ``id`` and a ``slug``::
+
+    >>> from django_roa_client.models import RemotePageWithCustomSlug
+    >>> page_custom = RemotePageWithCustomSlug.objects.create(title=u"Test custom page")
+    >>> page_custom.slug
+    u'test-custom-page'
+    >>> page_custom = RemotePageWithCustomSlug.objects.get(title=u"Test custom page")
+    >>> page_custom
+    <RemotePageWithCustomSlug: Test custom page (1)>
+    >>> page_custom.delete()
+
+
 Clean up
 --------
 ::
 
     >>> RemotePage.objects.all().delete()
+    >>> RemotePageWithCustomSlug.objects.all().delete()
     >>> RemoteUser.objects.exclude(username="david").delete()
 """

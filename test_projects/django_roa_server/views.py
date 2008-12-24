@@ -201,3 +201,37 @@ class MethodDispatcher(object):
         response = [object]
         logger.debug(u'Object "%s" modified with %s' % (object, data.items()))
         return response
+
+
+class MethodDispatcherWithCustomSlug(MethodDispatcher):
+    
+    def __call__(self, request, app_label, model_name, object_slug):
+        """
+        Dispatch the request given the method and object_slug argument.
+        """
+        model = models.get_model(app_label, model_name)
+        method = request.method
+        logger.debug(u"Request: %s %s %s" % (method, model.__name__, object_slug))
+        if object_slug is None:
+            if method == 'GET':
+                return self.index(request, model)
+            elif method == 'POST':
+                return self.add(request, model)
+        else:
+            object = self.get_object_from_slug(model, object_slug)
+            if method == 'GET':
+                return self.retrieve(request, model, object)
+            elif method == 'PUT':
+                return self.modify(request, model, object)
+            elif method == 'DELETE':
+                return self.delete(request, model, object)
+
+    def get_object_from_slug(self, model, object_slug):
+        """Returns an object from a slug.
+        
+        Useful when the slug is a combination of many fields.
+        """
+        id, slug = object_slug.split('-', 1)
+        object = get_object_or_404(model, id=id, slug=slug)
+        return object
+    

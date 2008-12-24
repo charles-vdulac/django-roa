@@ -9,3 +9,9 @@ class RemotePage(models.Model):
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
 
+class RemotePageWithCustomSlug(models.Model):
+    title = models.CharField(max_length=50)
+    slug = models.SlugField()
+    
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.id)
