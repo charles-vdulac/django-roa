@@ -55,8 +55,6 @@ class Query(object):
         # Ordering
         if self.order_by:
             order_by = ','.join(self.order_by)
-            if 'remotemodel_ptr' in order_by:
-                order_by = order_by.replace('remotemodel_ptr', 'id')
             parameters['order_by'] = order_by
         
         # Slicing
@@ -119,11 +117,10 @@ class RemoteQuerySet(query.QuerySet):
 
         # TODO: find a better way to do this
         response = response.replace('auth.user', 'remoteauth.remoteuser')
-        response = response.replace('auth.message', 'remoteauth.remotemessage')
+        response = response.replace('auth.message', 'remoteauth.message')
 
         for res in serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response):
             obj = res.object
-            obj.id = obj.remotemodel_ptr_id
             yield obj
         
     def count(self):

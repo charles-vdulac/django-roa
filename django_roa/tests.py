@@ -41,7 +41,7 @@ First of all, we verify that remote classes are called::
     >>> RemotePage.objects.__class__
     <class 'django_roa.db.managers.RemoteManager'>
     >>> RemotePage.__class__
-    <class 'django_roa.db.models.ResourceAsMetaModelBase'>
+    <class 'django_roa.db.models.ROAModelBase'>
 
 
 Base
@@ -188,7 +188,7 @@ Remote users are defined in ``django_roa.remoteauth`` application::
     <RemoteUser: alice>
     >>> RemoteMessage.objects.all()
     [<RemoteMessage: Test message>]
-    >>> #alice.remotemessage_set.all()
+    >>> alice.remotemessage_set.all()
     [<RemoteMessage: Test message>]
 
 

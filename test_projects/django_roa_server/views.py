@@ -101,7 +101,7 @@ class MethodDispatcher(object):
         
         # Ordering
         if 'order_by' in request.GET:
-            order_bys = request.GET['order_by'].replace('remotemodel_ptr', 'id').split(',')
+            order_bys = request.GET['order_by'].split(',')
             queryset = queryset.order_by(*order_bys)
         
         # Counting

@@ -30,7 +30,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
 ROOT_URLCONF = 'urls'
-TEMPLATE_DIRS = (os.path.join(ROOT_PATH, '../templates'),)
+TEMPLATE_DIRS = (os.path.join(ROOT_PATH, '../../templates'),)
 INSTALLED_APPS = (
     'django_roa',
     'django_roa.remoteauth',

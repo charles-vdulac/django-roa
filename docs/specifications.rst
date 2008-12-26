@@ -41,6 +41,11 @@ Available fields (more to come):
     * DateTimeField
 
 
+Available relations:
+
+    * ForeignKey
+
+
 Server
 ======
 

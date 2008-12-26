@@ -17,13 +17,13 @@ from django.db.models.base import ModelBase, subclass_exception
 from restclient import Resource
 from django_roa.db.managers import RemoteManager
 
-class ResourceAsMetaModelBase(ModelBase):
-    """
-    Deal with the new Meta ``resource_url_list`` attribute in __new__.
-    """
+class ROAModelBase(ModelBase):
     def __new__(cls, name, bases, attrs):
+        """
+        Exactly the same except the line with ``isinstance(b, ROAModelBase)``.
+        """
         super_new = super(ModelBase, cls).__new__
-        parents = [b for b in bases if isinstance(b, ModelBase)]
+        parents = [b for b in bases if isinstance(b, ROAModelBase)]
         if not parents:
             # If this isn't a subclass of Model, don't do anything special.
             return super_new(cls, name, bases, attrs)
@@ -48,7 +48,6 @@ class ResourceAsMetaModelBase(ModelBase):
             kwargs = {}
 
         new_class.add_to_class('_meta', Options(meta, **kwargs))
-
         if not abstract:
             new_class.add_to_class('DoesNotExist',
                     subclass_exception('DoesNotExist', ObjectDoesNotExist, module))
@@ -63,12 +62,8 @@ class ResourceAsMetaModelBase(ModelBase):
                 if not hasattr(meta, 'get_latest_by'):
                     new_class._meta.get_latest_by = base_meta.get_latest_by
 
-        # Custom default manager (sometimes Django instanciate a classic one?)
-        #if getattr(new_class, '_default_manager', None):
-        #    new_class._default_manager = None
-        new_class._default_manager = RemoteManager()
-        new_class._default_manager.contribute_to_class(new_class, name)
-        # /Custom default manager
+        if getattr(new_class, '_default_manager', None):
+            new_class._default_manager = None
 
         # Bail out early if we have already created this class.
         m = get_model(new_class._meta.app_label, name, False)
@@ -93,7 +88,7 @@ class ResourceAsMetaModelBase(ModelBase):
                          new_class._meta.local_many_to_many + \
                          new_class._meta.virtual_fields
             field_names = set([f.name for f in new_fields])
-            
+
             if not base._meta.abstract:
                 # Concrete classes...
                 if base in o2o_map:
@@ -132,7 +127,7 @@ class ResourceAsMetaModelBase(ModelBase):
                 if not val or val is manager:
                     new_manager = manager._copy_to_model(new_class)
                     new_class.add_to_class(mgr_name, new_manager)
-            
+
             # Inherit virtual fields (like GenericForeignKey) from the parent class
             for field in base._meta.virtual_fields:
                 if base._meta.abstract and field.name in field_names:
@@ -164,11 +159,11 @@ class RemoteModel(models.Model):
     """
     Model which access remote resources.
     """
-    __metaclass__ = ResourceAsMetaModelBase
+    __metaclass__ = ROAModelBase
     
     @staticmethod
     def get_resource_url_list():
-        raise "Static method get_resource_url_list is not defined."
+        raise Exception, "Static method get_resource_url_list is not defined."
     
     def get_resource_url_detail(self):
         return u"%s%s/" % (self.get_resource_url_list(), self.pk)
@@ -205,8 +200,7 @@ class RemoteModel(models.Model):
         args = dict((field.name, field.value_to_string(self)) for field in meta.local_fields)
         fk_args = dict((field.get_attname(), getattr(self, field.name).id) \
                     for field in meta.local_fields \
-                        if isinstance(field, models.ForeignKey) \
-                            and field.name != 'remotemodel_ptr')
+                        if isinstance(field, models.ForeignKey))
         args.update(fk_args)
         pk_val = self._get_pk_val(meta)
         pk_set = pk_val is not None
@@ -220,11 +214,7 @@ class RemoteModel(models.Model):
         
         result = serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response).next()
 
-        try:
-            result_id = int(result.object.remotemodel_ptr_id)
-        except AttributeError: # FK
-            result_id = int(result.object.id)
-        self.id = self.remotemodel_ptr_id = result_id
+        self.id = int(result.object.id)
         self = result.object
 
     save_base.alters_data = True
@@ -237,12 +227,3 @@ class RemoteModel(models.Model):
         response = resource.delete()
 
     delete.alters_data = True
-
-
-class DjangoModel(models.Model):
-    """
-    Model which allows ``resource_url_list`` as Meta attribute.
-    """
-    __metaclass__ = ResourceAsMetaModelBase
-    
-

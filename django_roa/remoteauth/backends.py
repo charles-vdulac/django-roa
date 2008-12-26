@@ -1,7 +1,4 @@
-from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
-from django.core.exceptions import ImproperlyConfigured
-from django.db.models import get_model
 
 from django_roa.remoteauth.models import RemoteUser
 

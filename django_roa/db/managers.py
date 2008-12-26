@@ -1,9 +1,9 @@
-from django.db.models.manager import Manager as DjangoManager
+from django.db.models.manager import Manager
 
 from django_roa.db.query import RemoteQuerySet
 
 
-class RemoteManager(DjangoManager):
+class RemoteManager(Manager):
     """
     Manager which access remote resources.
     """
