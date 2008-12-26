@@ -47,17 +47,7 @@ class ResourceAsMetaModelBase(ModelBase):
         else:
             kwargs = {}
 
-        # Custom Meta, replace:
-        # new_class.add_to_class('_meta', Options(meta, **kwargs))
-        resource_url_list = None
-        options = Options(meta, **kwargs)
-        if hasattr(options, 'meta') and options.meta is not None:
-            resource_url_list = options.meta.__dict__['resource_url_list']
-            del options.meta.__dict__['resource_url_list']
-        new_class.add_to_class('_meta', options)
-        if resource_url_list is not None:
-            setattr(new_class._meta, 'resource_url_list', resource_url_list)
-        # /Custom Meta
+        new_class.add_to_class('_meta', Options(meta, **kwargs))
 
         if not abstract:
             new_class.add_to_class('DoesNotExist',
@@ -103,7 +93,7 @@ class ResourceAsMetaModelBase(ModelBase):
                          new_class._meta.local_many_to_many + \
                          new_class._meta.virtual_fields
             field_names = set([f.name for f in new_fields])
-
+            
             if not base._meta.abstract:
                 # Concrete classes...
                 if base in o2o_map:
@@ -142,7 +132,7 @@ class ResourceAsMetaModelBase(ModelBase):
                 if not val or val is manager:
                     new_manager = manager._copy_to_model(new_class)
                     new_class.add_to_class(mgr_name, new_manager)
-
+            
             # Inherit virtual fields (like GenericForeignKey) from the parent class
             for field in base._meta.virtual_fields:
                 if base._meta.abstract and field.name in field_names:
@@ -176,9 +166,12 @@ class RemoteModel(models.Model):
     """
     __metaclass__ = ResourceAsMetaModelBase
     
-    @property
-    def resource_url_detail(self):
-        return u"%s%s/" % (self._meta.resource_url_list, self.pk)
+    @staticmethod
+    def get_resource_url_list():
+        raise "Static method get_resource_url_list is not defined."
+    
+    def get_resource_url_detail(self):
+        return u"%s%s/" % (self.get_resource_url_list(), self.pk)
     
     def save_base(self, raw=False, cls=None, force_insert=False,
             force_update=False):
@@ -219,10 +212,10 @@ class RemoteModel(models.Model):
         pk_set = pk_val is not None
 
         if force_update or pk_set and not self.id is None:
-            resource = Resource(self.resource_url_detail)
+            resource = Resource(self.get_resource_url_detail())
             response = resource.put(**args)
         else:
-            resource = Resource(meta.resource_url_list)
+            resource = Resource(self.get_resource_url_list())
             response = resource.post(**args)
         
         result = serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response).next()
@@ -240,7 +233,7 @@ class RemoteModel(models.Model):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
 
         # TODO: Find all the objects that need to be deleted.
-        resource = Resource(self.resource_url_detail)
+        resource = Resource(self.get_resource_url_detail())
         response = resource.delete()
 
     delete.alters_data = True

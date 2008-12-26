@@ -108,9 +108,9 @@ class RemoteQuerySet(query.QuerySet):
         remote web service.
         """
         try:
-            resource = Resource(self.model._meta.resource_url_list)
-        except AttributeError:
-            raise Exception, self.model._meta.__repr__()
+            resource = Resource(self.model.get_resource_url_list())
+        except AttributeError, e:
+            raise Exception, "%s for %s" % (e, self.model)
 
         try:
             response = resource.get(**self.query.parameters)
@@ -136,7 +136,7 @@ class RemoteQuerySet(query.QuerySet):
         clone = self._clone()
         clone.query.get_count()
         
-        resource = Resource(clone.model._meta.resource_url_list)
+        resource = Resource(clone.model.get_resource_url_list())
         
         try:
             response = resource.get(**clone.query.parameters)

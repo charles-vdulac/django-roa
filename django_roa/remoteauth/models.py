@@ -54,9 +54,10 @@ class RemoteUser(Model):
     user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
     objects = RemoteUserManager()
 
-    class Meta:
-        resource_url_list = u'http://127.0.0.1:8081/auth/user/'
-
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/auth/user/'
+    
     def __unicode__(self):
         return self.username
 
@@ -215,8 +216,9 @@ class RemoteMessage(Model):
     message = models.TextField(_('message'))
     objects = Manager()
 
-    class Meta:
-        resource_url_list = u'http://127.0.0.1:8081/auth/message/'
-
     def __unicode__(self):
         return self.message
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/auth/message/'

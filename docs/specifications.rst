@@ -54,7 +54,7 @@ Required URLs and limitations:
       (PUT) or deleting (DELETE) it
 
 Note: URL id is required but you can choose a totally different URL scheme
-given the ``resource_url_detail`` property, a complete example is available in
+given the ``get_resource_url_*`` methods, a complete example is available in 
 tests' projects.
 
 

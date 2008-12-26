@@ -20,3 +20,4 @@ Priority 2:
 * Improve test server for production
 * Cascading changes/deletions
 * Improve debugging
+* Add a RESOURCE_URL_OVERRIDES setting (same as ABSOLUTE_URL_OVERRIDES one)

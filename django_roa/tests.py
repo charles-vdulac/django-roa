@@ -189,6 +189,7 @@ Remote users are defined in ``django_roa.remoteauth`` application::
     >>> RemoteMessage.objects.all()
     [<RemoteMessage: Test message>]
     >>> #alice.remotemessage_set.all()
+    [<RemoteMessage: Test message>]
 
 
 Custom slug

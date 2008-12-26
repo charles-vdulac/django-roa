@@ -10,11 +10,12 @@ class RemotePage(Model):
     
     objects = Manager()
     
-    class Meta:
-        resource_url_list = u'http://127.0.0.1:8081/django_roa_server/remotepage/'
-    
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/django_roa_server/remotepage/'
 
 
 class RemotePageWithCustomSlug(Model):
@@ -22,9 +23,6 @@ class RemotePageWithCustomSlug(Model):
     slug = models.SlugField()
     
     objects = Manager()
-    
-    class Meta:
-        resource_url_list = u'http://127.0.0.1:8081/django_roa_server/remotepagewithcustomslug/'
     
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
@@ -34,6 +32,10 @@ class RemotePageWithCustomSlug(Model):
             self.slug = slugify(self.title)
         super(RemotePageWithCustomSlug, self).save(force_insert, force_update)
 
-    @property
-    def resource_url_detail(self):
-        return u"%s%s-%s/" % (self._meta.resource_url_list, self.id, self.slug)
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/django_roa_server/remotepagewithcustomslug/'
+
+    def get_resource_url_detail(self):
+        return u"%s%s-%s/" % (self.get_resource_url_list(), self.id, self.slug)
+

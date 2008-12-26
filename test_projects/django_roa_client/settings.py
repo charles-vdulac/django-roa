@@ -33,16 +33,16 @@ ROOT_URLCONF = 'urls'
 TEMPLATE_DIRS = (os.path.join(ROOT_PATH, '../templates'),)
 INSTALLED_APPS = (
     'django_roa',
-    #'django_roa.remoteauth',
+    'django_roa.remoteauth',
     'django_roa_client',
-    'django.contrib.auth',
+    #'django.contrib.auth',
     'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
 )
-#AUTHENTICATION_BACKENDS = (
-#    'django_roa.remoteauth.backends.RemoteUserModelBackend',
-#)
+AUTHENTICATION_BACKENDS = (
+    'django_roa.remoteauth.backends.RemoteUserModelBackend',
+)
 
 ROA_MODELS = True   # set to False if you'd like to develop/test locally
 ROA_FORMAT = 'json' # json (default) or xml (still in development)
