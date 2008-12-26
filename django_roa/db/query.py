@@ -133,17 +133,15 @@ class RemoteQuerySet(query.QuerySet):
         The result is not cached nor comes from cache, cache must be handled
         by the server.
         """
-        self.query.get_count()
+        clone = self._clone()
+        clone.query.get_count()
         
-        resource = Resource(self.model._meta.resource_url_list)
+        resource = Resource(clone.model._meta.resource_url_list)
         
         try:
-            response = resource.get(**self.query.parameters)
+            response = resource.get(**clone.query.parameters)
         except ResourceNotFound:
             response = 0
-        
-        # We must manually set count to False, self.query is shared
-        self.query.count = False
         
         return int(response)
 
@@ -212,7 +210,8 @@ class RemoteQuerySet(query.QuerySet):
         """
         assert self.query.can_filter(), \
                 "Cannot reorder a query once a slice has been taken."
-                
+        
+        clone = self._clone()
         for field_name in field_names:
-            self.query.order_by.append(field_name)
-        return self._clone()
+            clone.query.order_by.append(field_name)
+        return clone
