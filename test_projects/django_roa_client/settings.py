@@ -45,5 +45,5 @@ AUTHENTICATION_BACKENDS = (
 )
 
 ROA_MODELS = True   # set to False if you'd like to develop/test locally
-ROA_FORMAT = 'json' # json (default) or xml (still in development)
+ROA_FORMAT = 'xml' # json (default) or xml (still in development)
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server

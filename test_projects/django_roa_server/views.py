@@ -151,7 +151,8 @@ class MethodDispatcher(object):
                 del values[key[:-3]]
         
         object = model.objects.create(**values)
-        response = [object]
+        response = [model.objects.get(id=object.id)]
+        #response = [object]
         logger.debug(u'Object "%s" created' % object)
         return response
 
@@ -198,7 +199,8 @@ class MethodDispatcher(object):
                         field_data = None
                 setattr(object, k, field_data)
         object.save()
-        response = [object]
+        response = [model.objects.get(id=object.id)]
+        #response = [object]
         logger.debug(u'Object "%s" modified with %s' % (object, data.items()))
         return response
 

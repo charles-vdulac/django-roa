@@ -206,10 +206,15 @@ class RemoteModel(models.Model):
         args.update(fk_args)
         pk_val = self._get_pk_val(meta)
         pk_set = pk_val is not None
-
+        
+        args["format"] = getattr(settings, "ROA_FORMAT", 'json')
+        
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
-            response = resource.put(**args)
+            try:
+                response = resource.put(**args)
+            except RequestFailed, e:
+                raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
