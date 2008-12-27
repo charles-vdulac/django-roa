@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db.models import query
 from django.core import serializers
+from django.db.models.sql.constants import LOOKUP_SEP
 
 from restclient.rest import Resource, ResourceNotFound
 
@@ -15,6 +16,8 @@ class Query(object):
         self.limit_start = None
         self.limit_stop = None
         self.where = False
+        self.select_related = False
+        self.max_depth = None
     
     def can_filter(self):
         return self.filterable
@@ -38,6 +41,21 @@ class Query(object):
         self.limit_start = start
         self.limit_stop = stop
         self.filterable = False
+    
+    def add_select_related(self, fields):
+        """
+        Sets up the select_related data structure so that we only select
+        certain related models (as opposed to all models, when
+        self.select_related=True).
+        """
+        field_dict = {}
+        for field in fields:
+            d = field_dict
+            for part in field.split(LOOKUP_SEP):
+                d = d.setdefault(part, {})
+        self.select_related = field_dict
+        self.related_select_cols = []
+        self.related_select_fields = []
     
     @property
     def parameters(self):
@@ -105,10 +123,7 @@ class RemoteQuerySet(query.QuerySet):
         An iterator over the results from applying this QuerySet to the
         remote web service.
         """
-        try:
-            resource = Resource(self.model.get_resource_url_list())
-        except AttributeError, e:
-            raise Exception, "%s for %s" % (e, self.model)
+        resource = Resource(self.model.get_resource_url_list())
 
         try:
             response = resource.get(**self.query.parameters)
@@ -118,10 +133,11 @@ class RemoteQuerySet(query.QuerySet):
         # TODO: find a better way to do this
         response = response.replace('auth.user', 'remoteauth.remoteuser')
         response = response.replace('auth.message', 'remoteauth.message')
-
+        
         for res in serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response):
             obj = res.object
             yield obj
+        
         
     def count(self):
         """
@@ -140,6 +156,7 @@ class RemoteQuerySet(query.QuerySet):
         except ResourceNotFound:
             response = 0
         
+        clone.query.count = False
         return int(response)
 
     def latest(self, field_name=None):
@@ -212,3 +229,25 @@ class RemoteQuerySet(query.QuerySet):
         for field_name in field_names:
             clone.query.order_by.append(field_name)
         return clone
+
+    def select_related(self, *fields, **kwargs):
+        """
+        Returns a new QuerySet instance that will select related objects.
+
+        If fields are specified, they must be ForeignKey fields and only those
+        related objects are included in the selection.
+        """
+        depth = kwargs.pop('depth', 0)
+        if kwargs:
+            raise TypeError('Unexpected keyword arguments to select_related: %s'
+                    % (kwargs.keys(),))
+        obj = self._clone()
+        if fields:
+            if depth:
+                raise TypeError('Cannot pass both "depth" and fields to select_related()')
+            obj.query.add_select_related(fields)
+        else:
+            obj.query.select_related = True
+        if depth:
+            obj.query.max_depth = depth
+        return obj

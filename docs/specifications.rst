@@ -75,3 +75,18 @@ Optionnal parameters:
     * limit_start and limit_stop: slice the results given those integers
 
 Note: take a look at tests and test_projects to see all actual possibilities.
+
+
+Settings
+========
+
+List of custom settings:
+
+    * ``ROA_MODELS``: turn to True if you'd like to access distant resources,
+      useful to switch from a local development to a production remote server
+      in a breath.
+    * ``ROA_FORMAT``: turn to "xml" if you prefer the serialization format
+      over the default one (json).
+    * ``ROA_DJANGO_ERRORS``: turn to True if you use the ``MethodDispatcher``
+      class from ``django_roa_server``, it will display more readable errors.
+

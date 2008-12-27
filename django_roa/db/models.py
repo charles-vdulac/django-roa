@@ -15,7 +15,9 @@ from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception
 
 from restclient import Resource
+from restclient.rest import RequestFailed
 from django_roa.db.managers import RemoteManager
+from django_roa.db.exceptions import ROAException
 
 class ROAModelBase(ModelBase):
     def __new__(cls, name, bases, attrs):
@@ -210,7 +212,10 @@ class RemoteModel(models.Model):
             response = resource.put(**args)
         else:
             resource = Resource(self.get_resource_url_list())
-            response = resource.post(**args)
+            try:
+                response = resource.post(**args)
+            except RequestFailed, e:
+                raise ROAException(e)
         
         result = serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response).next()
 

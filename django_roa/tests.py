@@ -164,12 +164,12 @@ Combined::
     [<RemotePage: A fourth remote page (4)>, <RemotePage: A fourth remote page (3)>]
 
 
-Users
+Admin
 -----
 
 Remote users are defined in ``django_roa.remoteauth`` application::
 
-    >>> from django_roa.remoteauth.models import RemoteUser, RemoteMessage
+    >>> from django_roa.remoteauth.models import RemoteUser, Message
     >>> RemoteUser.objects.all()
     [<RemoteUser: david>]
     >>> alice = RemoteUser.objects.create_user(username="alice", password="secret", email="alice@example.com")
@@ -179,19 +179,47 @@ Remote users are defined in ``django_roa.remoteauth`` application::
     [<RemoteUser: david>, <RemoteUser: alice>]
     >>> alice.id
     2
-    >>> RemoteMessage.objects.all()
+    >>> Message.objects.all()
     []
-    >>> message = RemoteMessage.objects.create(user=alice, message=u"Test message")
+    >>> message = Message.objects.create(user=alice, message=u"Test message")
     >>> message.message
     u'Test message'
     >>> message.user
     <RemoteUser: alice>
-    >>> RemoteMessage.objects.all()
-    [<RemoteMessage: Test message>]
-    >>> alice.remotemessage_set.all()
-    [<RemoteMessage: Test message>]
+    >>> Message.objects.all()
+    [<Message: Test message>]
+    >>> alice.message_set.all()
+    [<Message: Test message>]
 
+``select_related`` is not supported, we just verify that it doesn't break::
 
+    >>> Message.objects.all().select_related()
+    [<Message: Test message>]
+    >>> Message.objects.all().select_related('user')
+    [<Message: Test message>]
+
+Now we can try to log in and navigate into the built-in admin::
+
+    >>> from django.test.client import Client
+    >>> c = Client()
+    >>> RemoteUser.objects.create_superuser(username="bob", password="secret", email="bob@example.com")
+    >>> bob = RemoteUser.objects.get(username="bob")
+    >>> bob.is_superuser
+    True
+    >>> c.login(username="bob", password="secret")
+    True
+    >>> response = c.get("/admin/")
+    >>> response.context[-1]["user"]
+    <RemoteUser: bob>
+    >>> response = c.get("/admin/django_roa_client/remotepage/")
+    >>> response.status_code
+    200
+    >>> response.context[-1]["cl"].result_list
+    [<RemotePage: A fool remote page (5)>, <RemotePage: A fourth remote page (4)>]
+    >>> response.context[-1]["cl"].result_count
+    5
+
+    
 Custom slug
 -----------
 
@@ -207,6 +235,23 @@ which contains both an ``id`` and a ``slug``::
     >>> page_custom
     <RemotePageWithCustomSlug: Test custom page (1)>
     >>> page_custom.delete()
+
+
+Errors
+------
+
+Unicity::
+
+    >>> RemoteUser.objects.create_user(username="alice", password="secret", email="alice@example.com")
+    Traceback (most recent call last):
+    ...
+    ROAException: IntegrityError at /auth/user: column username is not unique
+     Request Method: POST
+     Request URL: http://127.0.0.1:8081/auth/user
+     Exception Type: IntegrityError
+     Exception Value: column username is not unique
+     Exception Location: ..., line ...
+     Status code: 500
 
 
 Clean up
