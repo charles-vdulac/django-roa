@@ -2,6 +2,20 @@
 django-roa changelog
 ====================
 
+Version 0.5, 27 December 2008:
+------------------------------
+
+* Backward incompatible change: Remote* classes had been renamed to ROA*, this
+  is an internal change which should not affect your code.
+* Add support for ROA_URL_OVERRIDES_* settings and a complete example.
+* Declaration of default manager is no more required, if you inherit from
+  django_roa.Model it will be added automatically given your ROA_MODELS
+  setting.
+* Use the latest version of restclient (0.2.1), no more httplib2 dependency.
+  This version uses pycurl, urllib2 or httplib2 given your configuration, in
+  this order of preferences.
+
+
 Version 0.4, 27 December 2008:
 ------------------------------
 
