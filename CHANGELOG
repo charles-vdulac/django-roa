@@ -2,6 +2,20 @@
 django-roa changelog
 ====================
 
+Version 0.4, 27 December 2008:
+------------------------------
+
+* Backward incompatible change: resource_url_list is no more defined in Meta 
+  class, now you must define your own get_resource_url_list static method in
+  your Model class. resource_url_detail has been renamed as 
+  get_resource_url_detail for consistency and is no more a property.
+* Add support for ForeignKeys and XML serialization.
+* Bugfixes: DateTimeField and BooleanField should work as expected.
+* Add a complete example with a custom slug for multiple primary keys.
+* Ease debugging with a summary displayed if you use the test server instead
+  of the whole HTML error.
+
+
 Version 0.3, 23 December 2008:
 ------------------------------
 

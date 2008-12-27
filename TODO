@@ -5,8 +5,9 @@ django-roa todo
 Priority 1:
 -----------
 
-* Add a RESOURCE_URL_OVERRIDES setting (same as ABSOLUTE_URL_OVERRIDES one)
+* Add a ROA_URL_OVERRIDES setting (same as ABSOLUTE_URL_OVERRIDES one)
 * Use the latest version of restclient
+* (Re)Try to avoid default remote manager definition
 
 
 Priority 2:
@@ -16,4 +17,4 @@ Priority 2:
 * Handle ManyToMany relations
 * Improve test server for production
 * Cascading changes/deletions
-* Use ETags
+* Use ETags (performances)
