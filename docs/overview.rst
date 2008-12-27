@@ -13,17 +13,28 @@ objects as you've always done with Django's models.
 You can easily switch from local storage of data to remote one given a unique
 setting. That's very useful if you need to develop locally.
 
-Python 2.4 or greater and Django 1.O or greater are required.
-Restclient 0.1 and Httplib2 2.0.4 are included.
+Python 2.4 or greater and Django 1.O.2 or greater are required.
+Restclient 0.2 is included, it will use pycurl, urllib2 or httplib2.
 
 
 Installation
 ============
 
-There are a few steps:
+You just need to add the django_roa application into your settings:
 
-    * add ``django_roa`` and ``django_roa.remoteauth`` to your 
-      ``INSTALLED_APPS`` setting::
+    * add ``django_roa`` to your ``INSTALLED_APPS`` setting::
+      
+        INSTALLED_APPS = (
+            'django_roa',
+            etc
+        )
+    
+    * add ``ROA_MODELS = True`` in your settings.
+
+Optionnaly, you can use a remote auth if your users are stored on the remote
+repository:
+
+    * add ``django_roa.remoteauth`` to your ``INSTALLED_APPS`` setting::
       
         INSTALLED_APPS = (
             'django_roa',
@@ -37,8 +48,8 @@ There are a few steps:
         AUTHENTICATION_BACKENDS = (
             'django_roa.remoteauth.backends.RemoteUserModelBackend',
         )
-    
-    * add ``ROA_MODELS = True`` in your settings.
+
+That's it!
 
 
 Basic use

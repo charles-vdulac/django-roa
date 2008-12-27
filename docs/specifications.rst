@@ -82,11 +82,19 @@ Settings
 
 List of custom settings:
 
-    * ``ROA_MODELS``: turn to True if you'd like to access distant resources,
-      useful to switch from a local development to a production remote server
-      in a breath.
-    * ``ROA_FORMAT``: turn to "xml" if you prefer the serialization format
-      over the default one (json).
-    * ``ROA_DJANGO_ERRORS``: turn to True if you use the ``MethodDispatcher``
-      class from ``django_roa_server``, it will display more readable errors.
+    * ``ROA_MODELS``: A boolean, turn to True if you'd like to access distant
+      resources, useful to switch from a local development to a production 
+      remote server in a breath.
+    * ``ROA_FORMAT``: A string, turn to "xml" if you prefer this serialization 
+      format over the default one (json).
+    * ``ROA_DJANGO_ERRORS``: A boolean, turn to True if you use the 
+      ``MethodDispatcher`` class from ``django_roa_server``, it will display 
+      more readable errors.
+    * ``ROA_URL_OVERRIDES_*``: A dictionary mapping "app_label.model_name" 
+      strings to functions that take a model object and return its URL. This 
+      is a way of overriding ``get_resource_url_*`` methods on a 
+      per-installation basis. Note that the model name used in this setting 
+      should be all lower-case, regardless of the case of the actual model 
+      class name. Same behaviour as ``ABSOLUTE_URL_OVERRIDES`` setting, see
+      examples.
 

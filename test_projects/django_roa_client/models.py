@@ -39,3 +39,23 @@ class RemotePageWithCustomSlug(Model):
     def get_resource_url_detail(self):
         return u"%s%s-%s/" % (self.get_resource_url_list(), self.id, self.slug)
 
+
+class RemotePageWithOverriddenUrls(Model):
+    title = models.CharField(max_length=50)
+    slug = models.SlugField()
+
+    objects = Manager()
+    
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.id)
+
+    def save(self, force_insert=False, force_update=False):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super(RemotePageWithOverriddenUrls, self).save(force_insert, force_update)
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'' # overridden by settings
+
+

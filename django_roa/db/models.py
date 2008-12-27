@@ -6,8 +6,9 @@ from django.db import models
 from django.db.models import signals
 from django.db.models.options import Options
 from django.db.models.loading import register_models, get_model
-from django.db.models.base import ModelBase, subclass_exception
+from django.db.models.base import ModelBase, subclass_exception, get_absolute_url
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
+from django.utils.functional import curry
 
 from restclient.rest import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
@@ -149,6 +150,34 @@ class ROAModelBase(ModelBase):
         # registered version.
         return get_model(new_class._meta.app_label, name, False)
 
+    def _prepare(cls):
+        """
+        Creates some methods once self._meta has been populated.
+        """
+        opts = cls._meta
+        opts._prepare(cls)
+
+        if opts.order_with_respect_to:
+            cls.get_next_in_order = curry(cls._get_next_or_previous_in_order, is_next=True)
+            cls.get_previous_in_order = curry(cls._get_next_or_previous_in_order, is_next=False)
+            setattr(opts.order_with_respect_to.rel.to, 'get_%s_order' % cls.__name__.lower(), curry(method_get_order, cls))
+            setattr(opts.order_with_respect_to.rel.to, 'set_%s_order' % cls.__name__.lower(), curry(method_set_order, cls))
+
+        # Give the class a docstring -- its definition.
+        if cls.__doc__ is None:
+            cls.__doc__ = "%s(%s)" % (cls.__name__, ", ".join([f.attname for f in opts.fields]))
+
+        if hasattr(cls, 'get_absolute_url'):
+            cls.get_absolute_url = curry(get_absolute_url, opts, cls.get_absolute_url)
+
+        if hasattr(cls, 'get_resource_url_list'):
+            cls.get_resource_url_list = staticmethod(curry(get_resource_url_list, opts, cls.get_resource_url_list))
+
+        if hasattr(cls, 'get_resource_url_detail'):
+            cls.get_resource_url_detail = curry(get_resource_url_detail, opts, cls.get_resource_url_detail)
+
+        signals.class_prepared.send(sender=cls)
+
 
 class RemoteModel(models.Model):
     """
@@ -230,3 +259,15 @@ class RemoteModel(models.Model):
         response = resource.delete()
 
     delete.alters_data = True
+
+
+##############################################
+# HELPER FUNCTIONS (CURRIED MODEL FUNCTIONS) #
+##############################################
+
+def get_resource_url_list(opts, func, *args, **kwargs):
+    overridden = settings.ROA_URL_OVERRIDES_LIST.get('%s.%s' % (opts.app_label, opts.module_name), False)
+    return overridden and overridden or func(*args, **kwargs)
+
+def get_resource_url_detail(opts, func, self, *args, **kwargs):
+    return settings.ROA_URL_OVERRIDES_DETAIL.get('%s.%s' % (opts.app_label, opts.module_name), func)(self, *args, **kwargs)

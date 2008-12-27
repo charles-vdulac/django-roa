@@ -47,3 +47,10 @@ AUTHENTICATION_BACKENDS = (
 ROA_MODELS = True   # set to False if you'd like to develop/test locally
 ROA_FORMAT = 'xml' # json (default) or xml (still in development)
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
+
+ROA_URL_OVERRIDES_LIST = {
+    'django_roa_client.remotepagewithoverriddenurls': u'http://127.0.0.1:8081/django_roa_server/remotepagewithoverriddenurls/',
+}
+ROA_URL_OVERRIDES_DETAIL = {
+    'django_roa_client.remotepagewithoverriddenurls': lambda o: u"%s%s-%s/" % (o.get_resource_url_list(), o.id, o.slug),
+}

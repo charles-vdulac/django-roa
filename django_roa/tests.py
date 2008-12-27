@@ -237,6 +237,28 @@ which contains both an ``id`` and a ``slug``::
     >>> page_custom.delete()
 
 
+Overriding URLs
+---------------
+
+You can override ``get_resource_url_*`` methods on a per-installation basis
+with ``ROA_URL_OVERRIDES_*`` settings::
+    
+
+    >>> from django.conf import settings
+    >>> settings.ROA_URL_OVERRIDES_LIST
+    {'django_roa_client.remotepagewithoverriddenurls': u'http://127.0.0.1:8081/django_roa_server/remotepagewithoverriddenurls/'}
+    >>> settings.ROA_URL_OVERRIDES_DETAIL
+    {'django_roa_client.remotepagewithoverriddenurls': <function <lambda> at ...>}
+    >>> from django_roa_client.models import RemotePageWithOverriddenUrls
+    >>> page_overridden = RemotePageWithOverriddenUrls.objects.create(title=u"Test overridden urls")
+    >>> page_overridden.slug
+    u'test-overridden-urls'
+    >>> page_overridden = RemotePageWithOverriddenUrls.objects.get(title=u"Test overridden urls")
+    >>> page_overridden
+    <RemotePageWithOverriddenUrls: Test overridden urls (1)>
+    >>> page_overridden.delete()
+
+
 Errors
 ------
 
@@ -260,5 +282,6 @@ Clean up
 
     >>> RemotePage.objects.all().delete()
     >>> RemotePageWithCustomSlug.objects.all().delete()
+    >>> RemotePageWithOverriddenUrls.objects.all().delete()
     >>> RemoteUser.objects.exclude(username="david").delete()
 """
