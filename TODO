@@ -5,7 +5,6 @@ django-roa todo
 Must-have
 ---------
 
-* (Re)Try to avoid default remote manager definition
 * Add support for more fields' types
 
 

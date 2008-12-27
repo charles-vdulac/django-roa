@@ -179,7 +179,7 @@ class ROAModelBase(ModelBase):
         signals.class_prepared.send(sender=cls)
 
 
-class RemoteModel(models.Model):
+class ROAModel(models.Model):
     """
     Model which access remote resources.
     """

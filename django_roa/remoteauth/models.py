@@ -7,7 +7,7 @@ from django.db import models
 from django_roa import Model, Manager
 
 
-class RemoteUserManager(Manager):
+class ROAUserManager(Manager):
     def create_user(self, username, email, password=None):
         "Creates and saves a User with the given username, e-mail and password."
         now = datetime.datetime.now()
@@ -52,7 +52,7 @@ class RemoteUser(Model):
     groups = models.ManyToManyField(Group, verbose_name=_('groups'), blank=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
     user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
-    objects = RemoteUserManager()
+    objects = ROAUserManager()
 
     @staticmethod
     def get_resource_url_list():

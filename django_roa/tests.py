@@ -39,7 +39,7 @@ First of all, we verify that remote classes are called::
 
     >>> from django_roa_client.models import RemotePage
     >>> RemotePage.objects.__class__
-    <class 'django_roa.db.managers.RemoteManager'>
+    <class 'django_roa.db.managers.ROAManager'>
     >>> RemotePage.__class__
     <class 'django_roa.db.models.ROAModelBase'>
 

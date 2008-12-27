@@ -3,11 +3,12 @@ from django.db.models.manager import Manager
 from django_roa.db.query import RemoteQuerySet
 
 
-class RemoteManager(Manager):
+class ROAManager(Manager):
     """
     Manager which access remote resources.
     """
     use_for_related_fields = True
+    is_roa_manager = True # ugly but useful because isinstance is evil
     
     def get_query_set(self):
         """

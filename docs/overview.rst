@@ -14,7 +14,7 @@ You can easily switch from local storage of data to remote one given a unique
 setting. That's very useful if you need to develop locally.
 
 Python 2.4 or greater and Django 1.O.2 or greater are required.
-Restclient 0.2 is included, it will use pycurl, urllib2 or httplib2.
+Restclient 0.2.1 is included, it will use pycurl, urllib2 or httplib2.
 
 
 Installation
@@ -57,9 +57,9 @@ Basic use
 
 In order to use remote access with your models, there are 3 steps:
 
-    * inherit from ``django_roa.Model`` for your models
-    * add a custom default manager ``django_roa.Manager`` or inherit from it
-      for your own managers
+    * inherit from ``django_roa.Model`` for your models.
+    * inherit from ``django_roa.Manager`` for your own managers if you'd like
+      to extend/modify the default one.
     * define ``get_resource_url_list`` method in your models to access your 
       remote resource in a RESTful way. Optionally, use 
       ``get_resource_url_detail`` method for your model in order to define 

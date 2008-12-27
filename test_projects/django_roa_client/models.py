@@ -8,8 +8,6 @@ class RemotePage(Model):
     published = models.BooleanField()
     publication_date = models.DateTimeField(blank=True, null=True)
     
-    objects = Manager()
-    
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
 
@@ -21,8 +19,6 @@ class RemotePage(Model):
 class RemotePageWithCustomSlug(Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField()
-    
-    objects = Manager()
     
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
@@ -44,8 +40,6 @@ class RemotePageWithOverriddenUrls(Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField()
 
-    objects = Manager()
-    
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
 
