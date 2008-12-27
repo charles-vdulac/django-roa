@@ -43,6 +43,7 @@ INSTALLED_APPS = (
 AUTHENTICATION_BACKENDS = (
     'django_roa.remoteauth.backends.RemoteUserModelBackend',
 )
+SESSION_ENGINE = "django.contrib.sessions.backends.file"
 
 ROA_MODELS = True   # set to False if you'd like to develop/test locally
 ROA_FORMAT = 'xml' # json (default) or xml (still in development)

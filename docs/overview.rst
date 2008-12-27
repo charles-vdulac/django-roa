@@ -49,7 +49,9 @@ repository:
             'django_roa.remoteauth.backends.RemoteUserModelBackend',
         )
 
-That's it!
+Note that ``ROA_URL_OVERRIDES_*`` settings allow you to customize the URLs
+requested by this application. See specifications for a more detailed
+explanation.
 
 
 Basic use
@@ -60,8 +62,8 @@ In order to use remote access with your models, there are 3 steps:
     * inherit from ``django_roa.Model`` for your models.
     * inherit from ``django_roa.Manager`` for your own managers if you'd like
       to extend/modify the default one.
-    * define ``get_resource_url_list`` method in your models to access your 
-      remote resource in a RESTful way. Optionally, use 
+    * define ``get_resource_url_list`` static method in your models to access 
+      your remote resource in a RESTful way. Optionally, use 
       ``get_resource_url_detail`` method for your model in order to define 
       your own detail url, default is::
       

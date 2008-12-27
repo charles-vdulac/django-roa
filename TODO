@@ -5,6 +5,7 @@ django-roa todo
 Must-have
 ---------
 
+* Handle remote ContentTypes in admin
 * Add support for more fields' types
 
 

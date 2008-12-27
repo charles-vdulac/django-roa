@@ -3,6 +3,9 @@ from django.contrib.auth.backends import ModelBackend
 from django_roa.remoteauth.models import RemoteUser
 
 class RemoteUserModelBackend(ModelBackend):
+    """
+    Authenticates against django_roa.remoteauth.models.RemoteUser.
+    """
     def authenticate(self, username=None, password=None):
         try:
             user = RemoteUser.objects.get(username=username)
