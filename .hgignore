@@ -1,0 +1,15 @@
+syntax: glob
+
+*.pyc
+*~
+*.db
+*.tmp
+*.DS_Store
+*.txt
+*.sqlite
+*.svn
+*.orig
+*.old
+settings.py
+manage.py
+django

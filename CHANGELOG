@@ -23,7 +23,7 @@ Version 0.3, 23 December 2008:
   class, now you can define your own resource_url_detail property in your
   Model class. resource_url Meta attribute has been renamed as 
   resource_url_list for consistency.
-* Bugfixes: RemoteQuerySet.count() and BooleanField works as expected.
+* Bugfixes: RemoteQuerySet.count() and BooleanField should work as expected.
 * Better documentation, still need improvements.
 
 

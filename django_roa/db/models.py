@@ -1,22 +1,15 @@
 import sys
 from django.conf import settings
-from django.db import models, connection, transaction
-from django.db.models import signals
-from django.db.models.fields import AutoField
 from django.core import serializers
-
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
-from django.db.models.fields import AutoField
-from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
-from django.db.models.query import delete_objects, Q, CollectedObjects
+from django.db import models
+from django.db.models import signals
 from django.db.models.options import Options
-from django.db.models import signals, Manager
 from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception
+from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
 
-from restclient import Resource
-from restclient.rest import RequestFailed
-from django_roa.db.managers import RemoteManager
+from restclient.rest import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
 class ROAModelBase(ModelBase):
