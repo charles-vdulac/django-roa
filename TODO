@@ -2,17 +2,16 @@
 django-roa todo
 ===============
 
-Priority 1:
------------
+Must-have
+---------
 
 * Add a ROA_URL_OVERRIDES setting (same as ABSOLUTE_URL_OVERRIDES one)
-* Use the latest version of restclient
 * (Re)Try to avoid default remote manager definition
 * Add support for more fields' types
 
 
-Priority 2:
------------
+Maybe
+-----
 
 * Handle Q filters
 * Handle ManyToMany relations
