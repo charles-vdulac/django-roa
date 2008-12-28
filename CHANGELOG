@@ -2,6 +2,13 @@
 django-roa changelog
 ====================
 
+Version 0.6, 28 December 2008:
+------------------------------
+
+* Clean up remoteauth application.
+* Update py-restclient to 1.0.1.
+
+
 Version 0.5, 27 December 2008:
 ------------------------------
 

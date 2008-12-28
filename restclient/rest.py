@@ -25,33 +25,72 @@ This module provide a common interface for all HTTP equest.
     >>> res = Resource('http://friendpaste.com')
     >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'})
     '{"snippet": "hi!", "title": "", "id": "5rOqE9XTz7lccLgZoQS4IP", "language": "text", "revision": "386233396230"}'
-
-
+    >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'}).http_code
+    200
 """
 from urllib import quote, urlencode
 
 from restclient.http import getDefaultHTTPClient, HTTPClient 
 
 
-__all__ = ['Resource', 'RestClient', 'RestClientFactory', 'ResourceNotFound', \
-        'Unauthorised', 'RequestFailed']
+__all__ = ['Resource', 'RestClient', 'ResourceNotFound', \
+        'Unauthorized', 'RequestFailed', 'ResourceError',
+        'ResourceResult']
 __docformat__ = 'restructuredtext en'
 
 
-class ResourceNotFound(Exception):
-    """Exception raised when a 404 HTTP error is received in response to a
-    request.
+class ResourceError(Exception):
+    def __init__(self, message=None, http_code=None, response=None):
+        self.message = message
+        self.status_code = http_code
+        self.response = response
+
+class ResourceNotFound(ResourceError):
+    """Exception raised when no resource was found at the given url. 
     """
 
-class Unauthorized(Exception):
-    """Exception raised when a 401 HTTP error is received in response to a
-    request.
+class Unauthorized(ResourceError):
+    """Exception raised when an authorization is required to access to
+    the resource specified.
     """
 
-class RequestFailed(Exception):
+class RequestFailed(ResourceError):
     """Exception raised when an unexpected HTTP error is received in response
     to a request.
+    
+
+    The request failed, meaning the remote HTTP server returned a code 
+    other than success, unauthorized, or NotFound.
+
+    The exception message attempts to extract the error
+
+    You can get the status code by e.http_code, or see anything about the 
+    response via e.response. For example, the entire result body (which is 
+    probably an HTML error page) is e.response.body.
     """
+
+class ResourceResult(str):
+    """ result returned by `restclient.rest.RestClient`.
+    
+    you can get result like as string and  status code by result.http_code, 
+    or see anything about the response via result.response. For example, the entire 
+    result body is result.response.body.
+
+    .. code-block:: python
+
+            from restclient import RestClient
+            client = RestClient()
+            page = resource.request('GET', 'http://friendpaste.com')
+            print page
+            print "http code %s" % page.http_code
+
+    """
+    def __new__(cls, s, http_code, response):
+        self = str.__new__(cls, s)
+        self.http_code = http_code
+        self.response = response
+        return self
+
 
 
 class Resource(object):
@@ -101,7 +140,7 @@ class Resource(object):
         
         .. code-block:: python
 
-            Resource("/path").request("GET")
+            Resource("/path").get()
         """
 
         return type(self)(make_uri(self.uri, path), http=self.httpclient)
@@ -150,10 +189,6 @@ class Resource(object):
         """
         return self.client.put(self.uri, path=path, body=payload, headers=headers, **params)
 
-    def get_status_code(self):
-        """ get status code of the last request """
-        return self.client.status_code
-    status_code = property(get_status_code)
 
     def update_uri(self, path):
         """
@@ -278,25 +313,24 @@ class RestClient(object):
         resp, data = self.httpclient.request(make_uri(uri, path, **params), method=method,
                 body=body, headers=headers)
 
-        self.status_code = int(resp.status)
-        self.response = resp
+        status_code = int(resp.status)
 
-        if self.status_code >= 400:
+        if status_code >= 400:
             if type(data) is dict:
                 error = (data.get('error'), data.get('reason'))
             else:
                 error = data
 
-            self.error = error
-
-            if self.status_code == 404:
-                raise ResourceNotFound(error)
-            elif self.status_code == 401 or self.status_code == 403:
-                raise Unauthorized
+            if status_code == 404:
+                raise ResourceNotFound(error, http_code=404, response=resp)
+            elif status_code == 401 or status_code == 403:
+                raise Unauthorized(error, http_code=status_code,
+                        response=resp)
             else:
-                raise RequestFailed((self.status_code, error))
+                raise RequestFailed(error, http_code=status_code,
+                        response=resp)
 
-        return data
+        return ResourceResult(data, status_code, resp)
 
 
 def make_uri(base, *path, **query):

@@ -13,8 +13,8 @@ objects as you've always done with Django's models.
 You can easily switch from local storage of data to remote one given a unique
 setting. That's very useful if you need to develop locally.
 
-Python 2.4 or greater and Django 1.O.2 or greater are required.
-Restclient 0.2.1 is included, it will use pycurl, urllib2 or httplib2.
+Python 2.4 and Django 1.O.2 are required (or greater).
+Py-restclient 1.0.1 is included, it will use pycurl, urllib2 or httplib2.
 
 
 Installation

@@ -6,7 +6,8 @@ ROA_DJANGO_ERRORS = getattr(settings, 'ROA_DJANGO_ERRORS', False)
 class ROAException(Exception):
     def __init__(self, exception):
         if ROA_DJANGO_ERRORS:
-            self.status_code, self.content = exception.message
+            self.message = exception.message
+            self.status_code = exception.status_code
         else:
             self.message = str(exception)
 
@@ -15,7 +16,7 @@ class ROAException(Exception):
     
     def parse_django_error(self):
         """Extract the summary part of a Django HTML error."""
-        summary = self.content.split('<body>\n<div id="summary">\n  ', 1)[1]\
+        summary = self.message.split('<body>\n<div id="summary">\n  ', 1)[1]\
                               .split('<th>Python Executable:</th>', 1)[0]
         result = []
         title = None

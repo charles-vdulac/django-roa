@@ -10,7 +10,7 @@ from django.db.models.base import ModelBase, subclass_exception, get_absolute_ur
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
 from django.utils.functional import curry
 
-from restclient.rest import Resource, RequestFailed
+from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
 class ROAModelBase(ModelBase):

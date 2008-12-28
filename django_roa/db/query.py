@@ -3,7 +3,7 @@ from django.db.models import query
 from django.core import serializers
 from django.db.models.sql.constants import LOOKUP_SEP
 
-from restclient.rest import Resource, ResourceNotFound
+from restclient import Resource, ResourceNotFound
 
 
 class Query(object):
