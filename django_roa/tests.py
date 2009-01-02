@@ -10,10 +10,11 @@ How to run tests
 ----------------
 
 First, you need to create the remote database, go to
-``test_projects/django_roa_server`` and run ``syncdb`` command to create a 
-superuser named "david"::
+``test_projects/django_roa_server`` and run ``syncdb`` command with 
+``--noinput`` option in order to create a superuser named "david" from 
+fixtures::
 
-    $ python manage.py syncdb
+    $ python manage.py syncdb --noinput
 
 Now you can launch the project's server on port 8081 in order to test this 
 suite with this command::

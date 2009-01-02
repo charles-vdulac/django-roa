@@ -36,7 +36,7 @@ Fields
 Available fields:
 
     * Auto      # Custom AutoField doesn't work yet but default id one works
-    * Boolean
+    * Boolean   # None doesn't work with json serialization, bug #5563 of Django
     * Char
     * Date
     * DateTime
@@ -95,7 +95,8 @@ List of custom settings:
       resources, useful to switch from a local development to a production 
       remote server in a breath.
     * ``ROA_FORMAT``: A string, turn to "xml" if you prefer this serialization 
-      format over the default one (json).
+      format over the default one (json). Note that json serialization doesn't
+      work with BooleanFields set to None because of #5563 Django's bug.
     * ``ROA_DJANGO_ERRORS``: A boolean, turn to True if you use the 
       ``MethodDispatcher`` class from ``django_roa_server``, it will display 
       more readable errors.
