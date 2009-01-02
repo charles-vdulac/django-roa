@@ -2,6 +2,17 @@
 django-roa changelog
 ====================
 
+Version 0.7, 2 January 2008:
+------------------------------
+
+* Add support for most useful fields (see specifications).
+* Warning: there are some Django bugs (hopefully with patches) which are
+  required in order to use BooleanFields with None values and JSON 
+  serialization (#5563) or FloatFields which are considered as unicode 
+  (#9942). Patch your Django installation if you need those ones, that's why
+  actual tests failed.
+
+
 Version 0.6, 28 December 2008:
 ------------------------------
 

@@ -1,5 +1,5 @@
 import sys, os
-sys.path = [os.path.join(os.getcwd(), '../../'), ] + sys.path
+sys.path = [os.path.split(os.path.split(os.getcwd())[0])[0]] + sys.path
 
 from django.core.management import execute_manager
 
