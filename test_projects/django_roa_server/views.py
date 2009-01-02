@@ -50,6 +50,7 @@ def serialize(f):
             # serialization
             response = serializers.serialize(format, result)
             response = response.replace('_server', '_client')
+            #print response
             response = HttpResponse(response, mimetype=mimetype)
             return response
         return HttpResponse('OK', mimetype=mimetype)
@@ -136,15 +137,13 @@ class MethodDispatcher(object):
             field_data = data.get(field.name, None)
             if field_data not in ('', 'None'):
                 if isinstance(field, models.fields.BooleanField):
+                    field_data = field.to_python(field_data)
+                elif isinstance(field, models.fields.FloatField):
                     if field_data is not None:
-                        if field_data == u'True':
-                            field_data = True
-                        elif field_data == u'False':
-                            field_data = False
-                        else:
-                            field_data = None
+                        field_data = float(field_data)
                 values[field.name] = field_data
         
+        # Handle FK fields
         for key in keys:
             if key.endswith('_id') and key not in values:
                 values[str(key)] = int(data[key])
@@ -182,22 +181,25 @@ class MethodDispatcher(object):
         Modifies an object given request args, returned as a list.
         """
         data = request.REQUEST.copy()
-        keys = []
-        for dict_ in data.dicts:
-            keys += dict_.keys()
-        keys = Set(keys).intersection(Set([f.name for f in model._meta.fields]))
-        for k in keys:
-            field_data = data[k]
-            if field_data not in ('', 'None'):
-                field = getattr(object, k)
-                if isinstance(field, bool):
-                    if field_data == u'True':
-                        field_data = True
-                    elif field_data == u'False':
+        for field in model._meta.fields:
+            field_name = field.name
+            if field_name in data:
+                field_data = data[field_name]
+                if field_data in ('', 'None'):
+                    field_data = None
+                if isinstance(field, models.fields.BooleanField):
+                    if field_data is None:
                         field_data = False
-                    else:
-                        field_data = None
-                setattr(object, k, field_data)
+                    field_data = field.to_python(field_data)
+                elif isinstance(field, models.fields.IntegerField):
+                    field_data = field.to_python(field_data)
+                elif isinstance(field, models.fields.FloatField):
+                    if field_data is not None:
+                        field_data = float(field_data)
+                elif isinstance(field, models.fields.CharField):
+                    if field_data is None:
+                        field_data = u""
+                setattr(object, field_name, field_data)
         object.save()
         response = [model.objects.get(id=object.id)]
         #response = [object]

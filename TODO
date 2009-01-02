@@ -6,7 +6,6 @@ Must-have
 ---------
 
 * Handle remote ContentTypes in admin
-* Add support for more fields' types
 
 
 Maybe
@@ -14,6 +13,5 @@ Maybe
 
 * Handle Q filters
 * Handle ManyToMany relations
-* Improve test server for production
 * Cascading changes/deletions
 * Use ETags (performances)

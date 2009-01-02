@@ -33,13 +33,22 @@ Available methods and limitations:
 Fields
 ------
 
-Available fields (more to come):
+Available fields:
 
-    * BooleanField
-    * CharField
-    * TextField
-    * DateTimeField
-
+    * Auto      # Custom AutoField doesn't work yet but default id one works
+    * Boolean
+    * Char
+    * Date
+    * DateTime
+    * Decimal
+    * Email
+    * FilePath
+    * Float     # Do not work as expected, bug #9942 of Django
+    * Integer
+    * Slug
+    * Text
+    * Time
+    * URL
 
 Available relations:
 

@@ -49,19 +49,40 @@ Base
 
 Now, let's create, update, retrieve and delete a simple object::
 
-    >>> page = RemotePage.objects.create(title='A first remote page')
+    >>> page = RemotePage.objects.create(title=u'A first remote page')
     >>> page
     <RemotePage: A first remote page (1)>
-    >>> page.title = 'Another title'
+    >>> page.title = u'Another title'
     >>> page.save()
-    >>> page = RemotePage.objects.get(title='Another title')
+    >>> page = RemotePage.objects.get(title=u'Another title')
     >>> page.title
     u'Another title'
     >>> pages = RemotePage.objects.all()
     >>> pages
     [<RemotePage: Another title (1)>]
-    >>> pages.count()
+    >>> page.delete()
+    >>> RemotePage.objects.all()
+    []
+    >>> RemotePage.objects.count()
+    0
+
+A more complex example with empty values::
+
+    >>> page = RemotePage.objects.create(title=u'')
+    >>> page.title
+    u''
+    >>> page.title = u'A temporary title'
+    >>> page.save()
+    >>> page = RemotePage.objects.get(title=u'A temporary title')
+    >>> page.title
+    u'A temporary title'
+    >>> RemotePage.objects.count()
     1
+    >>> page.title = u''
+    >>> page.save()
+    >>> page = RemotePage.objects.all()[0]
+    >>> page.title
+    u''
     >>> page.delete()
     >>> RemotePage.objects.all()
     []
@@ -69,45 +90,290 @@ Now, let's create, update, retrieve and delete a simple object::
     0
 
 
+
 Fields
 ------
 
+First things first, we verify that default attributes are set to ``None`` or
+empty values even when it comes from the server::
+
+    >>> from django_roa_client.models import RemotePageWithManyFields
+    >>> default_page = RemotePageWithManyFields.objects.create()
+    >>> for field in default_page._meta.fields:
+    ...     print field.name, field.value_to_string(default_page)
+    id 1
+    boolean_field None
+    char_field None
+    date_field 
+    datetime_field 
+    decimal_field None
+    email_field None
+    filepath_field None
+    float_field None
+    integer_field None
+    ipaddress_field None
+    nullboolean_field None
+    positiveinteger_field None
+    positivesmallinteger_field None
+    slug_field None
+    smallinteger_field None
+    text_field None
+    time_field 
+    url_field None
+    xml_field None
+    file_field 
+    image_field 
+    >>> default_page = RemotePageWithManyFields.objects.get(id=default_page.id)
+    >>> for field in default_page._meta.fields:
+    ...     print field.name, field.value_to_string(default_page)
+    id 1
+    boolean_field None
+    char_field None
+    date_field 
+    datetime_field 
+    decimal_field None
+    email_field None
+    filepath_field None
+    float_field None
+    integer_field None
+    ipaddress_field None
+    nullboolean_field None
+    positiveinteger_field None
+    positivesmallinteger_field None
+    slug_field None
+    smallinteger_field None
+    text_field None
+    time_field 
+    url_field None
+    xml_field None
+    file_field 
+    image_field 
+
+Now for each field, we will test both creation and modification of the value.
+
 Boolean
 ~~~~~~~
+::
 
-    >>> page = RemotePage.objects.create(title='A published remote page', published=True)
-    >>> page.published
+    >>> page = RemotePageWithManyFields.objects.create(boolean_field=True)
+    >>> page.boolean_field
     True
-    >>> page = RemotePage.objects.get(id=page.id)
-    >>> page.published
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.boolean_field
     True
-    >>> page.published = False
+    >>> page.boolean_field = False
     >>> page.save()
-    >>> page = RemotePage.objects.get(id=page.id)
-    >>> page.published
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.boolean_field
     False
+    >>> page.delete()
+
+Char
+~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(char_field=u"foo")
+    >>> page.char_field
+    u'foo'
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.char_field
+    u'foo'
+    >>> page.char_field = u"bar"
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.char_field
+    u'bar'
+    >>> page.delete()
+
+Date
+~~~~
+::
+
+    >>> from datetime import date
+    >>> page = RemotePageWithManyFields.objects.create(date_field=date(2008, 12, 24))
+    >>> page.date_field
+    datetime.date(2008, 12, 24)
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.date_field
+    datetime.date(2008, 12, 24)
+    >>> page.date_field = date(2008, 12, 25)
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.date_field
+    datetime.date(2008, 12, 25)
     >>> page.delete()
 
 DateTime
 ~~~~~~~~
+::
 
     >>> from datetime import datetime
-    >>> page = RemotePage.objects.create(title='A published remote page', 
-    ...     publication_date=datetime(2008, 12, 24, 11, 53, 57))
-    >>> page.published
-    False
-    >>> page.publication_date
+    >>> page = RemotePageWithManyFields.objects.create(datetime_field=datetime(2008, 12, 24, 11, 53, 57))
+    >>> page.datetime_field
     datetime.datetime(2008, 12, 24, 11, 53, 57)
-    >>> page = RemotePage.objects.get(id=page.id)
-    >>> page.published
-    False
-    >>> page.publication_date
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.datetime_field
     datetime.datetime(2008, 12, 24, 11, 53, 57)
-    >>> page.publication_date = datetime(2008, 12, 25, 13, 20)
+    >>> page.datetime_field = datetime(2008, 12, 25, 13, 20)
     >>> page.save()
-    >>> page = RemotePage.objects.get(id=page.id)
-    >>> page.publication_date
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.datetime_field
     datetime.datetime(2008, 12, 25, 13, 20)
+    >>> page.delete()
+
+Decimal
+~~~~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(decimal_field=1.55)
+    >>> page.decimal_field
+    1.55
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.decimal_field
+    Decimal("1.55")
+    >>> page.decimal_field = 20.09
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.decimal_field
+    Decimal("20.09")
+    >>> page.delete()
+
+Email
+~~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(email_field=u"david@example.com")
+    >>> page.email_field
+    u'david@example.com'
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.email_field
+    u'david@example.com'
+    >>> page.email_field = u"david@example.org"
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.email_field
+    u'david@example.org'
+    >>> page.delete()
+
+FilePath
+~~~~~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(filepath_field=u"/foo/bar.zip")
+    >>> page.filepath_field
+    u'/foo/bar.zip'
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.filepath_field
+    u'/foo/bar.zip'
+    >>> page.filepath_field = u"/foo/bar/baz.tar.gz"
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.filepath_field
+    u'/foo/bar/baz.tar.gz'
+    >>> page.delete()
+
+Float
+~~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(float_field=1.55)
+    >>> page.float_field
+    1.55
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.float_field
+    1.55
+    >>> page.float_field = 20.09
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.float_field
+    20.09
+    >>> page.delete()
+    >>> print u"The two errors above are known bugs from Django, see #9942."
+
+Integer
+~~~~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(integer_field=155)
+    >>> page.integer_field
+    155
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.integer_field
+    155
+    >>> page.integer_field = 2009
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.integer_field
+    2009
+    >>> page.delete()
+
+Slug
+~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(slug_field=u"foo-bar")
+    >>> page.slug_field
+    u'foo-bar'
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.slug_field
+    u'foo-bar'
+    >>> page.slug_field = u"bar-baz"
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.slug_field
+    u'bar-baz'
+    >>> page.delete()
+
+Text
+~~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(text_field=u"foo bar")
+    >>> page.text_field
+    u'foo bar'
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.text_field
+    u'foo bar'
+    >>> page.text_field = u"bar baz"
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.text_field
+    u'bar baz'
+    >>> page.delete()
+
+Time
+~~~~
+::
+
+    >>> from datetime import time
+    >>> page = RemotePageWithManyFields.objects.create(time_field=time(3, 51, 28))
+    >>> page.time_field
+    datetime.time(3, 51, 28)
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.time_field
+    datetime.time(3, 51, 28)
+    >>> page.time_field = time(11, 20, 53)
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.time_field
+    datetime.time(11, 20, 53)
+    >>> page.delete()
+
+URL
+~~~
+::
+
+    >>> page = RemotePageWithManyFields.objects.create(url_field=u"http://example.com")
+    >>> page.url_field
+    u'http://example.com'
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.url_field
+    u'http://example.com'
+    >>> page.url_field = u"http://example.org"
+    >>> page.save()
+    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page.url_field
+    u'http://example.org'
     >>> page.delete()
 
 
@@ -281,7 +547,9 @@ Clean up
 ::
 
     >>> RemotePage.objects.all().delete()
+    >>> RemotePageWithManyFields.objects.all().delete()
     >>> RemotePageWithCustomSlug.objects.all().delete()
     >>> RemotePageWithOverriddenUrls.objects.all().delete()
     >>> RemoteUser.objects.exclude(username="david").delete()
+
 """
