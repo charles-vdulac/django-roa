@@ -289,7 +289,6 @@ Float
     >>> page.float_field
     20.09
     >>> page.delete()
-    >>> print u"The two errors above are known bugs from Django, see #9942."
 
 Integer
 ~~~~~~~

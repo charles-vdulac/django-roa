@@ -43,7 +43,7 @@ Available fields:
     * Decimal
     * Email
     * FilePath
-    * Float     # Do not work as expected, bug #9942 of Django
+    * Float
     * Integer
     * Slug
     * Text

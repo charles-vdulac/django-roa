@@ -13,7 +13,7 @@ objects as you've always done with Django's models.
 You can easily switch from local storage of data to remote one given a unique
 setting. That's very useful if you need to develop locally.
 
-Python 2.4 and Django 1.O.2 are required (or greater).
+Python 2.4 and Django trunk (greater than revision 9695) are required.
 Py-restclient 1.0.1 is included, it will use pycurl, urllib2 or httplib2.
 
 
