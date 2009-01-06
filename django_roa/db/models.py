@@ -266,8 +266,12 @@ class ROAModel(models.Model):
 ##############################################
 
 def get_resource_url_list(opts, func, *args, **kwargs):
-    overridden = settings.ROA_URL_OVERRIDES_LIST.get('%s.%s' % (opts.app_label, opts.module_name), False)
+    ROA_URL_OVERRIDES_LIST = getattr(settings, 'ROA_URL_OVERRIDES_LIST', {})
+    key = '%s.%s' % (opts.app_label, opts.module_name)
+    overridden = ROA_URL_OVERRIDES_LIST.get(key, False)
     return overridden and overridden or func(*args, **kwargs)
 
 def get_resource_url_detail(opts, func, self, *args, **kwargs):
-    return settings.ROA_URL_OVERRIDES_DETAIL.get('%s.%s' % (opts.app_label, opts.module_name), func)(self, *args, **kwargs)
+    ROA_URL_OVERRIDES_DETAIL = getattr(settings, 'ROA_URL_OVERRIDES_DETAIL', {})
+    key = '%s.%s' % (opts.app_label, opts.module_name)
+    return ROA_URL_OVERRIDES_DETAIL.get(key, func)(self, *args, **kwargs)
