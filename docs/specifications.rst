@@ -55,6 +55,12 @@ Available relations:
     * ForeignKey
 
 
+Admin
+-----
+
+Available options: all except ``search_fields`` because of advanced querysets.
+
+
 Server
 ======
 

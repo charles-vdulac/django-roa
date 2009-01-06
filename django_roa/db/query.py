@@ -18,6 +18,7 @@ class Query(object):
         self.where = False
         self.select_related = False
         self.max_depth = None
+        self.extra_select = {}
     
     def can_filter(self):
         return self.filterable
@@ -86,6 +87,26 @@ class Query(object):
         
         #print parameters
         return parameters
+    
+    ##########################################
+    # Fake methods required by admin options #
+    ##########################################
+    
+    def add_fields(self, field_names, allow_m2m=True):
+        """ Fake method. """
+        pass
+    
+    def trim_extra_select(self, names):
+        """ Fake method. """
+        pass
+    
+    def results_iter(self):
+        """ Fake method. """
+        return []
+
+    def combine(self, rhs, connector):
+        """ Fake method. """
+        pass
 
 
 class RemoteQuerySet(query.QuerySet):
