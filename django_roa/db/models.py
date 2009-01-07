@@ -13,6 +13,8 @@ from django.utils.functional import curry
 from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
+ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+
 class ROAModelBase(ModelBase):
     def __new__(cls, name, bases, attrs):
         """
@@ -219,17 +221,25 @@ class ROAModel(models.Model):
                 #self.save_base(raw, parent)
                 setattr(self, field.attname, self._get_pk_val(parent._meta))
 
-        non_pks = [f for f in meta.local_fields if not f.primary_key]
+        args = {}
+        for field in meta.local_fields:
+            
+            # Handle FK fields
+            if isinstance(field, models.ForeignKey):
+                field_attr = getattr(self, field.name)
+                if field_attr is None:
+                    args[field.attname] = None
+                else:
+                    args[field.attname] = field_attr.id
+            
+            # Handle all other fields
+            else:
+                args[field.name] = field.value_to_string(self)
 
-        args = dict((field.name, field.value_to_string(self)) for field in meta.local_fields)
-        fk_args = dict((field.get_attname(), getattr(self, field.name).id) \
-                    for field in meta.local_fields \
-                        if isinstance(field, models.ForeignKey))
-        args.update(fk_args)
         pk_val = self._get_pk_val(meta)
         pk_set = pk_val is not None
         
-        args["format"] = getattr(settings, "ROA_FORMAT", 'json')
+        args["format"] = ROA_FORMAT
         
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
@@ -244,7 +254,7 @@ class ROAModel(models.Model):
             except RequestFailed, e:
                 raise ROAException(e)
         
-        result = serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response).next()
+        result = serializers.deserialize(ROA_FORMAT, response).next()
 
         self.id = int(result.object.id)
         self = result.object

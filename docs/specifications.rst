@@ -50,9 +50,14 @@ Available fields:
     * Time
     * URL
 
+
+Relations
+---------
+
 Available relations:
 
     * ForeignKey
+    * ManyToMany in progress
 
 
 Admin

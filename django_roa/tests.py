@@ -149,6 +149,7 @@ empty values even when it comes from the server::
     xml_field None
     file_field 
     image_field 
+    >>> default_page.delete()
 
 Now for each field, we will test both creation and modification of the value.
 
@@ -377,6 +378,70 @@ URL
     >>> page.delete()
 
 
+Relations
+---------
+
+First things first, we verify that default attributes are set to ``None`` or
+empty values even when it comes from the server::
+
+    >>> from django_roa_client.models import RemotePageWithRelations
+    >>> default_page = RemotePageWithRelations.objects.create()
+    >>> for field in default_page._meta.fields:
+    ...     print field.name, field.value_to_string(default_page)
+    id 1
+    title 
+    remote_page None
+    >>> default_page = RemotePageWithRelations.objects.get(id=default_page.id)
+    >>> for field in default_page._meta.fields:
+    ...     print field.name, field.value_to_string(default_page)
+    id 1
+    title 
+    remote_page None
+
+
+ForeignKey
+~~~~~~~~~~~
+::
+
+    >>> remote_page = RemotePage.objects.create(title=u"A remote page")
+    >>> another_remote_page = RemotePage.objects.create(title=u"Another remote page")
+    >>> page = RemotePageWithRelations.objects.create(remote_page=remote_page)
+    >>> page.remote_page
+    <RemotePage: A remote page (1)>
+    >>> page = RemotePageWithRelations.objects.get(id=page.id)
+    >>> page.remote_page
+    <RemotePage: A remote page (1)>
+    >>> page.remote_page = another_remote_page
+    >>> page.save()
+    >>> page = RemotePageWithRelations.objects.get(id=page.id)
+    >>> page.remote_page
+    <RemotePage: Another remote page (2)>
+    >>> page.delete()
+    >>> remote_page.delete()
+    >>> another_remote_page.delete()
+
+ManyToMany
+~~~~~~~~~~
+::
+
+    >>> remote_page = RemotePageWithManyFields.objects.create(char_field=u"A remote page")
+    >>> another_remote_page = RemotePageWithManyFields.objects.create(char_field=u"Another remote page")
+    >>> page = RemotePageWithRelations.objects.create(title=u"A remote relation page")
+    >>> page.remote_page_fields.add(remote_page)
+    >>> page.remote_page_fields.all()
+    Implementation in progress
+    >>> page = RemotePageWithRelations.objects.get(id=page.id)
+    >>> page.remote_page_fields.all()
+    Implementation in progress
+    >>> page.remote_page_fields.add(another_remote_page)
+    >>> page = RemotePageWithRelations.objects.get(id=page.id)
+    >>> page.remote_page_fields.all()
+    Implementation in progress
+    >>> page.delete()
+    >>> remote_page.delete()
+    >>> another_remote_page.delete()
+
+
 QuerySet API
 ------------
 
@@ -548,6 +613,7 @@ Clean up
 
     >>> RemotePage.objects.all().delete()
     >>> RemotePageWithManyFields.objects.all().delete()
+    >>> RemotePageWithRelations.objects.all().delete()
     >>> RemotePageWithCustomSlug.objects.all().delete()
     >>> RemotePageWithOverriddenUrls.objects.all().delete()
     >>> RemoteUser.objects.exclude(username="david").delete()

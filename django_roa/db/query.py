@@ -5,6 +5,7 @@ from django.db.models.sql.constants import LOOKUP_SEP
 
 from restclient import Resource, ResourceNotFound
 
+ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
 
 class Query(object):
     def __init__(self):
@@ -83,7 +84,7 @@ class Query(object):
             parameters['limit_stop'] = self.limit_stop
         
         # Format
-        parameters['format'] = getattr(settings, "ROA_FORMAT", 'json')
+        parameters['format'] = ROA_FORMAT
         
         #print parameters
         return parameters
@@ -155,7 +156,7 @@ class RemoteQuerySet(query.QuerySet):
         response = response.replace('auth.user', 'remoteauth.remoteuser')
         response = response.replace('auth.message', 'remoteauth.message')
         
-        for res in serializers.deserialize(getattr(settings, "ROA_FORMAT", 'json'), response):
+        for res in serializers.deserialize(ROA_FORMAT, response):
             obj = res.object
             yield obj
         

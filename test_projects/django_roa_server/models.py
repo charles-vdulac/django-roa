@@ -51,3 +51,12 @@ class RemotePageWithOverriddenUrls(models.Model):
     
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
+
+
+class RemotePageWithRelations(models.Model):
+    title = models.CharField(max_length=50)
+    remote_page = models.ForeignKey(RemotePage, blank=True, null=True)
+    remote_page_fields = models.ManyToManyField(RemotePageWithManyFields, blank=True, null=True)
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.id)

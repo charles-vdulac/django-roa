@@ -8,6 +8,7 @@ from django.core import serializers
 from django.db import models
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, _get_queryset
+from django.utils.encoding import smart_unicode
 
 _MIMETYPE = {
     'json': 'application/json',
@@ -133,23 +134,38 @@ class MethodDispatcher(object):
             keys += dict_.keys()
         
         values = {}
-        for field in model._meta.fields:
-            field_data = data.get(field.name, None)
-            if field_data not in ('', 'None'):
-                if isinstance(field, models.fields.BooleanField):
-                    field_data = field.to_python(field_data)
-                elif isinstance(field, models.fields.FloatField):
-                    if field_data is not None:
-                        field_data = float(field_data)
-                values[field.name] = field_data
-        
-        # Handle FK fields
-        for key in keys:
-            if key.endswith('_id') and key not in values:
-                values[str(key)] = int(data[key])
-                del values[key[:-3]]
+        m2m_data = {}
+        for field in model._meta.local_fields:
+            field_value = data.get(field.name, None)
+            if field_value not in ('', 'None'):
+                
+                # Handle M2M relations
+                if field.rel and isinstance(field.rel, models.ManyToManyRel):
+                    m2m_convert = field.rel.to._meta.pk.to_python
+                    m2m_data[field.name] = [m2m_convert(smart_unicode(pk)) for pk in field_value]
+                
+                # Handle FK fields
+                elif field.rel and isinstance(field.rel, models.ManyToOneRel):
+                    field_value = data.get(field.attname, None)
+                    if field_value is not None:
+                        values[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
+                    else:
+                        values[field.attname] = None
+                
+                # Handle all other fields
+                else:
+                    if isinstance(field, models.fields.BooleanField):
+                        field_value = field.to_python(field_value)
+                    elif isinstance(field, models.fields.FloatField):
+                        if field_value is not None:
+                            field_value = float(field_value)
+                    values[field.name] = field_value
         
         object = model.objects.create(**values)
+        if m2m_data:
+            for accessor_name, object_list in m2m_data.items():
+                setattr(object, accessor_name, object_list)
+        
         response = [model.objects.get(id=object.id)]
         #response = [object]
         logger.debug(u'Object "%s" created' % object)
@@ -181,26 +197,48 @@ class MethodDispatcher(object):
         Modifies an object given request args, returned as a list.
         """
         data = request.REQUEST.copy()
-        for field in model._meta.fields:
+        m2m_data = {}
+        for field in model._meta.local_fields:
             field_name = field.name
-            if field_name in data:
-                field_data = data[field_name]
-                if field_data in ('', 'None'):
-                    field_data = None
+                
+            # Handle M2M relations
+            if field.rel and isinstance(field.rel, models.ManyToManyRel):
+                if field_name in data:
+                    field_value = data[field_name]
+                    m2m_convert = field.rel.to._meta.pk.to_python
+                    m2m_data[field.name] = [m2m_convert(smart_unicode(pk)) for pk in field_value]
+            
+            # Handle FK fields
+            elif field.rel and isinstance(field.rel, models.ManyToOneRel):
+                field_value = data.get(field.attname, None)
+                if field_value is not None:
+                    field_value = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
+                setattr(object, field.attname, field_value)
+            
+            # Handle all other fields
+            elif field_name in data:
+                field_value = data[field_name]
+                if field_value in ('', 'None'):
+                    field_value = None
                 if isinstance(field, models.fields.BooleanField):
-                    if field_data is None:
-                        field_data = False
-                    field_data = field.to_python(field_data)
+                    if field_value is None:
+                        field_value = False
+                    field_value = field.to_python(field_value)
                 elif isinstance(field, models.fields.IntegerField):
-                    field_data = field.to_python(field_data)
+                    field_value = field.to_python(field_value)
                 elif isinstance(field, models.fields.FloatField):
-                    if field_data is not None:
-                        field_data = float(field_data)
+                    if field_value is not None:
+                        field_value = float(field_value)
                 elif isinstance(field, models.fields.CharField):
-                    if field_data is None:
-                        field_data = u""
-                setattr(object, field_name, field_data)
+                    if field_value is None:
+                        field_value = u""
+                setattr(object, field_name, field_value)
+        
         object.save()
+        if m2m_data:
+            for accessor_name, object_list in m2m_data.items():
+                setattr(object, accessor_name, object_list)
+        
         response = [model.objects.get(id=object.id)]
         #response = [object]
         logger.debug(u'Object "%s" modified with %s' % (object, data.items()))

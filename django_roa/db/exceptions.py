@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.utils.html import strip_tags
+from django.utils.text import unescape_entities
 
 ROA_DJANGO_ERRORS = getattr(settings, 'ROA_DJANGO_ERRORS', False)
 
@@ -21,7 +22,7 @@ class ROAException(Exception):
         result = []
         title = None
         for line in strip_tags(summary).split('\n'):
-            line_content = line.strip()
+            line_content = unescape_entities(line.strip())
             if line_content:
                 if line_content.endswith(':'):
                     title = line_content
