@@ -62,6 +62,8 @@ In order to use remote access with your models, there are 3 steps:
     * inherit from ``django_roa.Model`` for your models.
     * inherit from ``django_roa.Manager`` for your own managers if you'd like
       to extend/modify the default one.
+    * inherit from ``django_roa.ModelAdmin`` for your own admin if you'd like
+      to set custom options.
     * define ``get_resource_url_list`` static method in your models to access 
       your remote resource in a RESTful way. Optionally, use 
       ``get_resource_url_detail`` method for your model in order to define 
