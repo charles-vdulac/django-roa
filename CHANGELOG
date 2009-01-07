@@ -2,6 +2,20 @@
 django-roa changelog
 ====================
 
+Version 0.8, 7 January 2008:
+------------------------------
+
+* Add support for admin options except search_fields because of advanced
+  querysets based on Q objects.
+* Support for ManyToMany relations in progress.
+* Warning: trunk version of Django is required for now, prior to revision 9695
+  in order to handle FloatFields
+* Bugfixes: ROA_URL_OVERRIDES_* settings are optionnal and ForeignKey fields
+  should work as expected.
+* Backward incompatible change: admin classes must inherit from
+  django_roa.ModelAdmin to be consistent (see documentation and example).
+
+
 Version 0.7, 2 January 2008:
 ------------------------------
 
