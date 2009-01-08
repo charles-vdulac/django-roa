@@ -60,26 +60,32 @@ def serialize(f):
 
 class MethodDispatcher(object):
     
-    def __call__(self, request, app_label, model_name, object_id):
+    def __call__(self, request, app_label, model_name, **args):
         """
         Dispatch the request given the method and object_id argument.
         """
         model = models.get_model(app_label, model_name)
         method = request.method
-        logger.debug(u"Request: %s %s %s" % (method, model.__name__, object_id))
-        if object_id is None:
-            if method == 'GET':
-                return self.index(request, model)
-            elif method == 'POST':
-                return self.add(request, model)
-        else:
-            object = get_object_or_404(model, id=object_id)
+        logger.debug(u"Request: %s %s %s" % (method, model.__name__, args))
+        if len([value for value in args.values() if value is not None]):
+            object = self._get_object(model, **args)
             if method == 'GET':
                 return self.retrieve(request, model, object)
             elif method == 'PUT':
                 return self.modify(request, model, object)
             elif method == 'DELETE':
                 return self.delete(request, model, object)
+        else:
+            if method == 'GET':
+                return self.index(request, model)
+            elif method == 'POST':
+                return self.add(request, model)
+    
+    def _get_object(self, model, **args):
+        """
+        Return an object from an object_id in args, ease subclassing.
+        """
+        return get_object_or_404(model, id=args['object_id'])
     
     ######################
     ## Resource methods ##
@@ -246,34 +252,13 @@ class MethodDispatcher(object):
 
 
 class MethodDispatcherWithCustomSlug(MethodDispatcher):
-    
-    def __call__(self, request, app_label, model_name, object_slug):
-        """
-        Dispatch the request given the method and object_slug argument.
-        """
-        model = models.get_model(app_label, model_name)
-        method = request.method
-        logger.debug(u"Request: %s %s %s" % (method, model.__name__, object_slug))
-        if object_slug is None:
-            if method == 'GET':
-                return self.index(request, model)
-            elif method == 'POST':
-                return self.add(request, model)
-        else:
-            object = self.get_object_from_slug(model, object_slug)
-            if method == 'GET':
-                return self.retrieve(request, model, object)
-            elif method == 'PUT':
-                return self.modify(request, model, object)
-            elif method == 'DELETE':
-                return self.delete(request, model, object)
 
-    def get_object_from_slug(self, model, object_slug):
+    def _get_object(self, model, **args):
         """Returns an object from a slug.
         
         Useful when the slug is a combination of many fields.
         """
-        id, slug = object_slug.split('-', 1)
+        id, slug = args['object_slug'].split('-', 1)
         object = get_object_or_404(model, id=id, slug=slug)
         return object
     
