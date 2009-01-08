@@ -81,7 +81,8 @@ class MethodDispatcher(object):
             elif method == 'POST':
                 return self.add(request, model)
     
-    def _get_object(self, model, **args):
+    @staticmethod
+    def _get_object(model, **args):
         """
         Return an object from an object_id in args, ease subclassing.
         """
@@ -253,7 +254,8 @@ class MethodDispatcher(object):
 
 class MethodDispatcherWithCustomSlug(MethodDispatcher):
 
-    def _get_object(self, model, **args):
+    @staticmethod
+    def _get_object(model, **args):
         """Returns an object from a slug.
         
         Useful when the slug is a combination of many fields.
