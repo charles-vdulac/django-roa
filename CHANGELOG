@@ -2,6 +2,12 @@
 django-roa changelog
 ====================
 
+Version 0.9, 9 January 2008:
+------------------------------
+
+* Ease subclassing of MethodDispatcher with custom slugs.
+
+
 Version 0.8, 7 January 2008:
 ------------------------------
 
