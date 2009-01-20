@@ -28,15 +28,17 @@ This module provide a common interface for all HTTP equest.
     >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'}).http_code
     200
 """
-from urllib import quote, urlencode
+import urllib
 
-from restclient.http import getDefaultHTTPClient, HTTPClient 
+from restclient.transport import getDefaultHTTPTransport, HTTPTransportBase, TransportError 
 
 
 __all__ = ['Resource', 'RestClient', 'ResourceNotFound', \
         'Unauthorized', 'RequestFailed', 'ResourceError',
-        'ResourceResult']
+        'ResourceResult', 'RequestError']
 __docformat__ = 'restructuredtext en'
+
+
 
 
 class ResourceError(Exception):
@@ -68,6 +70,10 @@ class RequestFailed(ResourceError):
     response via e.response. For example, the entire result body (which is 
     probably an HTML error page) is e.response.body.
     """
+
+class RequestError(Exception):
+    """Exception raised when a request is malformed"""
+
 
 class ResourceResult(str):
     """ result returned by `restclient.rest.RestClient`.
@@ -101,13 +107,13 @@ class Resource(object):
     `restclient.http.HTTPClient`.
 
     """
-    def __init__(self, uri, httpclient=None):
+    def __init__(self, uri, transport=None):
         """Constructor for a `Resource` object.
 
         Resource represent an HTTP resource.
 
         :param uri: str, full uri to the server.
-        :param httpclient: any http instance of object based on 
+        :param transport: any http instance of object based on 
                 `restclient.http.HTTPClient`. By default it will use 
                 a client based on `pycurl <http://pycurl.sourceforge.net/>`_ if 
                 installed or urllib2. You could also use 
@@ -117,9 +123,9 @@ class Resource(object):
                 (authentification, proxy, ....).
         """
 
-        self.client = RestClient(httpclient)
+        self.client = RestClient(transport)
         self.uri = uri
-        self.httpclient = httpclient
+        self.transport = self.client.transport
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.uri)
@@ -132,7 +138,7 @@ class Resource(object):
             resr2 = res.clone()
         
         """
-        obj = self.__class__(self.uri, http=self.httpclient)
+        obj = self.__class__(self.uri, transport=self.transport)
         return obj
    
     def __call__(self, path):
@@ -143,7 +149,8 @@ class Resource(object):
             Resource("/path").get()
         """
 
-        return type(self)(make_uri(self.uri, path), http=self.httpclient)
+        return type(self)(self.client.make_uri(self.uri, path),
+                transport=self.transport)
 
     
     def get(self, path=None, headers=None, **params):
@@ -154,47 +161,62 @@ class Resource(object):
             be added to HTTP request.
         :param params: Optionnal parameterss added to the request.
         """
-        return self.client.get(self.uri, path=path, headers=headers, **params)
+        return self.request("GET", path=path, headers=headers, **params)
 
     def delete(self, path=None, headers=None, **params):
         """ HTTP DELETE
 
         see GET for params description.
         """
-        return self.client.delete(self.uri, path=path, headers=headers, **params)
+        return self.request("DELETE", path=path, headers=headers, **params)
 
     def head(self, path=None, headers=None, **params):
         """ HTTP HEAD
 
         see GET for params description.
         """
-        return self.client.head(self.uri, path=path, headers=headers, **params)
+        return self.request("HEAD", path=path, headers=headers, **params)
 
     def post(self, path=None, payload=None, headers=None, **params):
         """ HTTP POST
 
-        :payload: string passed to the body of the request
+        :param payload: string passed to the body of the request
         :param path: string  additionnal path to the uri
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
         :param params: Optionnal parameterss added to the request
         """
 
-        return self.client.post(self.uri, path=path, body=payload, headers=headers, **params)
+        return self.request("POST", path=path, payload=payload, headers=headers, **params)
 
     def put(self, path=None, payload=None, headers=None, **params):
         """ HTTP PUT
 
         see POST for params description.
         """
-        return self.client.put(self.uri, path=path, body=payload, headers=headers, **params)
+        return self.request("PUT", path=path, payload=payload, headers=headers, **params)
 
+    def request(self, method, path=None, payload=None, headers=None, **params):
+        """ HTTP request
+
+        This method may be the only one you want to override when
+        subclassing `restclient.rest.Resource`.
+        
+        :param payload: string or File object passed to the body of the request
+        :param path: string  additionnal path to the uri
+        :param headers: dict, optionnal headers that will
+            be added to HTTP request.
+        :param params: Optionnal parameterss added to the request
+        """
+
+        return self.client.request(method, self.uri, path=path,
+                body=payload, headers=headers, **params)
 
     def update_uri(self, path):
         """
         to set a new uri absolute path
         """
-        self.uri = make_uri(self.uri, path)
+        self.uri = self.client.transport.make_uri(self.uri, path)
 
 
 class RestClient(object):
@@ -207,25 +229,28 @@ class RestClient(object):
         '{"snippet": "testing API.", "title": "", "id": "3XDqQ8G83LlzVWgCeWdwru", "language": "text", "revision": "363934613139"}'
     """
 
-    def __init__(self, httpclient=None):
+    charset = 'utf-8'
+    encode_keys = True
+    safe = "/:"
+
+    def __init__(self, transport=None):
         """Constructor for a `RestClient` object.
 
         RestClient represent an HTTP client.
 
-        :param httpclient: any http instance of object based on 
-                `restclient.http.HTTPClient`. By default it will use 
+        :param transport: any http instance of object based on 
+                `restclient.transport.HTTPTransportBase`. By default it will use 
                 a client based on `pycurl <http://pycurl.sourceforge.net/>`_ if 
-                installed or urllib2. You could also use 
-                `restclient.http.HTTPLib2HTTPClient`,a client based on 
+                installed or `restclient.transport.HTTPLib2Transport`,a client based on 
                 `Httplib2 <http://code.google.com/p/httplib2/>`_ or make your
                 own depending of the option you need to access to the serve
                 (authentification, proxy, ....).
         """ 
 
-        if httpclient is None:
-            httpclient = getDefaultHTTPClient()
+        if transport is None:
+            transport = getDefaultHTTPTransport()
 
-        self.httpclient = httpclient
+        self.transport = transport
 
         self.status_code = None
         self.response = None
@@ -240,33 +265,33 @@ class RestClient(object):
         :param params: Optionnal parameterss added to the request.
         """
 
-        return self.make_request('GET', uri, path=path, headers=headers, **params)
+        return self.request('GET', uri, path=path, headers=headers, **params)
 
     def head(self, uri, path=None, headers=None, **params):
         """ HTTP HEAD
 
         see GET for params description.
         """
-        return self.make_request("HEAD", uri, path=path, headers=headers, **params)
+        return self.request("HEAD", uri, path=path, headers=headers, **params)
 
     def delete(self, uri, path=None, headers=None, **params):
         """ HTTP DELETE
 
         see GET for params description.
         """
-        return self.make_request('DELETE', uri, path=path, headers=headers, **params)
+        return self.request('DELETE', uri, path=path, headers=headers, **params)
 
     def post(self, uri, path=None, body=None, headers=None, **params):
         """ HTTP POST
 
         :param uri: str, uri on which you make the request
-        :body: string passed to the body of the request
+        :param body: string or File object passed to the body of the request
         :param path: string  additionnal path to the uri
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
         :param params: Optionnal parameterss added to the request
         """
-        return self.make_request("POST", uri, path=path, body=body, headers=headers, **params)
+        return self.request("POST", uri, path=path, body=body, headers=headers, **params)
 
     def put(self, uri, path=None, body=None, headers=None, **params):
         """ HTTP PUT
@@ -274,9 +299,9 @@ class RestClient(object):
         see POST for params description.
         """
 
-        return self.make_request('PUT', uri, path=path, body=body, headers=headers, **params)
+        return self.request('PUT', uri, path=path, body=body, headers=headers, **params)
 
-    def make_request(self, method, uri, path=None, body=None, headers=None, **params):
+    def request(self, method, uri, path=None, body=None, headers=None, **params):
         """ Perform HTTP call support GET, HEAD, POST, PUT and DELETE.
         
         Usage example, get friendpaste page :
@@ -293,14 +318,13 @@ class RestClient(object):
 
             from restclient import RestClient
             client = RestClient()
-            client.make_request('GET', 'http://friendpaste.com/5rOqE9XTz7lccLgZoQS4IP'),
+            client.request('GET', 'http://friendpaste.com/5rOqE9XTz7lccLgZoQS4IP'),
                 headers={'Accept': 'application/json'})
 
         :param method: str, the HTTP action to be performed: 
             'GET', 'HEAD', 'POST', 'PUT', or 'DELETE'
         :param path: str or list, path to add to the uri
-        :param data: str or string or any object that could be
-            converted to JSON.
+        :param data: tring or File object.
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
         :param params: Optionnal parameterss added to the request.
@@ -310,8 +334,15 @@ class RestClient(object):
         
         headers = headers or {}
 
-        resp, data = self.httpclient.request(make_uri(uri, path, **params), method=method,
-                body=body, headers=headers)
+        if hasattr(body, 'read'):
+            if not 'Content-Length' in headers:
+                raise RequestError("'Content-Lenght' should be specified when body is a File like instance") 
+
+        try:
+            resp, data = self.transport.request(self.make_uri(uri, path, **params), 
+                method=method, body=body, headers=headers)
+        except TransportError, e:
+            raise RequestError(e)
 
         status_code = int(resp.status)
 
@@ -328,52 +359,76 @@ class RestClient(object):
                         response=resp)
             else:
                 raise RequestFailed(error, http_code=status_code,
-                        response=resp)
+                    response=resp)
 
         return ResourceResult(data, status_code, resp)
 
 
-def make_uri(base, *path, **query):
-    """Assemble a uri based on a base, any number of path segments, and query
-    string parameters.
+    def make_uri(self, base, *path, **query):
+        """Assemble a uri based on a base, any number of path segments, and query
+        string parameters.
 
-    >>> make_uri('http://example.org/', '/_all_dbs')
-    'http://example.org/_all_dbs'
-    """
+        """
+        if base and base.endswith("/"):
+            base = base[:-1]
+        retval = [base]
 
-    if base and base.endswith("/"):
-        base = base[:-1]
-    retval = [base]
+        # build the path
+        path = "/".join([''] +
+                        [url_quote(s.strip('/'), self.charset, self.safe) for s in path
+                         if s is not None])
 
-    # build the path
-    path = '/'.join([''] +
-                    [unicode_quote(s.strip('/')) for s in path
-                     if s is not None])
-    if path:
-        retval.append(path)
+        if path:
+            retval.append(path)
+    
+        params = []
+        for k, v in query.items():
+            if type(v) in (list, tuple):
+                params.extend([(name, i) for i in v if i is not None])
+            elif v is not None:
+                params.append((k,v))
+        if params:
+            retval.extend(['?', url_encode(dict(params), self.charset, self.encode_keys)])
 
-    params = []
-    for k, v in query.items():
-        if type(v) in (list, tuple):
-            params.extend([(name, i) for i in v if i is not None])
-        elif v is not None:
-            params.append((k,v))
-    if params:
-        retval.extend(['?', unicode_urlencode(params)])
-    return ''.join(retval)
+        return ''.join(retval)
 
-def unicode_quote(string, safe=''):
-    if isinstance(string, unicode):
-        string = string.encode('utf-8')
-    return quote(string, safe)
 
-def unicode_urlencode(data):
-    if isinstance(data, dict):
-        data = data.items()
-    params = []
-    for name, value in data:
-        if isinstance(value, unicode):
-            value = value.encode('utf-8')
-        params.append((name, value))
-    return urlencode(params)
+# code borrowed to Wekzeug with minor changes
+
+def url_quote(s, charset='utf-8', safe='/:'):
+    """URL encode a single string with a given encoding."""
+    if isinstance(s, unicode):
+        s = s.encode(charset)
+    elif not isinstance(s, str):
+        s = str(s)
+    return urllib.quote(s, safe=safe)
+
+def url_encode(obj, charset="utf8", encode_keys=False):
+    if isinstance(obj, dict):
+        items = []
+        for k, v in obj.iteritems():
+            if not isinstance(v, (tuple, list)):
+                v = [v]
+            items.append((k, v))
+    else:
+        items = obj or ()
+
+    tmp = []
+    for key, values in items:
+        if encode_keys and isinstance(key, unicode):
+            key = key.encode(charset)
+        else:
+            key = str(key)
+
+        for value in values:
+            if value is None:
+                continue
+            elif isinstance(value, unicode):
+                value = value.encode(charset)
+            else:
+                value = str(value)
+        tmp.append('%s=%s' % (urllib.quote(key),
+            urllib.quote_plus(value)))
+
+    return '&'.join(tmp)
 

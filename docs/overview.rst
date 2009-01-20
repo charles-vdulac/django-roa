@@ -14,7 +14,7 @@ You can easily switch from local storage of data to remote one given a unique
 setting. That's very useful if you need to develop locally.
 
 Python 2.4 and Django trunk (greater than revision 9695) are required.
-Py-restclient 1.0.1 is included, it will use pycurl, urllib2 or httplib2.
+Py-restclient 1.1.4 is included, it will use pycurl, urllib2 or httplib2.
 
 
 Installation

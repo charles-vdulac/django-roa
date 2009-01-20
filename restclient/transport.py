@@ -16,8 +16,8 @@
 #
 import StringIO
 import httplib
+import re
 import sys
-import urllib2
 
 import restclient
 
@@ -33,6 +33,9 @@ except ImportError:
     pycurl=None
 
 _default_http = None
+
+class TransportError(Exception):
+    """Error raised by a transport """
 
 USER_AGENT = "py-restclient/%s (%s)" % (restclient.__version__, sys.platform)
 DEFAULT_MAX_REDIRECT = 3
@@ -65,19 +68,19 @@ def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
         return s
 
 
-def createHTTPClient():
+def createHTTPTransport():
     """Create default HTTP client instance
     prefers Curl to urllib"""
 
     if pycurl is None:
-        http = Urllib2HTTPClient()
+        http = HTTPLib2Transport()
     else:
-        http = CurlHTTPClient()
+        http = CurlTransport()
 
     return http
 
-def getDefaultHTTPClient():
-    """ Return the default http client instance instance
+def getDefaultHTTPTransport():
+    """ Return the default http transport instance instance
     if no client has been set, it will create a default client.
 
     :return: the default client
@@ -86,17 +89,21 @@ def getDefaultHTTPClient():
     global _default_http
 
     if _default_http is None:
-        setDefaultHTTPClient(createHTTPClient())
+        setDefaultHTTPTransport(createHTTPTransport())
 
     return _default_http
 
-def setDefaultHTTPClient(httpclient):
-    """ set default httpClient 
+def setDefaultHTTPTransport(httptransport):
+    """ set default http transport 
     :param http: RestClient
     """
     global _default_http
 
-    _default_http = httpclient
+    _default_http = httptransport
+
+def useCurl():
+    global _default_http
+    return isinstance(_default_http, CurlHTTPTransport)
 
 class HTTPError(Exception):
     """ raised when there is an HTTP error """
@@ -105,11 +112,12 @@ class HTTPResponse(dict):
     headers = None
     status = 200
     final_url = None
-    
+    body = None
+
     def __init__(self, final_url=None, status=None, headers=None,
             body=None):
         self.final_url = final_url
-        self.status_code = status
+        self.status = status
         self.headers = headers
         self.body = body
 
@@ -118,7 +126,7 @@ class HTTPResponse(dict):
                                           self.status,
                                           self.final_url)
 
-class HTTPClient(object):
+class HTTPTransportBase(object):
     """ Interface for HTTP clients """
 
     def request(self, url, method='GET', body=None, headers=None):
@@ -134,109 +142,31 @@ class HTTPClient(object):
         """
         raise NotImplementedError
 
-
-class CustomRequest(urllib2.Request):
-    _method = None
-
-    def __init__(self, url, data=None, headers={},
-                 origin_req_host=None, unverifiable=False, method=None):
-        urllib2.Request.__init__(self, url, data=data, headers=headers,
-                 origin_req_host=origin_req_host, unverifiable=unverifiable)
-
-        if method is not None:
-            self._method = method
-
-    def get_method(self):
-        if self._method is not None:
-            return self._method
-
-        if self.has_data():
-            return "POST"
-        else:
-            return "GET"
-
-class Urllib2HTTPClient(HTTPClient):
-    """ HTTP Client that use urllib2.
-    This module is included in python so i mean that you don't need any
-    dependancy to run this client and restclient.
-
-    urllib2 is very powerfull and you can use many handlers to manage
-    authentification and proxies.
-
-    .. seealso::
-        
-        `Urllib2 <http://docs.python.org/library/urllib2.html>`_
-    
+def _get_pycurl_errcode(symbol, default):
     """
+    Returns the numerical error code for a symbol defined by pycurl.
 
-    def __init__(self, *handlers):
-        """ Constructor for Urllib2HTTPClien
-
-        :param *handlers: add here any urllib2 handlers.
-
-        For example here is a way to have your urllib2 based client
-        using http basic authentification :
-
-        .. code-block:: python
-
-            password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            password_mgr.add_password(None, "%s/%s" % (self.url, "auth"),
-                "test", "test")
-            auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-
-            httpclient = Urllib2HTTPClient(auth_handler)
-                    
-        """
-
-        openers = []
-        if handlers:
-            openers = [handler for handler in handlers]
-        self.openers = openers
-    
-    def request(self, url, method='GET', body=None, headers=None):
-        headers = headers or {}
-        body = body or ''
-
-        headers.setdefault('User-Agent',
-            "%s Python-urllib/%s" % (USER_AGENT, urllib2.__version__,))
-
-        if self.openers:
-            opener = urllib2.build_opener(*self.openers)
-            urllib2.install_opener(opener)
-
-        req = CustomRequest(url=url, data=body, method=method)
-        
-        for key, value in headers.items():
-            req.add_header(key, value)
-        
-        try:
-            f = urllib2.urlopen(req)
-            try:
-                return self._make_response(f)
-            finally:
-                f.close()
-        except urllib2.HTTPError, e:
-            try:
-                return self._make_response(e)
-            finally:
-                e.close()
-
-    def _make_response(self, response):
-        resp = HTTPResponse()
-        resp.final_url = response.geturl()
-        resp.headers = dict(response.info().items())
-        resp.body = response.read()
-
-        if hasattr(response, 'code'):
-            resp.status = response.code
-        else:
-            resp.status = 200
-
-        return resp, resp.body
-
-class CurlHTTPClient(HTTPClient):
+    Different pycurl implementations define different symbols for error
+    codes. Old versions never define some symbols (wether they can return the
+    corresponding error code or not). The following addresses the problem by
+    defining the symbols we care about.  Note: this allows to define symbols
+    for errors that older versions will never return, which is fine.
     """
-    An HTTPClient that uses pycurl.
+    return pycurl.__dict__.get(symbol, default)
+
+CURLE_COULDNT_CONNECT = _get_pycurl_errcode('E_COULDNT_CONNECT', 7)
+CURLE_COULDNT_RESOLVE_HOST = _get_pycurl_errcode('E_COULDNT_RESOLVE_HOST', 6)
+CURLE_COULDNT_RESOLVE_PROXY = _get_pycurl_errcode('E_COULDNT_RESOLVE_PROXY', 5)
+CURLE_GOT_NOTHING = _get_pycurl_errcode('E_GOT_NOTHING', 52)
+CURLE_PARTIAL_FILE = _get_pycurl_errcode('E_PARTIAL_FILE', 18)
+CURLE_SEND_ERROR = _get_pycurl_errcode('E_SEND_ERROR', 55)
+CURLE_SSL_CACERT = _get_pycurl_errcode('E_SSL_CACERT', 60)
+CURLE_SSL_CACERT_BADFILE = _get_pycurl_errcode('E_SSL_CACERT_BADFILE', 77)    
+
+
+class CurlTransport(HTTPTransportBase):
+    """
+    An HTTP transportthat uses pycurl.
 
     Pycurl is recommanded when you want fast access to http resources.
     We have added some basic management of authentification and proxies,
@@ -248,7 +178,7 @@ class CurlHTTPClient(HTTPClient):
     
     .. code-block:: python
 
-        httpclient = CurlHTTPClient()
+        httpclient = CurlTransport()
         httpclient.add_credentials("test", "test")        
 
     .. seealso::
@@ -257,21 +187,17 @@ class CurlHTTPClient(HTTPClient):
     """
 
     def __init__(self, timeout=None):
-        HTTPClient.__init__(self)
+        HTTPTransportBase.__init__(self)
+        self._credentials = {}
+
+        # path to certificate file
+        self.cabundle = None
+
         if pycurl is None:
             raise RuntimeError('Cannot find pycurl library')
 
         self.timeout = timeout
-        self._credentials = {}
-
-    def add_credentials(self, user, password):
-        self._credentials = {
-                "user": user,
-                "password": password
-        }
-
-    def _get_credentials(self):
-        return self._credentials
+            
 
     def _parseHeaders(self, status_and_headers):
         status_and_headers.seek(0)
@@ -296,11 +222,6 @@ class CurlHTTPClient(HTTPClient):
 
         if put:
             headers.setdefault('Expect', '100-continue')
-        
-        if method in ['POST', 'PUT']:
-            body = body or ''
-            headers.setdefault('Content-Length', str(len(body))) 
-
 
         c = pycurl.Curl()
         try:
@@ -318,6 +239,9 @@ class CurlHTTPClient(HTTPClient):
             c.setopt(pycurl.FOLLOWLOCATION, 1)
             c.setopt(pycurl.MAXREDIRS, 5)
 
+            if self.cabundle:
+                c.setopt(pycurl.CAINFO, celf.cabundle)
+
             auth = self._get_credentials()
             user = auth.get('user', None)
             password = auth.get('password', None)
@@ -329,12 +253,6 @@ class CurlHTTPClient(HTTPClient):
                 if password is not None: # '' is a valid password
                     userpass += password
                 c.setopt(pycurl.USERPWD, userpass)
-            #.setopt(pycurl.VERBOSE, 1)
-
-            if headers:
-                c.setopt(pycurl.HTTPHEADER,
-                        ["%s: %s" % pair for pair in sorted(headers.iteritems())])
-
 
             # set method
             if method == "GET":
@@ -350,19 +268,31 @@ class CurlHTTPClient(HTTPClient):
                 c.setopt(pycurl.CUSTOMREQUEST, method)
 
             if method in ('POST','PUT'):
+                if hasattr(body, 'read'):
+                    content_length = int(headers.pop('Content-Length',
+                        0))
+                    content = body
+                else:
+                    content = StringIO.StringIO(body)
+                    if 'Content-Length' in headers:
+                        del headers['Content-Length']
+                    content_length = len(body)
+
                 if put:
-                    c.setopt(pycurl.INFILESIZE, len(body))
+                    c.setopt(pycurl.INFILESIZE, content_length)
                 if method in ('POST'):
-                    c.setopt(pycurl.POSTFIELDSIZE, len(body))
-                s = StringIO.StringIO(body)
-                c.setopt(pycurl.READFUNCTION, s.read)
+                    c.setopt(pycurl.POSTFIELDSIZE, content_length)
+                c.setopt(pycurl.READFUNCTION, content.read)
             
+            if headers:
+                c.setopt(pycurl.HTTPHEADER,
+                        ["%s: %s" % pair for pair in sorted(headers.iteritems())])
+
             try:
                 c.perform()
             except pycurl.error, e:
-                errno, message = e
-                return self._make_response(final_url=url, status=errno,
-                        body=message)
+                if e[0] != CURLE_SEND_ERROR:
+                    raise TransportError(e)
 
             response_headers = self._parseHeaders(header)
             code = c.getinfo(pycurl.RESPONSE_CODE)
@@ -372,16 +302,26 @@ class CurlHTTPClient(HTTPClient):
         finally:
             c.close()
 
+    def add_credentials(self, user, password):
+        self._credentials = {
+                "user": user,
+                "password": password
+        }
+
+    def _get_credentials(self):
+        return self._credentials
+
+
     def _make_response(self, final_url=None, status=None, headers=None,
             body=None):
         resp = HTTPResponse()
-        resp.headers = headers
+        resp.headers = headers or {}
         resp.status = status
         resp.final_url = final_url
         resp.body = body
         return resp, body 
     
-class HTTPLib2HTTPClient(HTTPClient):
+class HTTPLib2Transport(HTTPTransportBase):
     """An http client that uses httplib2 for performing HTTP
     requests. This implementation supports HTTP caching.
 
@@ -390,37 +330,40 @@ class HTTPLib2HTTPClient(HTTPClient):
         `Httplib2 <http://code.google.com/p/httplib2/>`_
     """
 
-    def __init__(self, http=None, cache=None):
-        """@param cache: An object suitable for use as an C{httplib2}
-            cache. If a string is passed, it is assumed to be a
-            directory name.
+    def __init__(self, http=None):
+        """@param http: An httplib2.HTTP instance.
         """
         if httplib2 is None:
             raise RuntimeError('Cannot find httplib2 library. '
                                'See http://bitworking.org/projects/httplib2/')
 
-        super(HTTPLib2HTTPClient, self).__init__()
+        super(HTTPLib2Transport, self).__init__()
         
         if http is None:
-            http = httplib2.Http(cache)
+            http = httplib2.Http()
 
         self.http = http
         self.http.force_exception_to_status_code = False
 
     def request(self, url, method='GET', body=None, headers=None):
         headers = headers or {}
-       
+      
+        content = ''
         if method in ['POST', 'PUT']:
             body = body or ''
-            headers.setdefault('Content-Length', str(len(body))) 
+            if hasattr(body, 'read'): # httplib2 don't suppport file read
+                content = body.read()
+            else:
+                content = body
+                headers.setdefault('Content-Length', str(len(body))) 
 
         if not (url.startswith('http://') or url.startswith('https://')):
             raise ValueError('URL is not a HTTP URL: %r' % (url,))
 
         headers.setdefault('User-Agent', USER_AGENT)
-
+        
         httplib2_response, content = self.http.request(url,
-                method=method, body=body, headers=headers)
+                method=method, body=content, headers=headers)
 
 
         try:
