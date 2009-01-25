@@ -429,14 +429,22 @@ ManyToMany
     >>> page = RemotePageWithRelations.objects.create(title=u"A remote relation page")
     >>> page.remote_page_fields.add(remote_page)
     >>> page.remote_page_fields.all()
-    Implementation in progress
+    [<RemotePageWithManyFields: RemotePageWithManyFields (1)>]
     >>> page = RemotePageWithRelations.objects.get(id=page.id)
     >>> page.remote_page_fields.all()
-    Implementation in progress
+    [<RemotePageWithManyFields: RemotePageWithManyFields (1)>]
     >>> page.remote_page_fields.add(another_remote_page)
     >>> page = RemotePageWithRelations.objects.get(id=page.id)
     >>> page.remote_page_fields.all()
-    Implementation in progress
+    [<RemotePageWithManyFields: RemotePageWithManyFields (1)>, <RemotePageWithManyFields: RemotePageWithManyFields (2)>]
+    >>> remote_page.remotepagewithrelations_set.all()
+    [<RemotePageWithRelations: A remote relation page (2)>]
+    >>> page.remote_page_fields.remove(remote_page)
+    >>> page.remote_page_fields.all()
+    [<RemotePageWithManyFields: RemotePageWithManyFields (2)>]
+    >>> page.remote_page_fields.clear()
+    >>> page.remote_page_fields.all()
+    []
     >>> page.delete()
     >>> remote_page.delete()
     >>> another_remote_page.delete()

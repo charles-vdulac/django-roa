@@ -65,6 +65,9 @@ class MethodDispatcher(object):
         Dispatch the request given the method and object_id argument.
         """
         model = models.get_model(app_label, model_name)
+        if model is None:
+            logger.debug(u'Model not found with: "%s" app label and "%s" model name' % (app_label, model_name))
+            raise Http404()
         method = request.method
         logger.debug(u"Request: %s %s %s" % (method, model.__name__, args))
         if len([value for value in args.values() if value is not None]):
@@ -204,6 +207,41 @@ class MethodDispatcher(object):
         Modifies an object given request args, returned as a list.
         """
         data = request.REQUEST.copy()
+        
+        # Add M2M relations
+        if 'm2m_add' in data:
+            obj_ids_str = data['m2m_ids']
+            obj_ids = [int(obj_id) for obj_id in data['m2m_ids']]
+            m2m_field = getattr(object, data['m2m_field_name'])
+            m2m_field.add(*obj_ids)
+            
+            response = [model.objects.get(id=object.id)]
+            #response = [object]
+            logger.debug(u'Object "%s" added M2M relations with ids %s' % (object, obj_ids_str))
+            return response
+        
+        # Remove M2M relations
+        if 'm2m_remove' in data:
+            obj_ids_str = data['m2m_ids']
+            obj_ids = [int(obj_id) for obj_id in data['m2m_ids']]
+            m2m_field = getattr(object, data['m2m_field_name'])
+            m2m_field.remove(*obj_ids)
+            
+            response = [model.objects.get(id=object.id)]
+            #response = [object]
+            logger.debug(u'Object "%s" removed M2M relations with ids %s' % (object, obj_ids_str))
+            return response
+        
+        # Remove M2M relations
+        if 'm2m_clear' in data:
+            m2m_field = getattr(object, data['m2m_field_name'])
+            m2m_field.clear()
+            
+            response = [model.objects.get(id=object.id)]
+            #response = [object]
+            logger.debug(u'Object "%s" cleared M2M relations' % (object, ))
+            return response
+        
         m2m_data = {}
         for field in model._meta.local_fields:
             field_name = field.name

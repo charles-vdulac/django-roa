@@ -3,7 +3,8 @@ from django.db.models import query
 from django.core import serializers
 from django.db.models.sql.constants import LOOKUP_SEP
 
-from restclient import Resource, ResourceNotFound
+from restclient import Resource, ResourceNotFound, RequestFailed
+from django_roa.db.exceptions import ROAException
 
 ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
 
@@ -19,6 +20,9 @@ class Query(object):
         self.where = False
         self.select_related = False
         self.max_depth = None
+        self.m2m_add = False
+        self.m2m_remove = False
+        self.m2m_clear = False
         self.extra_select = {}
     
     def can_filter(self):
@@ -58,9 +62,26 @@ class Query(object):
         self.select_related = field_dict
         self.related_select_cols = []
         self.related_select_fields = []
+
+    def _add_items(self, field, *objs):
+        self.m2m_add = True
+        self.m2m_ids = [str(obj.id) for obj in objs]
+        self.m2m_field_name = field.name
+    
+    def _remove_items(self, field, *objs):
+        self.m2m_remove = True
+        self.m2m_ids = [str(obj.id) for obj in objs]
+        self.m2m_field_name = field.name
+    
+    def _clear_items(self, field):
+        self.m2m_clear = True
+        self.m2m_field_name = field.name
     
     @property
     def parameters(self):
+        """
+        Returns useful parameters as a dictionary.
+        """
         parameters = {}
         # Counting
         if self.count:
@@ -85,6 +106,19 @@ class Query(object):
         
         # Format
         parameters['format'] = ROA_FORMAT
+        
+        # M2M relations
+        if self.m2m_add:
+            parameters['m2m_add'] = 1
+            parameters['m2m_ids'] = ','.join(self.m2m_ids)
+            parameters['m2m_field_name'] = self.m2m_field_name
+        if self.m2m_remove:
+            parameters['m2m_remove'] = 1
+            parameters['m2m_ids'] = ','.join(self.m2m_ids)
+            parameters['m2m_field_name'] = self.m2m_field_name
+        if self.m2m_clear:
+            parameters['m2m_clear'] = 1
+            parameters['m2m_field_name'] = self.m2m_field_name
         
         #print parameters
         return parameters
@@ -273,3 +307,51 @@ class RemoteQuerySet(query.QuerySet):
         if depth:
             obj.query.max_depth = depth
         return obj
+
+    #################################
+    # METHODS THAT DO M2M RELATIONS #
+    #################################
+
+    def _add_items(self, source_col_name=None, target_col_name=None, 
+                   join_table=None, pk_val=None, instance=None, field=None, 
+                   *objs):
+        """
+        Adds m2m relations between ``instance`` object and ``objs``.
+        """
+        self.query._add_items(field, *objs)
+        
+        resource = Resource(instance.get_resource_url_detail())
+        
+        try:
+            response = resource.put(**self.query.parameters)
+        except RequestFailed, e:
+            raise ROAException(e)
+
+    def _remove_items(self, source_col_name=None, target_col_name=None, 
+                      join_table=None, pk_val=None, instance=None, field=None, 
+                      *objs):
+        """
+        Removes m2m relations between ``instance`` object and ``objs``.
+        """
+        self.query._remove_items(field, *objs)
+        
+        resource = Resource(instance.get_resource_url_detail())
+        
+        try:
+            response = resource.put(**self.query.parameters)
+        except RequestFailed, e:
+            raise ROAException(e)
+
+    def _clear_items(self, source_col_name=None, join_table=None, pk_val=None, 
+                     instance=None, field=None):
+        """
+        Clears m2m relations related to ``instance`` object.
+        """
+        self.query._clear_items(field)
+        
+        resource = Resource(instance.get_resource_url_detail())
+        
+        try:
+            response = resource.put(**self.query.parameters)
+        except RequestFailed, e:
+            raise ROAException(e)

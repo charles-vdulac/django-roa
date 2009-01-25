@@ -2,16 +2,8 @@
 django-roa todo
 ===============
 
-Must-have
----------
-
-* Handle remote ContentTypes in admin, very hard without rewriting it.
-* Handle ManyToMany relations, raw SQL executed without any backend call.
-
-
 Maybe
 -----
 
-* Handle Q filters
+* Handle remote ContentTypes in admin, very hard without rewriting it
 * Cascading changes/deletions
-* Use ETags (performances)

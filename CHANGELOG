@@ -2,14 +2,23 @@
 django-roa changelog
 ====================
 
+Version 1.0, 23 January 2008:
+-----------------------------
+
+* Add support for many-to-many relations.
+* Warning: Many-to-many relations depends on Django' issue #10109, apply the 
+  attached patch if you need it.
+* Update py-restclient to 1.1.4.
+
+
 Version 0.9, 9 January 2008:
-------------------------------
+----------------------------
 
 * Ease subclassing of MethodDispatcher with custom slugs.
 
 
 Version 0.8, 7 January 2008:
-------------------------------
+----------------------------
 
 * Add support for admin options except search_fields because of advanced
   querysets based on Q objects.
@@ -23,7 +32,7 @@ Version 0.8, 7 January 2008:
 
 
 Version 0.7, 2 January 2008:
-------------------------------
+----------------------------
 
 * Add support for most useful fields (see specifications).
 * Warning: there are some Django bugs (hopefully with patches) which are

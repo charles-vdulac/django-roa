@@ -57,7 +57,7 @@ Relations
 Available relations:
 
     * ForeignKey
-    * ManyToMany in progress
+    * ManyToMany
 
 
 Admin
@@ -86,13 +86,23 @@ tests' projects.
 Parameters
 ----------
 
-Optionnal parameters:
+Optional parameters:
 
-    * format: json, xml will be supported as soon as possible
     * count: returns the number of elements
     * filter_* and exclude_*: * is the string used by Django to filter/exclude
     * order_by: order the results given this field
     * limit_start and limit_stop: slice the results given those integers
+    * format: json or xml
+
+Optional M2M parameters:
+
+    * m2m_add: declare that you will add many-to-many relations
+    * m2m_remove: declare that you will remove many-to-many relations
+    * m2m_clear: declare that you will clear many-to-many relations
+    * m2m_field_name: name of the related field, required for add, remove and
+      clear types of relations
+    * m2m_ids: ids of the related objects, required for add and remove types
+      of relations
 
 Note: take a look at tests and test_projects to see all actual possibilities.
 
@@ -118,4 +128,3 @@ List of custom settings:
       should be all lower-case, regardless of the case of the actual model 
       class name. Same behaviour as ``ABSOLUTE_URL_OVERRIDES`` setting, see
       examples.
-
