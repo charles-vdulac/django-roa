@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -
 #
-# Copyright (c) 2008 (c) Benoit Chesneau <benoitc@e-engura.com> 
+# Copyright (c) 2008, 2009 Benoit Chesneau <benoitc@e-engura.com> 
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -216,7 +216,7 @@ class Resource(object):
         """
         to set a new uri absolute path
         """
-        self.uri = self.client.transport.make_uri(self.uri, path)
+        self.uri = self.client.make_uri(self.uri, path)
 
 
 class RestClient(object):
@@ -336,7 +336,7 @@ class RestClient(object):
 
         if hasattr(body, 'read'):
             if not 'Content-Length' in headers:
-                raise RequestError("'Content-Lenght' should be specified when body is a File like instance") 
+                raise RequestError("'Content-Length' should be specified when body is a File like instance") 
 
         try:
             resp, data = self.transport.request(self.make_uri(uri, path, **params), 
@@ -376,7 +376,7 @@ class RestClient(object):
         # build the path
         path = "/".join([''] +
                         [url_quote(s.strip('/'), self.charset, self.safe) for s in path
-                         if s is not None])
+                         if s is not None and isinstance(s, basestring)])
 
         if path:
             retval.append(path)
@@ -384,7 +384,7 @@ class RestClient(object):
         params = []
         for k, v in query.items():
             if type(v) in (list, tuple):
-                params.extend([(name, i) for i in v if i is not None])
+                params.extend([(k, i) for i in v if i is not None])
             elif v is not None:
                 params.append((k,v))
         if params:

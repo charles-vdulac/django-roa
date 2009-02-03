@@ -57,7 +57,7 @@ Relations
 Available relations:
 
     * ForeignKey
-    * ManyToMany
+    * ManyToMany   # Patch from bug #10109 of Django required
 
 
 Admin

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -
-# Copyright (c) 2008 (c) Benoit Chesneau <benoitc@e-engura.com> 
+# Copyright (c) 2008, 2009  Benoit Chesneau <benoitc@e-engura.com> 
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -13,8 +13,9 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+
 try:
-    __version__ = __import__('pkg_resources').get_distribution('restclient').version
+    __version__ = __import__('pkg_resources').get_distribution('py-restclient').version
 except:
     __version__ = '?'
 
