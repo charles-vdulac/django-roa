@@ -49,9 +49,9 @@ def serialize(f):
         
         if result:
             # serialization
-            response = serializers.serialize(format, result)
+            response = serializers.serialize(format, result, **{'indent': True})
             response = response.replace('_server', '_client')
-            #print response
+            logger.debug(u"Response:\n%s" % response)
             response = HttpResponse(response, mimetype=mimetype)
             return response
         return HttpResponse('OK', mimetype=mimetype)
