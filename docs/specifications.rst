@@ -104,7 +104,7 @@ Optional M2M parameters:
     * m2m_ids: ids of the related objects, required for add and remove types
       of relations
 
-Note: take a look at tests and test_projects to see all actual possibilities.
+Note: take a look at tests and examples to see all actual possibilities.
 
 
 Settings
