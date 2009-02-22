@@ -24,22 +24,21 @@ This module provide a common interface for all HTTP equest.
     >>> from restclient import Resource
     >>> res = Resource('http://friendpaste.com')
     >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'})
-    '{"snippet": "hi!", "title": "", "id": "5rOqE9XTz7lccLgZoQS4IP", "language": "text", "revision": "386233396230"}'
-    >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'}).http_code
+    u'{"snippet": "hi!", "title": "", "id": "5rOqE9XTz7lccLgZoQS4IP", "language": "text", "revision": "386233396230"}'
+    >>> res.status
     200
 """
 import urllib
 
-from restclient.transport import getDefaultHTTPTransport, HTTPTransportBase, TransportError 
-
+from restclient.transport import getDefaultHTTPTransport, \
+HTTPTransportBase, TransportError
+from restclient.utils import to_bytestring
 
 __all__ = ['Resource', 'RestClient', 'ResourceNotFound', \
         'Unauthorized', 'RequestFailed', 'ResourceError',
-        'ResourceResult', 'RequestError']
+        'RequestError']
+
 __docformat__ = 'restructuredtext en'
-
-
-
 
 class ResourceError(Exception):
     def __init__(self, message=None, http_code=None, response=None):
@@ -75,30 +74,6 @@ class RequestError(Exception):
     """Exception raised when a request is malformed"""
 
 
-class ResourceResult(str):
-    """ result returned by `restclient.rest.RestClient`.
-    
-    you can get result like as string and  status code by result.http_code, 
-    or see anything about the response via result.response. For example, the entire 
-    result body is result.response.body.
-
-    .. code-block:: python
-
-            from restclient import RestClient
-            client = RestClient()
-            page = resource.request('GET', 'http://friendpaste.com')
-            print page
-            print "http code %s" % page.http_code
-
-    """
-    def __new__(cls, s, http_code, response):
-        self = str.__new__(cls, s)
-        self.http_code = http_code
-        self.response = response
-        return self
-
-
-
 class Resource(object):
     """A class that can be instantiated for access to a RESTful resource, 
     including authentication. 
@@ -107,7 +82,7 @@ class Resource(object):
     `restclient.http.HTTPClient`.
 
     """
-    def __init__(self, uri, transport=None):
+    def __init__(self, uri, transport=None, headers=None):
         """Constructor for a `Resource` object.
 
         Resource represent an HTTP resource.
@@ -121,11 +96,14 @@ class Resource(object):
                 `Httplib2 <http://code.google.com/p/httplib2/>`_ or make your
                 own depending of the option you need to access to the serve
                 (authentification, proxy, ....).
+        :param headers: dict, optionnal headers that will
+            be added to HTTP request.
         """
 
-        self.client = RestClient(transport)
+        self.client = RestClient(transport, headers=headers)
         self.uri = uri
-        self.transport = self.client.transport
+        self.transport = self.client.transport 
+        self._headers = headers
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.uri)
@@ -208,15 +186,25 @@ class Resource(object):
             be added to HTTP request.
         :param params: Optionnal parameterss added to the request
         """
-
+        _headers = self._headers or {}
+        _headers.update(headers or {})
         return self.client.request(method, self.uri, path=path,
-                body=payload, headers=headers, **params)
+                body=payload, headers=_headers, **params)
+
+    def get_response(self):
+        return self.client.get_response()
+    response = property(get_response)
+
+    def get_status(self):
+        return self.client.status
+    status = property(get_status)
 
     def update_uri(self, path):
         """
         to set a new uri absolute path
         """
-        self.uri = self.client.make_uri(self.uri, path)
+        self.uri = self.client.make_uri(self.uri, 
+                path)
 
 
 class RestClient(object):
@@ -226,14 +214,14 @@ class RestClient(object):
         >>> xml = res.get('http://pypaste.com/about')
         >>> json = res.get('http://pypaste.com/3XDqQ8G83LlzVWgCeWdwru', headers={'accept': 'application/json'})
         >>> json
-        '{"snippet": "testing API.", "title": "", "id": "3XDqQ8G83LlzVWgCeWdwru", "language": "text", "revision": "363934613139"}'
+        u'{"snippet": "testing API.", "title": "", "id": "3XDqQ8G83LlzVWgCeWdwru", "language": "text", "revision": "363934613139"}'
     """
 
     charset = 'utf-8'
     encode_keys = True
     safe = "/:"
 
-    def __init__(self, transport=None):
+    def __init__(self, transport=None, headers=None):
         """Constructor for a `RestClient` object.
 
         RestClient represent an HTTP client.
@@ -245,6 +233,8 @@ class RestClient(object):
                 `Httplib2 <http://code.google.com/p/httplib2/>`_ or make your
                 own depending of the option you need to access to the serve
                 (authentification, proxy, ....).
+        :param headers: dict, optionnal headers that will
+            be added to HTTP request.
         """ 
 
         if transport is None:
@@ -252,8 +242,10 @@ class RestClient(object):
 
         self.transport = transport
 
-        self.status_code = None
+        self.status = None
         self.response = None
+        self._headers = headers
+
 
     def get(self, uri, path=None, headers=None, **params):
         """ HTTP GET         
@@ -331,21 +323,27 @@ class RestClient(object):
         
         :return: str.
         """
-        
-        headers = headers or {}
 
+        # init headers
+        _headers = self._headers or {}
+        _headers.update(headers or {})
+        
+        is_unicode = True
         if hasattr(body, 'read'):
             if not 'Content-Length' in headers:
                 raise RequestError("'Content-Length' should be specified when body is a File like instance") 
+        elif body is not None:
+            body = to_bytestring(body)
 
         try:
             resp, data = self.transport.request(self.make_uri(uri, path, **params), 
-                method=method, body=body, headers=headers)
+                method=method, body=body, headers=_headers)
         except TransportError, e:
             raise RequestError(e)
 
-        status_code = int(resp.status)
-
+        self.status  = status_code = resp.status
+        self.response = resp
+        
         if status_code >= 400:
             if type(data) is dict:
                 error = (data.get('error'), data.get('reason'))
@@ -361,8 +359,15 @@ class RestClient(object):
                 raise RequestFailed(error, http_code=status_code,
                     response=resp)
 
-        return ResourceResult(data, status_code, resp)
+        
+        try:
+            return data.decode('utf-8')
+        except UnicodeDecodeError:
+            pass    
+        return data 
 
+    def get_response(self):
+        return self.response
 
     def make_uri(self, base, *path, **query):
         """Assemble a uri based on a base, any number of path segments, and query
@@ -380,7 +385,7 @@ class RestClient(object):
 
         if path:
             retval.append(path)
-    
+
         params = []
         for k, v in query.items():
             if type(v) in (list, tuple):

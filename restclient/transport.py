@@ -14,6 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
+
+import codecs
 import StringIO
 import httplib
 
@@ -21,7 +23,7 @@ import re
 import sys
 
 import restclient
-from restclient.iri2uri import iri2uri
+from restclient.utils import to_bytestring, iri2uri
 
 try:
     import httplib2
@@ -46,32 +48,7 @@ NORMALIZE_SPACE = re.compile(r'(?:\r\n)?[ \t]+')
 def _normalize_headers(headers):
     return dict([ (key.lower(), NORMALIZE_SPACE.sub(value, ' ').strip())  for (key, value) in headers.iteritems()])
 
-def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
-    """
-    Returns a bytestring version of 's', encoded as specified in 'encoding'.
 
-    If strings_only is True, don't convert (some) non-string-like objects.
-    """
-    if strings_only and isinstance(s, (types.NoneType, int)):
-        return s
-   
-    if not isinstance(s, basestring):
-        try:
-            return str(s)
-        except UnicodeEncodeError:
-            if isinstance(s, Exception):
-                # An Exception subclass containing non-ASCII data that doesn't
-                # know how to print itself properly. We shouldn't raise a
-                # further exception.
-                return ' '.join([smart_str(arg, encoding, strings_only,
-                        errors) for arg in s])
-            return unicode(s).encode(encoding, errors)
-    elif isinstance(s, unicode):
-        return s.encode(encoding, errors)
-    elif s and encoding != 'utf-8':
-        return s.decode('utf-8', errors).encode(encoding, errors)
-    else:
-        return s
 
 def createHTTPTransport():
     """Create default HTTP client instance
@@ -116,22 +93,49 @@ class HTTPError(Exception):
     """ raised when there is an HTTP error """
 
 class HTTPResponse(dict):
-    headers = None
-    status = 200
-    final_url = None
-    body = None
+    """An object more like email.Message than httplib.HTTPResponse.
+    
+        >>> from restclient import Resource
+        >>> res = Resource('http://e-engura.org')
+        >>> from restclient import Resource
+        >>> res = Resource('http://e-engura.org')
+        >>> page = res.get()
+        >>> res.status
+        200
+        >>> res.response['content-type']
+        'text/html'
+        >>> logo = res.get('/images/logo.gif')
+        >>> res.response['content-type']
+        'image/gif'
+    """
 
-    def __init__(self, final_url=None, status=None, headers=None,
-            body=None):
-        self.final_url = final_url
-        self.status = status
-        self.headers = headers
-        self.body = body
+    final_url = None
+    
+    "Status code returned by server. "
+    status = 200
+
+    """Reason phrase returned by server."""
+    reason = "Ok"
+
+    def __init__(self, info):
+        for key, value in info.iteritems(): 
+            self[key] = value 
+        self.status = int(self.get('status', self.status))
+        self.final_url = self.get('final_url', self.final_url)
+
+    def __getattr__(self, name):
+        if name == 'dict':
+            return self 
+        else:  
+            raise AttributeError, name
 
     def __repr__(self):
         return "<%s status %s for %s>" % (self.__class__.__name__,
                                           self.status,
                                           self.final_url)
+
+
+
 
 class HTTPTransportBase(object):
     """ Interface for HTTP clients """
@@ -282,8 +286,15 @@ class CurlTransport(HTTPTransportBase):
         headers.setdefault('User-Agent',
                            "%s %s" % (USER_AGENT, pycurl.version,))
 
+        # by default turn off default pragma
+        headers.setdefault('Cache-control', 'max-age=0')
+        headers.setdefault('Pragma', 'no-cache')
+
+        if method in 'PUT':
+            headers.setdefault('Expect', '100-continue')
+
         # encode url
-        url = iri2uri(url)
+        url = iri2uri(to_bytestring(url))
         
         c = pycurl.Curl()
         try:
@@ -297,7 +308,7 @@ class CurlTransport(HTTPTransportBase):
             header = StringIO.StringIO()
             c.setopt(pycurl.WRITEFUNCTION, data.write)
             c.setopt(pycurl.HEADERFUNCTION, header.write)
-            c.setopt(pycurl.URL, smart_str(url))
+            c.setopt(pycurl.URL, url)
             c.setopt(pycurl.FOLLOWLOCATION, 1)
             c.setopt(pycurl.MAXREDIRS, 5)
             c.setopt(pycurl.NOSIGNAL, 1)
@@ -349,6 +360,7 @@ class CurlTransport(HTTPTransportBase):
                         0))
                     content = body
                 else:
+                    body = to_bytestring(body)
                     content = StringIO.StringIO(body)
                     if 'Content-Length' in headers:
                         del headers['Content-Length']
@@ -383,11 +395,12 @@ class CurlTransport(HTTPTransportBase):
 
     def _make_response(self, final_url=None, status=None, headers=None,
             body=None):
-        resp = HTTPResponse()
-        resp.headers = headers or {}
-        resp.status = status
-        resp.final_url = final_url
-        resp.body = body
+        infos = headers or {}
+        infos.update({
+            'status': status,
+            'final_url': final_url
+        })
+        resp = HTTPResponse(infos)
         return resp, body 
     
 class HTTPLib2Transport(HTTPTransportBase):
@@ -481,15 +494,10 @@ class HTTPLib2Transport(HTTPTransportBase):
         except KeyError:
             final_url = url
 
-        resp = HTTPResponse()
-        resp.headers = dict(httplib2_response.items())
-        resp.status = int(httplib2_response.status)
-        resp.final_url = final_url
-        resp.body = content
-
+        
+        resp = HTTPResponse(httplib2_response)
         return resp, content
 
     def add_credentials(self, user, password):
         super(HTTPLib2Transport, self).add_credentials(user, password)
         self.http.add_credentials(user, password)
-
