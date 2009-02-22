@@ -13,7 +13,6 @@ from django.utils.functional import curry
 from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
-ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
 
 class ROAModelBase(ModelBase):
     def __new__(cls, name, bases, attrs):
@@ -239,6 +238,7 @@ class ROAModel(models.Model):
         pk_val = self._get_pk_val(meta)
         pk_set = pk_val is not None
         
+        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         args["format"] = ROA_FORMAT
         
         if force_update or pk_set and not self.id is None:

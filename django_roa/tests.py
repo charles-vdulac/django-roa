@@ -615,6 +615,24 @@ Unicity::
      Status code: 500
 
 
+Custom serializer
+-----------------
+
+You can use your own serializer thanks to the ``SERIALIZATION_MODULES`` Django
+setting (registered manually here for test purpose)::
+
+    >>> from django.conf import settings
+    >>> initial_roa_format_setting = settings.ROA_FORMAT
+    >>> from django.core.serializers import register_serializer
+    >>> register_serializer('custom', 'examples.django_roa_client.custom_serializer')
+    >>> settings.ROA_FORMAT = 'custom'
+    >>> page = RemotePage.objects.create(title=u'A custom serialized page')
+    >>> page
+    <RemotePage: A custom serialized page (6)>
+    >>> page.delete()
+    >>> settings.ROA_FORMAT = initial_roa_format_setting
+
+
 Clean up
 --------
 ::
