@@ -189,6 +189,8 @@ class RemoteQuerySet(query.QuerySet):
         # TODO: find a better way to do this
         response = response.replace('auth.user', 'remoteauth.remoteuser')
         response = response.replace('auth.message', 'remoteauth.message')
+        response = response.replace('auth.group', 'remoteauth.remotegroup')
+        response = response.replace('auth.permission', 'remoteauth.remotepermission')
         
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         for res in serializers.deserialize(ROA_FORMAT, response):

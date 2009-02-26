@@ -558,7 +558,22 @@ Now we can try to log in and navigate into the built-in admin::
     >>> response.context[-1]["cl"].result_count
     5
 
-    
+
+Groups & Permissions (in progress)
+----------------------------------
+
+As with users, there are remote groups and permissions::
+
+    >>> from django_roa.remoteauth.models import RemoteGroup, RemotePermission
+    >>> RemoteGroup.objects.all()
+    []
+    >>> RemotePermission.objects.all()
+    [<RemotePermission: django_roa_client | remote page with custom slug | Can add group>, ...]
+    >>> # TODO: finish, we verify that it doesn't break for now
+    >>> alice.get_group_permissions()
+    set([])
+
+
 Custom slug
 -----------
 

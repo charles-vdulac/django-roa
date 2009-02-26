@@ -1,13 +1,39 @@
 import datetime
 
-from django.contrib.auth.models import Group, Permission, get_hexdigest, check_password, UserManager, Message, User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.models import Permission as DjangoPermission, User, \
+    Group as DjangoGroup, get_hexdigest, check_password, UserManager, Message
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 
 from django_roa import Model, Manager
 
+class RemotePermission(Model, DjangoPermission):
+    """
+    Inherits methods from Django's Permission model.
+    """
+    name = models.CharField(_('name'), max_length=50)
+    content_type = models.ForeignKey(ContentType)
+    codename = models.CharField(_('codename'), max_length=100)
 
-class ROAUserManager(Manager, UserManager):
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/auth/permission/'
+
+
+class RemoteGroup(Model, DjangoGroup):
+    """
+    Inherits methods from Django's Group model.
+    """
+    name = models.CharField(_('name'), max_length=80, unique=True)
+    permissions = models.ManyToManyField(RemotePermission, verbose_name=_('permissions'), blank=True)
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/auth/group/'
+
+
+class RemoteUserManager(Manager, UserManager):
     """
     Inherits methods from Django's UserManager manager.
     """
@@ -26,10 +52,10 @@ class RemoteUser(Model, User):
     is_superuser = models.BooleanField(_('superuser status'), default=False, help_text=_("Designates that this user has all permissions without explicitly assigning them."))
     last_login = models.DateTimeField(_('last login'), default=datetime.datetime.now)
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
-    groups = models.ManyToManyField(Group, verbose_name=_('groups'), blank=True,
+    groups = models.ManyToManyField(RemoteGroup, verbose_name=_('groups'), blank=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
-    user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
-    objects = ROAUserManager()
+    user_permissions = models.ManyToManyField(RemotePermission, verbose_name=_('user permissions'), blank=True)
+    objects = RemoteUserManager()
 
     @staticmethod
     def get_resource_url_list():
