@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db.models import query
 from django.core import serializers
 from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models.query_utils import Q
 
 from restclient import Resource, ResourceNotFound, RequestFailed
 from django_roa.db.exceptions import ROAException
@@ -277,17 +278,19 @@ class RemoteQuerySet(query.QuerySet):
         clone.query.exclude(*args, **kwargs)
         return clone
 
-    def order_by(self, *field_names):
+    def complex_filter(self, filter_obj):
         """
-        Returns a QuerySet instance with the ordering changed.
+        Returns a new QuerySet instance with filter_obj added to the filters.
+
+        filter_obj can be a Q object (or anything with an add_to_query()
+        method) or a dictionary of keyword lookup arguments.
+
+        This exists to support framework features such as 'limit_choices_to',
+        and usually it will be more natural to use other methods.
         """
-        assert self.query.can_filter(), \
-                "Cannot reorder a query once a slice has been taken."
-        
-        clone = self._clone()
-        for field_name in field_names:
-            clone.query.order_by.append(field_name)
-        return clone
+        if isinstance(filter_obj, Q) or hasattr(filter_obj, 'add_to_query'):
+            raise ROAException('Not implemented yet')
+        return self.filter(**filter_obj)
 
     def select_related(self, *fields, **kwargs):
         """
@@ -310,6 +313,18 @@ class RemoteQuerySet(query.QuerySet):
         if depth:
             obj.query.max_depth = depth
         return obj
+
+    def order_by(self, *field_names):
+        """
+        Returns a QuerySet instance with the ordering changed.
+        """
+        assert self.query.can_filter(), \
+                "Cannot reorder a query once a slice has been taken."
+        
+        clone = self._clone()
+        for field_name in field_names:
+            clone.query.order_by.append(field_name)
+        return clone
 
     #################################
     # METHODS THAT DO M2M RELATIONS #

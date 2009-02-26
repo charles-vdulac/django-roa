@@ -559,6 +559,28 @@ Now we can try to log in and navigate into the built-in admin::
     5
 
 
+Home
+----
+
+Test the rendering of a ModelForm with complex relations (depends on
+previously created remote pages)::
+
+    >>> c = Client()
+    >>> response = c.get('/')
+    >>> print response.content
+    <li><label for="id_title">Title:</label> <input id="id_title" type="text" name="title" maxlength="50" /></li>
+    <li><label for="id_remote_page">Remote page:</label> <select name="remote_page" id="id_remote_page">
+    <option value="" selected="selected">---------</option>
+    <option value="1">A second remote page (1)</option>
+    <option value="2">A third remote page (2)</option>
+    <option value="3">A fourth remote page (3)</option>
+    <option value="4">A fourth remote page (4)</option>
+    <option value="5">A fool remote page (5)</option>
+    </select></li>
+    <li><label for="id_remote_page_fields">Remote page fields:</label> <select multiple="multiple" name="remote_page_fields" id="id_remote_page_fields">
+    </select>  Hold down "Control", or "Command" on a Mac, to select more than one.</li>
+
+
 Groups & Permissions (in progress)
 ----------------------------------
 

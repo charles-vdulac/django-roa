@@ -1,13 +1,11 @@
 from django.conf.urls.defaults import *
 from django.contrib import admin
 
-admin.autodiscover()
+from django_roa_client.views import home
 
-def fake_home(request):
-    from django.http import HttpResponse
-    return HttpResponse('Home' * 50)
+admin.autodiscover()
 
 urlpatterns = patterns('',
     url(r'^admin/(.*)', admin.site.root),
-    url(r'^$', fake_home),
+    url(r'^$', home),
 )
