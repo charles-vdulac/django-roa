@@ -186,12 +186,10 @@ class RemoteQuerySet(query.QuerySet):
             response = resource.get(**self.query.parameters)
         except ResourceNotFound:
             return
+        except Exception, e:
+            raise ROAException(e)
 
-        # TODO: find a better way to do this
-        response = response.replace('auth.user', 'remoteauth.remoteuser')
-        response = response.replace('auth.message', 'remoteauth.message')
-        response = response.replace('auth.group', 'remoteauth.remotegroup')
-        response = response.replace('auth.permission', 'remoteauth.remotepermission')
+        response = response.replace('auth.', 'remoteauth.')
         
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         for res in serializers.deserialize(ROA_FORMAT, response):

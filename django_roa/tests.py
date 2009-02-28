@@ -508,14 +508,14 @@ Admin
 
 Remote users are defined in ``django_roa.remoteauth`` application::
 
-    >>> from django_roa.remoteauth.models import RemoteUser, Message
-    >>> RemoteUser.objects.all()
-    [<RemoteUser: david>]
-    >>> alice = RemoteUser.objects.create_user(username="alice", password="secret", email="alice@example.com")
+    >>> from django_roa.remoteauth.models import User, Message
+    >>> User.objects.all()
+    [<User: david>]
+    >>> alice = User.objects.create_user(username="alice", password="secret", email="alice@example.com")
     >>> alice.is_superuser
     False
-    >>> RemoteUser.objects.all()
-    [<RemoteUser: david>, <RemoteUser: alice>]
+    >>> User.objects.all()
+    [<User: david>, <User: alice>]
     >>> alice.id
     2
     >>> Message.objects.all()
@@ -524,7 +524,7 @@ Remote users are defined in ``django_roa.remoteauth`` application::
     >>> message.message
     u'Test message'
     >>> message.user
-    <RemoteUser: alice>
+    <User: alice>
     >>> Message.objects.all()
     [<Message: Test message>]
     >>> alice.message_set.all()
@@ -541,15 +541,15 @@ Now we can try to log in and navigate into the built-in admin::
 
     >>> from django.test.client import Client
     >>> c = Client()
-    >>> RemoteUser.objects.create_superuser(username="bob", password="secret", email="bob@example.com")
-    >>> bob = RemoteUser.objects.get(username="bob")
+    >>> User.objects.create_superuser(username="bob", password="secret", email="bob@example.com")
+    >>> bob = User.objects.get(username="bob")
     >>> bob.is_superuser
     True
     >>> c.login(username="bob", password="secret")
     True
     >>> response = c.get("/admin/")
     >>> response.context[-1]["user"]
-    <RemoteUser: bob>
+    <User: bob>
     >>> response = c.get("/admin/django_roa_client/remotepage/")
     >>> response.status_code
     200
@@ -581,19 +581,47 @@ previously created remote pages)::
     </select>  Hold down "Control", or "Command" on a Mac, to select more than one.</li>
 
 
-Groups & Permissions (in progress)
-----------------------------------
+Groups & Permissions
+--------------------
 
 As with users, there are remote groups and permissions::
 
-    >>> from django_roa.remoteauth.models import RemoteGroup, RemotePermission
-    >>> RemoteGroup.objects.all()
+    >>> from django.contrib.contenttypes.models import ContentType
+    >>> from django_roa.remoteauth.models import Group, Permission
+    >>> Permission.objects.all()
     []
-    >>> RemotePermission.objects.all()
-    [<RemotePermission: django_roa_client | remote page with custom slug | Can add group>, ...]
-    >>> # TODO: finish, we verify that it doesn't break for now
+    >>> bob.user_permissions.all()
+    []
+    >>> ct_user = ContentType.objects.get(name='user')
+    >>> user_permission = Permission.objects.create(name=u"Custom permission to user model",
+    ...                                        content_type=ct_user,
+    ...                                        codename=u"custom_user_permission")
+    >>> bob.user_permissions.add(user_permission)
+    >>> bob.user_permissions.all()
+    [<Permission: remoteauth | user | Custom permission to user model>]
+
+    >>> Group.objects.all()
+    []
+    >>> bob.groups.all()
+    []
+    >>> ct_group = ContentType.objects.get(name='group')
+    >>> group_permission = Permission.objects.create(name=u"Custom permission to group model",
+    ...                                              content_type=ct_group,
+    ...                                              codename=u"custom_group_permission")
+    >>> group = Group.objects.create(name=u"Custom group")
+    >>> group.permissions.add(group_permission)
+    >>> bob.groups.add(group)
+    >>> bob.groups.all()
+    [<Group: Custom group>]
+    >>> bob.groups.all()[0].permissions.all()
+    [<Permission: remoteauth | group | Custom permission to group model>]
+    
     >>> alice.get_group_permissions()
     set([])
+    >>> bob.get_group_permissions()
+    set([u'remoteauth.custom_group_permission'])
+    >>> bob.get_all_permissions()
+    set([u'remoteauth.custom_group_permission', u'remoteauth.custom_user_permission'])
 
 
 Custom slug
@@ -640,7 +668,7 @@ Errors
 
 Unicity::
 
-    >>> RemoteUser.objects.create_user(username="alice", password="secret", email="alice@example.com")
+    >>> User.objects.create_user(username="alice", password="secret", email="alice@example.com")
     Traceback (most recent call last):
     ...
     ROAException: IntegrityError at /auth/user: column username is not unique
@@ -679,6 +707,8 @@ Clean up
     >>> RemotePageWithRelations.objects.all().delete()
     >>> RemotePageWithCustomSlug.objects.all().delete()
     >>> RemotePageWithOverriddenUrls.objects.all().delete()
-    >>> RemoteUser.objects.exclude(username="david").delete()
+    >>> User.objects.exclude(username="david").delete()
+    >>> Permission.objects.all().delete()
+    >>> Group.objects.all().delete()
 
 """
