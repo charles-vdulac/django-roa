@@ -31,7 +31,7 @@ You just need to add the django_roa application into your settings:
     
     * add ``ROA_MODELS = True`` in your settings.
 
-Optionnaly, you can use a remote auth if your users are stored on the remote
+Optionally, you can use a remote auth if your users are stored on the remote
 repository:
 
     * add ``django_roa.remoteauth`` to your ``INSTALLED_APPS`` setting::
