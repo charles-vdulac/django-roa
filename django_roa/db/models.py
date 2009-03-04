@@ -264,7 +264,7 @@ class ROAModel(models.Model):
     def delete(self):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
 
-        # TODO: Find all the objects that need to be deleted.
+        # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail())
         response = resource.delete()
 

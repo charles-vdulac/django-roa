@@ -6,4 +6,3 @@ Maybe
 -----
 
 * Handle remote ContentTypes in admin, very hard without rewriting it
-* Cascading changes/deletions
