@@ -689,7 +689,7 @@ setting (registered manually here for test purpose)::
     >>> from django.conf import settings
     >>> initial_roa_format_setting = settings.ROA_FORMAT
     >>> from django.core.serializers import register_serializer
-    >>> register_serializer('custom', 'examples.django_roa_client.custom_serializer')
+    >>> register_serializer('custom', 'examples.django_roa_client.serializers')
     >>> settings.ROA_FORMAT = 'custom'
     >>> page = RemotePage.objects.create(title=u'A custom serialized page')
     >>> page
