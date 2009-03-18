@@ -59,8 +59,19 @@ class ROAModelBase(ModelBase):
                 if not hasattr(meta, 'get_latest_by'):
                     new_class._meta.get_latest_by = base_meta.get_latest_by
 
+        is_proxy = new_class._meta.proxy
+
         if getattr(new_class, '_default_manager', None):
-            new_class._default_manager = None
+            if not is_proxy:
+                # Multi-table inheritance doesn't inherit default manager from
+                # parents.
+                new_class._default_manager = None
+                new_class._base_manager = None
+            else:
+                # Proxy classes do inherit parent's default manager, if none is
+                # set explicitly.
+                new_class._default_manager = new_class._default_manager._copy_to_model(new_class)
+                new_class._base_manager = new_class._base_manager._copy_to_model(new_class)
 
         # Bail out early if we have already created this class.
         m = get_model(new_class._meta.app_label, name, False)
@@ -71,20 +82,42 @@ class ROAModelBase(ModelBase):
         for obj_name, obj in attrs.items():
             new_class.add_to_class(obj_name, obj)
 
+        # All the fields of any type declared on this model
+        new_fields = new_class._meta.local_fields + \
+                     new_class._meta.local_many_to_many + \
+                     new_class._meta.virtual_fields
+        field_names = set([f.name for f in new_fields])
+
+        # Basic setup for proxy models.
+        if is_proxy:
+            base = None
+            for parent in [cls for cls in parents if hasattr(cls, '_meta')]:
+                if parent._meta.abstract:
+                    if parent._meta.fields:
+                        raise TypeError("Abstract base class containing model fields not permitted for proxy model '%s'." % name)
+                    else:
+                        continue
+                if base is not None:
+                    raise TypeError("Proxy model '%s' has more than one non-abstract model base class." % name)
+                else:
+                    base = parent
+            if base is None:
+                    raise TypeError("Proxy model '%s' has no non-abstract model base class." % name)
+            if (new_class._meta.local_fields or
+                    new_class._meta.local_many_to_many):
+                raise FieldError("Proxy model '%s' contains model fields."
+                        % name)
+            new_class._meta.setup_proxy(base)
+
         # Do the appropriate setup for any model parents.
         o2o_map = dict([(f.rel.to, f) for f in new_class._meta.local_fields
                 if isinstance(f, OneToOneField)])
+
         for base in parents:
             if not hasattr(base, '_meta'):
                 # Things without _meta aren't functional models, so they're
                 # uninteresting parents.
                 continue
-
-            # All the fields of any type declared on this model
-            new_fields = new_class._meta.local_fields + \
-                         new_class._meta.local_many_to_many + \
-                         new_class._meta.virtual_fields
-            field_names = set([f.name for f in new_fields])
 
             parent_fields = base._meta.local_fields + base._meta.local_many_to_many
             # Check for clashes between locally declared fields and those
@@ -98,15 +131,19 @@ class ROAModelBase(ModelBase):
                                         (field.name, name, base.__name__))
             if not base._meta.abstract:
                 # Concrete classes...
+                while base._meta.proxy:
+                    # Skip over a proxy class to the "real" base it proxies.
+                    base = base._meta.proxy_for_model
                 if base in o2o_map:
                     field = o2o_map[base]
-                else:
+                elif not is_proxy:
                     attr_name = '%s_ptr' % base._meta.module_name
                     field = OneToOneField(base, name=attr_name,
                             auto_created=True, parent_link=True)
                     new_class.add_to_class(attr_name, field)
+                else:
+                    field = None
                 new_class._meta.parents[base] = field
-
             else:
                 # .. and abstract ones.
                 for field in parent_fields:
@@ -116,13 +153,12 @@ class ROAModelBase(ModelBase):
                 new_class._meta.parents.update(base._meta.parents)
 
             # Inherit managers from the abstract base classes.
-            base_managers = base._meta.abstract_managers
-            base_managers.sort()
-            for _, mgr_name, manager in base_managers:
-                val = getattr(new_class, mgr_name, None)
-                if not val or val is manager:
-                    new_manager = manager._copy_to_model(new_class)
-                    new_class.add_to_class(mgr_name, new_manager)
+            new_class.copy_managers(base._meta.abstract_managers)
+
+            # Proxy models inherit the non-abstract managers from their base,
+            # unless they have redefined any of them.
+            if is_proxy:
+                new_class.copy_managers(base._meta.concrete_managers)
 
             # Inherit virtual fields (like GenericForeignKey) from the parent
             # class
