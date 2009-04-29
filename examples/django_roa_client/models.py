@@ -16,7 +16,6 @@ class RemotePage(Model):
 
 class RemotePageWithManyFields(Model):
     #auto_field = models.AutoField(primary_key=True)
-    boolean_field = models.NullBooleanField()
     char_field = models.CharField(max_length=50, blank=True, null=True)
     date_field = models.DateField(blank=True, null=True)
     datetime_field = models.DateTimeField(blank=True, null=True)
@@ -26,7 +25,6 @@ class RemotePageWithManyFields(Model):
     float_field = models.FloatField(blank=True, null=True)
     integer_field = models.IntegerField(blank=True, null=True)
     ipaddress_field = models.IPAddressField(blank=True, null=True)
-    nullboolean_field = models.NullBooleanField(blank=True, null=True)
     positiveinteger_field = models.PositiveIntegerField(blank=True, null=True)
     positivesmallinteger_field = models.PositiveSmallIntegerField(blank=True, null=True)
     slug_field = models.SlugField(blank=True, null=True)
@@ -45,6 +43,16 @@ class RemotePageWithManyFields(Model):
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithmanyfields/'
+
+
+class RemotePageWithBooleanFields(Model):
+    boolean_field = models.BooleanField()
+    null_boolean_field = models.NullBooleanField()
+
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/django_roa_server/remotepagewithbooleanfields/'
 
 
 class RemotePageWithCustomSlug(Model):

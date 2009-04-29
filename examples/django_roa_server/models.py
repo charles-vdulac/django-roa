@@ -10,7 +10,6 @@ class RemotePage(models.Model):
 
 class RemotePageWithManyFields(models.Model):
     #auto_field = models.AutoField(primary_key=True)
-    boolean_field = models.NullBooleanField()
     char_field = models.CharField(max_length=50, blank=True, null=True)
     date_field = models.DateField(blank=True, null=True)
     datetime_field = models.DateTimeField(blank=True, null=True)
@@ -20,7 +19,6 @@ class RemotePageWithManyFields(models.Model):
     float_field = models.FloatField(blank=True, null=True)
     integer_field = models.IntegerField(blank=True, null=True)
     ipaddress_field = models.IPAddressField(blank=True, null=True)
-    nullboolean_field = models.NullBooleanField(blank=True, null=True)
     positiveinteger_field = models.PositiveIntegerField(blank=True, null=True)
     positivesmallinteger_field = models.PositiveSmallIntegerField(blank=True, null=True)
     slug_field = models.SlugField(blank=True, null=True)
@@ -35,6 +33,11 @@ class RemotePageWithManyFields(models.Model):
     
     def __unicode__(self):
         return u'%s (%s)' % (self.__class__.__name__, self.id)
+
+
+class RemotePageWithBooleanFields(models.Model):
+    boolean_field = models.BooleanField()
+    null_boolean_field = models.NullBooleanField()
 
 
 class RemotePageWithCustomSlug(models.Model):

@@ -2,8 +2,8 @@
 Django ROA specifications
 =========================
 
-Client
-======
+Client side
+===========
 
 Model
 -----
@@ -36,7 +36,7 @@ Fields
 Available fields:
 
     * Auto      # Custom AutoField doesn't work yet but default id one works
-    * Boolean   # None doesn't work with json serialization, bug #5563 of Django
+    * Boolean
     * Char
     * Date
     * DateTime
@@ -45,6 +45,7 @@ Available fields:
     * FilePath
     * Float
     * Integer
+    * NullBoolean
     * Slug
     * Text
     * Time
@@ -66,8 +67,8 @@ Admin
 Available options: all except ``search_fields`` because of advanced querysets.
 
 
-Server
-======
+Server side
+===========
 
 URLs
 ----

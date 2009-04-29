@@ -103,7 +103,6 @@ empty values even when it comes from the server::
     >>> for field in default_page._meta.fields:
     ...     print field.name, field.value_to_string(default_page)
     id 1
-    boolean_field None
     char_field None
     date_field 
     datetime_field 
@@ -113,7 +112,6 @@ empty values even when it comes from the server::
     float_field None
     integer_field None
     ipaddress_field None
-    nullboolean_field None
     positiveinteger_field None
     positivesmallinteger_field None
     slug_field None
@@ -128,7 +126,6 @@ empty values even when it comes from the server::
     >>> for field in default_page._meta.fields:
     ...     print field.name, field.value_to_string(default_page)
     id 1
-    boolean_field None
     char_field None
     date_field 
     datetime_field 
@@ -138,7 +135,6 @@ empty values even when it comes from the server::
     float_field None
     integer_field None
     ipaddress_field None
-    nullboolean_field None
     positiveinteger_field None
     positivesmallinteger_field None
     slug_field None
@@ -151,21 +147,38 @@ empty values even when it comes from the server::
     image_field 
     >>> default_page.delete()
 
+Same for boolean fields::
+
+    >>> from django_roa_client.models import RemotePageWithBooleanFields
+    >>> boolean_page = RemotePageWithBooleanFields.objects.create(boolean_field=True)
+    >>> for field in boolean_page._meta.fields:
+    ...     print field.name, field.value_to_string(boolean_page)
+    id 1
+    boolean_field True
+    null_boolean_field None
+    >>> boolean_page = RemotePageWithBooleanFields.objects.get(id=boolean_page.id)
+    >>> for field in boolean_page._meta.fields:
+    ...     print field.name, field.value_to_string(boolean_page)
+    id 1
+    boolean_field True
+    null_boolean_field None
+
+
 Now for each field, we will test both creation and modification of the value.
 
 Boolean
 ~~~~~~~
 ::
 
-    >>> page = RemotePageWithManyFields.objects.create(boolean_field=True)
+    >>> page = RemotePageWithBooleanFields.objects.create(boolean_field=True)
     >>> page.boolean_field
     True
-    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page = RemotePageWithBooleanFields.objects.get(id=page.id)
     >>> page.boolean_field
     True
     >>> page.boolean_field = False
     >>> page.save()
-    >>> page = RemotePageWithManyFields.objects.get(id=page.id)
+    >>> page = RemotePageWithBooleanFields.objects.get(id=page.id)
     >>> page.boolean_field
     False
     >>> page.delete()
@@ -306,6 +319,23 @@ Integer
     >>> page = RemotePageWithManyFields.objects.get(id=page.id)
     >>> page.integer_field
     2009
+    >>> page.delete()
+
+NullBoolean
+~~~~~~~~~~~
+::
+
+    >>> page = RemotePageWithBooleanFields.objects.create(null_boolean_field=True)
+    >>> page.null_boolean_field
+    True
+    >>> page = RemotePageWithBooleanFields.objects.get(id=page.id)
+    >>> page.null_boolean_field
+    True
+    >>> page.null_boolean_field = False
+    >>> page.save()
+    >>> page = RemotePageWithBooleanFields.objects.get(id=page.id)
+    >>> page.null_boolean_field
+    False
     >>> page.delete()
 
 Slug
@@ -705,6 +735,7 @@ Clean up
 
     >>> RemotePage.objects.all().delete()
     >>> RemotePageWithManyFields.objects.all().delete()
+    >>> RemotePageWithBooleanFields.objects.all().delete()
     >>> RemotePageWithRelations.objects.all().delete()
     >>> RemotePageWithCustomSlug.objects.all().delete()
     >>> RemotePageWithOverriddenUrls.objects.all().delete()
