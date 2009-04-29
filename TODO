@@ -2,7 +2,8 @@
 django-roa todo
 ===============
 
-Maybe
------
-
 * Handle remote ContentTypes in admin, very hard without rewriting it
+* Switch test server to Piston
+* Handle cache (ETags & co)
+* Improve links between models
+* Handle image/file fields (design decision needed)
