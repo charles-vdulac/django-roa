@@ -265,11 +265,9 @@ class MethodDispatcher(object):
                 field_value = data[field_name]
                 if field_value in ('', 'None'):
                     field_value = None
-                if isinstance(field, models.fields.BooleanField):
-                    if field_value is None:
-                        field_value = False
-                    field_value = field.to_python(field_value)
-                elif isinstance(field, models.fields.IntegerField):
+                if isinstance(field, models.fields.BooleanField) \
+                or isinstance(field, models.fields.NullBooleanField) \
+                or isinstance(field, models.fields.IntegerField):
                     field_value = field.to_python(field_value)
                 elif isinstance(field, models.fields.FloatField):
                     if field_value is not None:

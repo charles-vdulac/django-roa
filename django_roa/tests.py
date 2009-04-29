@@ -542,6 +542,7 @@ Now we can try to log in and navigate into the built-in admin::
     >>> from django.test.client import Client
     >>> c = Client()
     >>> User.objects.create_superuser(username="bob", password="secret", email="bob@example.com")
+    <User: bob>
     >>> bob = User.objects.get(username="bob")
     >>> bob.is_superuser
     True
@@ -673,7 +674,7 @@ Unicity::
     ...
     ROAException: IntegrityError at /auth/user: column username is not unique
      Request Method: POST
-     Request URL: http://127.0.0.1:8081/auth/user
+     Request URL: http://127.0.0.1:8081/auth/user...
      Exception Type: IntegrityError
      Exception Value: column username is not unique
      Exception Location: ..., line ...

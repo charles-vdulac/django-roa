@@ -10,7 +10,7 @@ class RemotePage(models.Model):
 
 class RemotePageWithManyFields(models.Model):
     #auto_field = models.AutoField(primary_key=True)
-    boolean_field = models.BooleanField(blank=True, null=True)
+    boolean_field = models.NullBooleanField()
     char_field = models.CharField(max_length=50, blank=True, null=True)
     date_field = models.DateField(blank=True, null=True)
     datetime_field = models.DateTimeField(blank=True, null=True)
