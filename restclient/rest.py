@@ -28,51 +28,20 @@ This module provide a common interface for all HTTP equest.
     >>> res.status
     200
 """
+
+import mimetypes
+import os
+import StringIO
+import types
 import urllib
 
-from restclient.transport import getDefaultHTTPTransport, \
-HTTPTransportBase, TransportError
+from restclient.errors import *
+from restclient.transport import getDefaultHTTPTransport, HTTPTransportBase
 from restclient.utils import to_bytestring
 
-__all__ = ['Resource', 'RestClient', 'ResourceNotFound', \
-        'Unauthorized', 'RequestFailed', 'ResourceError',
-        'RequestError']
+__all__ = ['Resource', 'RestClient', 'url_quote', 'url_encode']
 
 __docformat__ = 'restructuredtext en'
-
-class ResourceError(Exception):
-    def __init__(self, message=None, http_code=None, response=None):
-        self.message = message
-        self.status_code = http_code
-        self.response = response
-
-class ResourceNotFound(ResourceError):
-    """Exception raised when no resource was found at the given url. 
-    """
-
-class Unauthorized(ResourceError):
-    """Exception raised when an authorization is required to access to
-    the resource specified.
-    """
-
-class RequestFailed(ResourceError):
-    """Exception raised when an unexpected HTTP error is received in response
-    to a request.
-    
-
-    The request failed, meaning the remote HTTP server returned a code 
-    other than success, unauthorized, or NotFound.
-
-    The exception message attempts to extract the error
-
-    You can get the status code by e.http_code, or see anything about the 
-    response via e.response. For example, the entire result body (which is 
-    probably an HTML error page) is e.response.body.
-    """
-
-class RequestError(Exception):
-    """Exception raised when a request is malformed"""
-
 
 class Resource(object):
     """A class that can be instantiated for access to a RESTful resource, 
@@ -329,37 +298,48 @@ class RestClient(object):
         _headers.update(headers or {})
         
         is_unicode = True
-        if hasattr(body, 'read'):
-            if not 'Content-Length' in headers:
-                raise RequestError("'Content-Length' should be specified when body is a File like instance") 
-        elif body is not None:
-            body = to_bytestring(body)
-
+        
+        if body and body is not None and 'Content-Length' not in headers:
+            if isinstance(body, file):
+                try:
+                    body.flush()
+                except IOError:
+                    pass
+                size = int(os.fstat(body.fileno())[6])
+            elif isinstance(body, types.StringTypes):
+                size = len(body)
+                body = to_bytestring(body)
+            else:
+                raise RequestError('Unable to calculate '
+                    'the length of the data parameter. Specify a value for '
+                    'Content-Length')
+            _headers['Content-Length'] = size
+            
+            if 'Content-Type' not in headers:
+                type = None
+                if hasattr(body, 'name'):
+                    type = mimetypes.guess_type(body.name)[0]
+                _headers['Content-Type'] = type and type or 'application/octet-stream'
+                
         try:
             resp, data = self.transport.request(self.make_uri(uri, path, **params), 
                 method=method, body=body, headers=_headers)
         except TransportError, e:
-            raise RequestError(e)
+            raise RequestError(str(e))
 
         self.status  = status_code = resp.status
         self.response = resp
         
         if status_code >= 400:
-            if type(data) is dict:
-                error = (data.get('error'), data.get('reason'))
-            else:
-                error = data
-
             if status_code == 404:
-                raise ResourceNotFound(error, http_code=404, response=resp)
+                raise ResourceNotFound(data, http_code=404, response=resp)
             elif status_code == 401 or status_code == 403:
-                raise Unauthorized(error, http_code=status_code,
+                raise Unauthorized(data, http_code=status_code,
                         response=resp)
             else:
-                raise RequestFailed(error, http_code=status_code,
+                raise RequestFailed(data, http_code=status_code,
                     response=resp)
 
-        
         try:
             return data.decode('utf-8')
         except UnicodeDecodeError:

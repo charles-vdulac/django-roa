@@ -19,7 +19,10 @@ try:
 except:
     __version__ = '?'
 
+debuglevel = 0
 
-from restclient.rest import * 
+from restclient.errors import *
+from restclient.transport import CurlTransport, HTTPLib2Transport
+from restclient.rest import *
 
 
