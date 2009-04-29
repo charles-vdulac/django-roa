@@ -11,7 +11,7 @@ How to run tests
 
 First, you need to create the remote database, go to
 ``examples/django_roa_server`` and run ``syncdb`` command with 
-``--noinput`` option in order to create a superuser named "david" from 
+``--noinput`` option in order to create a superuser named "roa_user" from 
 fixtures::
 
     $ python manage.py syncdb --noinput
@@ -257,17 +257,17 @@ Email
 ~~~~~
 ::
 
-    >>> page = RemotePageWithManyFields.objects.create(email_field=u"david@example.com")
+    >>> page = RemotePageWithManyFields.objects.create(email_field=u"roa_user@example.com")
     >>> page.email_field
-    u'david@example.com'
+    u'roa_user@example.com'
     >>> page = RemotePageWithManyFields.objects.get(id=page.id)
     >>> page.email_field
-    u'david@example.com'
-    >>> page.email_field = u"david@example.org"
+    u'roa_user@example.com'
+    >>> page.email_field = u"roa_user@example.org"
     >>> page.save()
     >>> page = RemotePageWithManyFields.objects.get(id=page.id)
     >>> page.email_field
-    u'david@example.org'
+    u'roa_user@example.org'
     >>> page.delete()
 
 FilePath
@@ -540,12 +540,12 @@ Remote users are defined in ``django_roa.remoteauth`` application::
 
     >>> from django_roa.remoteauth.models import User, Message
     >>> User.objects.all()
-    [<User: david>]
+    [<User: roa_user>]
     >>> alice = User.objects.create_user(username="alice", password="secret", email="alice@example.com")
     >>> alice.is_superuser
     False
     >>> User.objects.all()
-    [<User: david>, <User: alice>]
+    [<User: roa_user>, <User: alice>]
     >>> alice.id
     2
     >>> Message.objects.all()
@@ -620,7 +620,8 @@ As with users, there are remote groups and permissions::
     >>> from django.contrib.contenttypes.models import ContentType
     >>> from django_roa.remoteauth.models import Group, Permission
     >>> Permission.objects.all()
-    []
+    [...]
+    >>> Permission.objects.all().delete()
     >>> bob.user_permissions.all()
     []
     >>> ct_user = ContentType.objects.get(name='user')
@@ -739,7 +740,7 @@ Clean up
     >>> RemotePageWithRelations.objects.all().delete()
     >>> RemotePageWithCustomSlug.objects.all().delete()
     >>> RemotePageWithOverriddenUrls.objects.all().delete()
-    >>> User.objects.exclude(username="david").delete()
+    >>> User.objects.exclude(username="roa_user").delete()
     >>> Permission.objects.all().delete()
     >>> Group.objects.all().delete()
 

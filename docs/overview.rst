@@ -93,7 +93,7 @@ How to run tests
 
 First, you need to create the remote database, go to
 ``examples/django_roa_server`` and run ``syncdb`` command with 
-``--noinput`` option in order to create a superuser named "david" from 
+``--noinput`` option in order to create a superuser named "roa_user" from 
 fixtures::
 
     $ python manage.py syncdb --noinput
