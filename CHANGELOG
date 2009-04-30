@@ -1,8 +1,16 @@
-====================
-django-roa changelog
-====================
+======================
+Django-ROA's changelog
+======================
 
-Version 1.1, 28 February 2008:
+Version 1.2, 30 April 2009:
+------------------------------
+
+* Update (Null)Boolean fields, Django doesn't allow anymore null=True.
+* Move documentation to BitBucket's wiki.
+* Update py-restclient to the latest revision (1.3).
+
+
+Version 1.1, 28 February 2009:
 ------------------------------
 
 * Add support for Groups and Permissions in remoteauth application (still
@@ -14,7 +22,7 @@ Version 1.1, 28 February 2008:
   ROAUserManager to UserManager to be consistent with the existing auth app.
 
 
-Version 1.0, 23 January 2008:
+Version 1.0, 23 January 2009:
 -----------------------------
 
 * Add support for many-to-many relations.
@@ -23,13 +31,13 @@ Version 1.0, 23 January 2008:
 * Update py-restclient to 1.1.4.
 
 
-Version 0.9, 9 January 2008:
+Version 0.9, 9 January 2009:
 ----------------------------
 
 * Ease subclassing of MethodDispatcher with custom slugs.
 
 
-Version 0.8, 7 January 2008:
+Version 0.8, 7 January 2009:
 ----------------------------
 
 * Add support for admin options except search_fields because of advanced
@@ -43,7 +51,7 @@ Version 0.8, 7 January 2008:
   django_roa.ModelAdmin to be consistent (see documentation and example).
 
 
-Version 0.7, 2 January 2008:
+Version 0.7, 2 January 2009:
 ----------------------------
 
 * Add support for most useful fields (see specifications).
