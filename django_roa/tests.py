@@ -703,9 +703,9 @@ Unicity::
     >>> User.objects.create_user(username="alice", password="secret", email="alice@example.com")
     Traceback (most recent call last):
     ...
-    ROAException: IntegrityError at /auth/user: column username is not unique
+    ROAException: IntegrityError at /auth/user/: column username is not unique
      Request Method: POST
-     Request URL: http://127.0.0.1:8081/auth/user...
+     Request URL: http://127.0.0.1:8081/auth/user/?format=json
      Exception Type: IntegrityError
      Exception Value: column username is not unique
      Exception Location: ..., line ...

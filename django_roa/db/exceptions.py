@@ -7,7 +7,7 @@ ROA_DJANGO_ERRORS = getattr(settings, 'ROA_DJANGO_ERRORS', False)
 class ROAException(Exception):
     def __init__(self, exception):
         if ROA_DJANGO_ERRORS:
-            self.msg = exception.msg
+            self.msg = exception.message
             self.status_code = exception.status_code
         else:
             self.msg = str(exception)

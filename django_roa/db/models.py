@@ -256,7 +256,7 @@ class ROAModel(models.Model):
                 #self.save_base(raw, parent)
                 setattr(self, field.attname, self._get_pk_val(parent._meta))
 
-        args = {}
+        args, get_args = {}, {}
         for field in meta.local_fields:
             
             # Handle FK fields
@@ -275,18 +275,18 @@ class ROAModel(models.Model):
         pk_set = pk_val is not None
         
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
-        args["format"] = ROA_FORMAT
+        get_args["format"] = ROA_FORMAT
         
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
             try:
-                response = resource.put(**args)
+                response = resource.put(payload=args, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
-                response = resource.post(**args)
+                response = resource.post(payload=args, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         

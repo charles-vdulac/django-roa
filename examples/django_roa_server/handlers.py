@@ -1,8 +1,7 @@
 import logging
-from sets import Set
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Message, Group, Permission
 from django.core.exceptions import ObjectDoesNotExist
 from django.core import serializers
 from django.db import models
@@ -10,10 +9,12 @@ from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, _get_queryset
 from django.utils.encoding import smart_unicode
 
-_MIMETYPE = {
-    'json': 'application/json',
-    'xml': 'application/xml'
-}
+from piston.handler import BaseHandler, AnonymousBaseHandler
+from piston.utils import rc
+
+from django_roa_server.models import RemotePage, RemotePageWithManyFields, \
+    RemotePageWithBooleanFields, RemotePageWithCustomSlug, \
+    RemotePageWithOverriddenUrls, RemotePageWithRelations
 
 # create logger
 logger = logging.getLogger("django_roa_server log")
@@ -22,85 +23,33 @@ logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(logging.Formatter("%(name)s - %(message)s"))
-# add ch to logger
 logger.addHandler(ch)
 
 
-def serialize(f):
-    """
-    Decorator to serialize responses.
-    """
-    def wrapped(self, request, *args, **kwargs):
-        format = request.GET.get('format', 'json')
-        mimetype = _MIMETYPE.get(format, 'text/plain')
-        try:
-            result = f(self, request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            response = HttpResponse('ERROR', mimetype=mimetype)
-            response.status_code = 404
-            return response
-        
-        # count
-        try:
-            response = HttpResponse(int(result), mimetype=mimetype)
-            return response
-        except TypeError:
-            pass
-        
-        if result:
-            # serialization
-            response = serializers.serialize(format, result, **{'indent': True})
-            response = response.replace('_server', '_client')
-            logger.debug(u"Response:\n%s" % response)
-            response = HttpResponse(response, mimetype=mimetype)
-            return response
-        return HttpResponse('OK', mimetype=mimetype)
-    return wrapped
+class ROAHandler(BaseHandler):
+    model = RemotePage
 
+    def flatten_dict(self, dct):
+        return dict([ (str(k), dct.get(k)) for k in dct.keys() \
+            if (k, dct.get(k)) != (u'id', u'None')])
 
-class MethodDispatcher(object):
-    
-    def __call__(self, request, app_label, model_name, **args):
-        """
-        Dispatch the request given the method and object_id argument.
-        """
-        model = models.get_model(app_label, model_name)
-        if model is None:
-            logger.debug(u'Model not found with: "%s" app label and "%s" model name' % (app_label, model_name))
-            raise Http404()
-        method = request.method
-        logger.debug(u"Request: %s %s %s" % (method, model.__name__, args))
-        if len([value for value in args.values() if value is not None]):
-            object = self._get_object(model, **args)
-            if method == 'GET':
-                return self.retrieve(request, model, object)
-            elif method == 'PUT':
-                return self.modify(request, model, object)
-            elif method == 'DELETE':
-                return self.delete(request, model, object)
-        else:
-            if method == 'GET':
-                return self.index(request, model)
-            elif method == 'POST':
-                return self.add(request, model)
-    
     @staticmethod
-    def _get_object(model, **args):
+    def _get_object(model, *args, **kwargs):
+        return get_object_or_404(model, id=kwargs['id'])
+        
+    def read(self, request, *args, **kwargs):
         """
-        Return an object from an object_id in args, ease subclassing.
+        Retrieves an object or a list of objects.
         """
-        return get_object_or_404(model, id=args['object_id'])
-    
-    ######################
-    ## Resource methods ##
-    ######################    
-    @serialize
-    def index(self, request, model):
-        """
-        Returns a list of objects given request args.
-        """
+        if not self.has_model():
+            return rc.NOT_IMPLEMENTED
+        
+        # FIXME: ugly way to determine if it's a single object
+        if kwargs.values() != [None]:
+            return [self._get_object(self.model, *args, **kwargs)]
+        
         # Initialization
-        queryset = _get_queryset(model)
+        queryset = _get_queryset(self.model)
         
         # Filtering
         filters, excludes = {}, {}
@@ -131,23 +80,24 @@ class MethodDispatcher(object):
         if not obj_list:
             raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
         logger.debug(u'Objects: %s retrieved' % obj_list)
-        return obj_list
-
-    @serialize
-    def add(self, request, model):
+        return queryset
+        
+    def create(self, request, *args, **kwargs):
         """
-        Creates a new object given request args, returned as a list.
+        Creates an object given request args, returned as a list.
         """
-        data = request.REQUEST.copy()
-        keys = []
-        for dict_ in data.dicts:
-            keys += dict_.keys()
+        if not self.has_model():
+            return rc.NOT_IMPLEMENTED
+        
+        data = request.POST.copy()
+        keys = data.keys()
         
         values = {}
         m2m_data = {}
-        for field in model._meta.local_fields:
+        for field in self.model._meta.local_fields:
             field_value = data.get(field.name, None)
-            if field_value not in ('', 'None'):
+            
+            if field_value not in (u'', u'None'):
                 
                 # Handle M2M relations
                 if field.rel and isinstance(field.rel, models.ManyToManyRel):
@@ -157,7 +107,7 @@ class MethodDispatcher(object):
                 # Handle FK fields
                 elif field.rel and isinstance(field.rel, models.ManyToOneRel):
                     field_value = data.get(field.attname, None)
-                    if field_value is not None:
+                    if field_value not in (u'', u'None'):
                         values[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
                     else:
                         values[field.attname] = None
@@ -170,80 +120,64 @@ class MethodDispatcher(object):
                         if field_value is not None:
                             field_value = float(field_value)
                     values[field.name] = field_value
-        
-        object = model.objects.create(**values)
+
+        object = self.model.objects.create(**values)
         if m2m_data:
             for accessor_name, object_list in m2m_data.items():
                 setattr(object, accessor_name, object_list)
         
-        response = [model.objects.get(id=object.id)]
+        response = [self.model.objects.get(id=object.id)]
         #response = [object]
         logger.debug(u'Object "%s" created' % object)
         return response
 
-    ####################
-    ## Object methods ##
-    ####################
-    @serialize
-    def retrieve(self, request, model, object):
-        """
-        Returns an object as a list.
-        """
-        response = [object]
-        logger.debug(u'Object "%s" retrieved' % object)
-        return response
-    
-    @serialize
-    def delete(self, request, model, object):
-        """
-        Deletes an object.
-        """
-        object.delete()
-        logger.debug(u'Object "%s" deleted, remains %s' % (object, model.objects.all()))
-    
-    @serialize
-    def modify(self, request, model, object):
+    def update(self, request, *args, **kwargs):
         """
         Modifies an object given request args, returned as a list.
         """
-        data = request.REQUEST.copy()
+        if not self.has_model():
+            return rc.NOT_IMPLEMENTED
         
+        data = request.PUT.copy()
+        get_data = request.GET.copy()
+        object = self._get_object(self.model, *args, **kwargs)
+
         # Add M2M relations
-        if 'm2m_add' in data:
-            obj_ids_str = data['m2m_ids']
-            obj_ids = [int(obj_id) for obj_id in data['m2m_ids']]
-            m2m_field = getattr(object, data['m2m_field_name'])
+        if 'm2m_add' in get_data:
+            obj_ids_str = get_data['m2m_ids']
+            obj_ids = [int(obj_id) for obj_id in obj_ids_str]
+            m2m_field = getattr(object, get_data['m2m_field_name'])
             m2m_field.add(*obj_ids)
             
-            response = [model.objects.get(id=object.id)]
+            response = [self.model.objects.get(id=object.id)]
             #response = [object]
             logger.debug(u'Object "%s" added M2M relations with ids %s' % (object, obj_ids_str))
             return response
         
         # Remove M2M relations
-        if 'm2m_remove' in data:
-            obj_ids_str = data['m2m_ids']
-            obj_ids = [int(obj_id) for obj_id in data['m2m_ids']]
-            m2m_field = getattr(object, data['m2m_field_name'])
+        if 'm2m_remove' in get_data:
+            obj_ids_str = get_data['m2m_ids']
+            obj_ids = [int(obj_id) for obj_id in obj_ids_str]
+            m2m_field = getattr(object, get_data['m2m_field_name'])
             m2m_field.remove(*obj_ids)
             
-            response = [model.objects.get(id=object.id)]
+            response = [self.model.objects.get(id=object.id)]
             #response = [object]
             logger.debug(u'Object "%s" removed M2M relations with ids %s' % (object, obj_ids_str))
             return response
         
         # Remove M2M relations
-        if 'm2m_clear' in data:
-            m2m_field = getattr(object, data['m2m_field_name'])
+        if 'm2m_clear' in get_data:
+            m2m_field = getattr(object, get_data['m2m_field_name'])
             m2m_field.clear()
             
-            response = [model.objects.get(id=object.id)]
+            response = [self.model.objects.get(id=object.id)]
             #response = [object]
             logger.debug(u'Object "%s" cleared M2M relations' % (object, ))
             return response
         
         m2m_data = {}
-        for field in model._meta.local_fields:
+        for field in self.model._meta.local_fields:
             field_name = field.name
                 
             # Handle M2M relations
@@ -263,7 +197,7 @@ class MethodDispatcher(object):
             # Handle all other fields
             elif field_name in data:
                 field_value = data[field_name]
-                if field_value in ('', 'None'):
+                if field_value in (u'', u'None'):
                     field_value = None
                 if isinstance(field, models.fields.BooleanField) \
                 or isinstance(field, models.fields.NullBooleanField) \
@@ -274,7 +208,7 @@ class MethodDispatcher(object):
                         field_value = float(field_value)
                 elif isinstance(field, models.fields.CharField):
                     if field_value is None:
-                        field_value = u""
+                        field_value = u''
                 setattr(object, field_name, field_value)
         
         object.save()
@@ -282,21 +216,67 @@ class MethodDispatcher(object):
             for accessor_name, object_list in m2m_data.items():
                 setattr(object, accessor_name, object_list)
         
-        response = [model.objects.get(id=object.id)]
+        response = [self.model.objects.get(id=object.id)]
         #response = [object]
         logger.debug(u'Object "%s" modified with %s' % (object, data.items()))
         return response
 
+    def delete(self, request, *args, **kwargs):
+        """
+        Deletes an object.
+        """
+        if not self.has_model():
+            raise NotImplementedError
+        
+        try:
+            object = self._get_object(self.model, *args, **kwargs)
+            object.delete()
+            logger.debug(u'Object "%s" deleted, remains %s' % (object, self.model.objects.all()))
 
-class MethodDispatcherWithCustomSlug(MethodDispatcher):
+            return rc.DELETED
+        except self.model.MultipleObjectsReturned:
+            return rc.DUPLICATE_ENTRY
+        except self.model.DoesNotExist:
+            return rc.NOT_HERE
 
+class RemotePageHandler(ROAHandler):
+    model = RemotePage
+
+class RemotePageWithManyFieldsHandler(ROAHandler):
+    model = RemotePageWithManyFields
+
+class RemotePageWithBooleanFieldsHandler(ROAHandler):
+    model = RemotePageWithBooleanFields
+
+class RemotePageWithSlugHandler(ROAHandler):
+    
     @staticmethod
-    def _get_object(model, **args):
+    def _get_object(model, *args, **kwargs):
         """Returns an object from a slug.
         
         Useful when the slug is a combination of many fields.
         """
-        id, slug = args['object_slug'].split('-', 1)
+        id, slug = kwargs['object_slug'].split('-', 1)
         object = get_object_or_404(model, id=id, slug=slug)
         return object
     
+class RemotePageWithCustomSlugHandler(RemotePageWithSlugHandler):
+    model = RemotePageWithCustomSlug
+    
+class RemotePageWithOverriddenUrlsHandler(RemotePageWithSlugHandler):
+    model = RemotePageWithOverriddenUrls
+
+class RemotePageWithRelationsHandler(ROAHandler):
+    model = RemotePageWithRelations
+    
+class UserHandler(ROAHandler):
+    model = User
+
+class MessageHandler(ROAHandler):
+    model = Message
+
+class PermissionHandler(ROAHandler):
+    model = Permission
+    
+class GroupHandler(ROAHandler):
+    model = Group

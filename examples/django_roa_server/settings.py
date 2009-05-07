@@ -40,7 +40,7 @@ INSTALLED_APPS = (
     #'django.contrib.sites',
     #'django.contrib.admin',
 )
-APPEND_SLASH = False
 SERIALIZATION_MODULES = {
     'custom' : 'examples.django_roa_client.custom_serializer',
 }
+PISTON_DISPLAY_ERRORS = False
