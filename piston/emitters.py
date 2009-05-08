@@ -115,7 +115,7 @@ class Emitter(object):
                     """
                     mapped = self.in_typemapper(type(data), self.anonymous)
                     get_fields = set(mapped.fields)
-                    exclude_fields = set(mapped.exclude)
+                    exclude_fields = set(mapped.exclude).difference(get_fields)
                 
                     if not get_fields:
                         get_fields = set([ f.attname.replace("_id", "", 1)
@@ -185,8 +185,8 @@ class Emitter(object):
                     ret[k] = _any(getattr(data, k))
             
             # resouce uri
-            if type(data) in self.typemapper.keys():
-                handler = self.typemapper.get(type(data))
+            if self.in_typemapper(type(data), self.anonymous):
+                handler = self.in_typemapper(type(data), self.anonymous)
                 if hasattr(handler, 'resource_uri'):
                     url_id, fields = handler.resource_uri()
                     ret['resource_uri'] = permalink( lambda: (url_id, 
@@ -264,7 +264,9 @@ class XMLEmitter(Emitter):
     def _to_xml(self, xml, data):
         if isinstance(data, (list, tuple)):
             for item in data:
+                xml.startElement("resource", {})
                 self._to_xml(xml, item)
+                xml.endElement("resource")
         elif isinstance(data, dict):
             for key, value in data.iteritems():
                 xml.startElement(key, {})
