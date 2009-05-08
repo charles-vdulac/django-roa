@@ -49,7 +49,6 @@ class RemotePageWithBooleanFields(Model):
     boolean_field = models.BooleanField()
     null_boolean_field = models.NullBooleanField()
 
-
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithbooleanfields/'
