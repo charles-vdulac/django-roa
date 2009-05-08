@@ -7,8 +7,8 @@ class RemotePageAdmin(ModelAdmin):
 
 
 class RemotePageWithManyFieldsAdmin(ModelAdmin):
-    list_display = ('__unicode__', 'boolean_field', 'char_field')
-    list_filter = ('boolean_field',)
+    list_display = ('__unicode__', 'date_field', 'char_field')
+    list_filter = ('date_field',)
 
 
 class RemotePageWithCustomSlugAdmin(ModelAdmin):

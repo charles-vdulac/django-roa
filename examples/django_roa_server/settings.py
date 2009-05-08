@@ -41,6 +41,6 @@ INSTALLED_APPS = (
     #'django.contrib.admin',
 )
 SERIALIZATION_MODULES = {
-    'custom' : 'examples.django_roa_client.custom_serializer',
+    'custom' : 'examples.django_roa_client.serializers',
 }
 PISTON_DISPLAY_ERRORS = False

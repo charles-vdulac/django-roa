@@ -16,14 +16,14 @@ class Serializer(XMLSerializer):
         """
         self.xml = SimplerXMLGenerator(self.stream, self.options.get("encoding", settings.DEFAULT_CHARSET))
         self.xml.startDocument()
-        #self.xml.startElement("django-objects", {"version" : "1.0"})
+        self.xml.startElement("django-test", {"version" : "1.0"})
 
     def end_serialization(self):
         """
         End serialization -- end the document.
         """
         self.indent(0)
-        #self.xml.endElement("django-objects")
+        self.xml.endElement("django-test")
         self.xml.endDocument()
 
 

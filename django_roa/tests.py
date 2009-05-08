@@ -726,6 +726,23 @@ setting (registered manually here for test purpose)::
     >>> page = RemotePage.objects.create(title=u'A custom serialized page')
     >>> page
     <RemotePage: A custom serialized page (6)>
+    >>> from restclient import RestClient
+    >>> rc = RestClient()
+    >>> response = rc.get('http://127.0.0.1:8081/django_roa_server/remotepage/?format=custom')
+    >>> print response
+    <?xml version="1.0" encoding="utf-8"?>
+    <django-test version="1.0">
+     <object pk="1" model="django_roa_client.remotepage">
+      <field type="CharField" name="title">A second remote page</field>
+     </object>
+     ...
+    </django-test>
+    
+    >>> len(RemotePage.objects.all())
+    6
+    >>> page = RemotePage.objects.get(id=page.id)
+    >>> page
+    <RemotePage: A custom serialized page (6)>
     >>> page.delete()
     >>> settings.ROA_FORMAT = initial_roa_format_setting
 

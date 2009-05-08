@@ -2,13 +2,11 @@ import logging
 
 from django.core import serializers
 from django.http import HttpResponse
+from django.utils import simplejson
 
-from piston.emitters import Emitter, JSONEmitter as PistonJSONEmitter
-
-_MIMETYPE = {
-    'json': 'application/json',
-    'xml': 'application/xml'
-}
+from piston.emitters import Emitter, JSONEmitter as PistonJSONEmitter, \
+                            XMLEmitter as PistonXMLEmitter
+from piston.utils import Mimer
 
 logger = logging.getLogger("django_roa_server log")
 
@@ -17,43 +15,35 @@ class JSONEmitter(PistonJSONEmitter):
     JSON emitter, understands timestamps.
     """
     def render(self, request):
-        format = request.GET.get('format', 'json')
-        mimetype = _MIMETYPE.get(format, 'text/plain')
-        # serialization
         if isinstance(self.data, HttpResponse):
             return self.data
-        elif isinstance(self.data, int) or isinstance(self.data, str):
+        elif isinstance(self.data, (int, str)):
             response = self.data
         else:
-            response = serializers.serialize(format, self.data, **{'indent': True})
+            response = serializers.serialize('json', self.data, **{'indent': True})
             response = response.replace('_server', '_client')
         logger.debug(u"Response:\n%s" % response)
-        response = HttpResponse(response, mimetype=mimetype)
-
         return response
     
 Emitter.register('json', JSONEmitter, 'application/json; charset=utf-8')
+Mimer.register(simplejson.loads, ('application/json',))
 
-class CustomXMLEmitter(PistonJSONEmitter):
+class CustomXMLEmitter(PistonXMLEmitter):
     """
     Custom XML emitter.
     """
     def render(self, request):
-        format = request.GET.get('format', 'json')
-        mimetype = _MIMETYPE.get(format, 'text/plain')
-        # serialization
         if isinstance(self.data, HttpResponse):
             return self.data
-        elif isinstance(self.data, int) or isinstance(self.data, str):
+        elif isinstance(self.data, (int, str)):
             response = self.data
         else:
-            response = serializers.serialize(format, self.data, **{'indent': True})
+            response = serializers.serialize('custom', self.data, **{'indent': True})
             response = response.replace('_server', '_client')
         logger.debug(u"Response:\n%s" % response)
-        response = HttpResponse(response, mimetype=mimetype)
-
         return response
     
 Emitter.register('custom', CustomXMLEmitter, 'application/xml; charset=utf-8')
+Mimer.register(lambda *a: None, ('text/xml',))
 
 
