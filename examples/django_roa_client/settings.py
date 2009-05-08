@@ -44,9 +44,12 @@ AUTHENTICATION_BACKENDS = (
     'django_roa.remoteauth.backends.RemoteUserModelBackend',
 )
 SESSION_ENGINE = "django.contrib.sessions.backends.file"
+SERIALIZATION_MODULES = {
+    'django' : 'examples.django_roa_client.serializers',
+}
 
 ROA_MODELS = True   # set to False if you'd like to develop/test locally
-ROA_FORMAT = 'json' # json or xml
+ROA_FORMAT = 'django' # json or xml
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
 
 ROA_URL_OVERRIDES_LIST = {
@@ -55,3 +58,8 @@ ROA_URL_OVERRIDES_LIST = {
 ROA_URL_OVERRIDES_DETAIL = {
     'django_roa_client.remotepagewithoverriddenurls': lambda o: u"%s%s-%s/" % (o.get_resource_url_list(), o.id, o.slug),
 }
+ROA_MODEL_NAME_MAPPING = (
+    # local name: remote name
+    ('django_roa_client.', 'django_roa_server.'),
+    ('remoteauth.', 'auth.'),
+)

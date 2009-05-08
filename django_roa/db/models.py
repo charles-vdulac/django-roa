@@ -13,6 +13,8 @@ from django.utils.functional import curry
 from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
+ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
+
 
 class ROAModelBase(ModelBase):
     def __new__(cls, name, bases, attrs):
@@ -290,6 +292,9 @@ class ROAModel(models.Model):
             except RequestFailed, e:
                 raise ROAException(e)
         
+        for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
+            response = response.replace(remote_name, local_name)
+
         result = serializers.deserialize(ROA_FORMAT, response).next()
 
         self.id = int(result.object.id)

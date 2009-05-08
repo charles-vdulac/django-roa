@@ -4,7 +4,7 @@ from django.core import serializers
 from django.http import HttpResponse
 from django.utils import simplejson
 
-from piston.emitters import Emitter, JSONEmitter, XMLEmitter
+from piston.emitters import Emitter, XMLEmitter
 from piston.utils import Mimer
 
 logger = logging.getLogger("django_roa_server log")
@@ -16,26 +16,24 @@ def render_serialized_data(data, format):
         response = data
     else:
         response = serializers.serialize(format, data, **{'indent': True})
-        response = response.replace('_server', '_client')
     logger.debug(u"Response:\n%s" % response)
     return response
 
-class CustomJSONEmitter(JSONEmitter):
+class DjangoEmitter(XMLEmitter):
     """
-    JSON emitter, understands timestamps.
+    Django XML emitter.
     """
     def render(self, request):
-        return render_serialized_data(self.data, 'json')
+        return render_serialized_data(self.data, 'xml')
     
-Emitter.register('json', CustomJSONEmitter, 'application/json; charset=utf-8')
-Mimer.register(simplejson.loads, ('application/json',))
+Emitter.register('django', DjangoEmitter, 'application/xml; charset=utf-8')
 
-class CustomXMLEmitter(XMLEmitter):
+class CustomDjangoEmitter(XMLEmitter):
     """
-    Custom XML emitter.
+    Custom Django XML emitter.
     """
     def render(self, request):
         return render_serialized_data(self.data, 'custom')
     
-Emitter.register('custom', CustomXMLEmitter, 'application/xml; charset=utf-8')
-Mimer.register(lambda *a: None, ('text/xml',))
+Emitter.register('custom', CustomDjangoEmitter, 'application/xml; charset=utf-8')
+

@@ -7,6 +7,8 @@ from django.db.models.query_utils import Q
 from restclient import Resource, ResourceNotFound, RequestFailed
 from django_roa.db.exceptions import ROAException
 
+ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
+
 
 class Query(object):
     def __init__(self):
@@ -189,7 +191,8 @@ class RemoteQuerySet(query.QuerySet):
         except Exception, e:
             raise ROAException(e)
 
-        response = response.replace('auth.', 'remoteauth.')
+        for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
+            response = response.replace(remote_name, local_name)
         
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         for res in serializers.deserialize(ROA_FORMAT, response):

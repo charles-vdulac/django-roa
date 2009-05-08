@@ -705,7 +705,7 @@ Unicity::
     ...
     ROAException: IntegrityError at /auth/user/: column username is not unique
      Request Method: POST
-     Request URL: http://127.0.0.1:8081/auth/user/?format=json
+     Request URL: http://127.0.0.1:8081/auth/user/?format=django
      Exception Type: IntegrityError
      Exception Value: column username is not unique
      Exception Location: ..., line ...
@@ -732,7 +732,7 @@ setting (registered manually here for test purpose)::
     >>> print response
     <?xml version="1.0" encoding="utf-8"?>
     <django-test version="1.0">
-     <object pk="1" model="django_roa_client.remotepage">
+     <object pk="1" model="django_roa_server.remotepage">
       <field type="CharField" name="title">A second remote page</field>
      </object>
      ...

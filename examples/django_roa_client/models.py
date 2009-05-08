@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.db import models
 from django.template.defaultfilters import slugify
 
@@ -102,4 +103,3 @@ class RemotePageWithRelations(Model):
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithrelations/'
-

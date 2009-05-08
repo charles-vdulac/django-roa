@@ -44,8 +44,8 @@ class ROAHandler(BaseHandler):
         if not self.has_model():
             return rc.NOT_IMPLEMENTED
         
-        # FIXME: ugly way to determine if it's a single object
         if kwargs.values() != [None]:
+            # Returns a single object
             return [self._get_object(self.model, *args, **kwargs)]
         
         # Initialization
