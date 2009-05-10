@@ -9,31 +9,31 @@ from piston.utils import Mimer
 
 logger = logging.getLogger("django_roa_server log")
 
-def render_serialized_data(data, format):
-    if isinstance(data, HttpResponse):
-        return data
-    elif isinstance(data, (int, str)):
-        response = data
-    else:
-        response = serializers.serialize(format, data, **{'indent': True})
-    logger.debug(u"Response:\n%s" % response)
-    return response
+class DjangoEmitter(Emitter):
+    """
+    Emitter for the Django serialized format.
+    """
+    def serialize(self, format):
+        if isinstance(self.data, HttpResponse):
+            return self.data
+        elif isinstance(self.data, (int, str)):
+            response = self.data
+        else:
+            response = serializers.serialize(format, self.data, indent=True)
 
-class DjangoEmitter(XMLEmitter):
-    """
-    Django XML emitter.
-    """
+        return response
+        
     def render(self, request):
-        return render_serialized_data(self.data, 'xml')
-    
+        return self.serialize(format='xml')
+        
 Emitter.register('django', DjangoEmitter, 'application/xml; charset=utf-8')
 
-class CustomDjangoEmitter(XMLEmitter):
+class CustomDjangoEmitter(DjangoEmitter):
     """
     Custom Django XML emitter.
     """
     def render(self, request):
-        return render_serialized_data(self.data, 'custom')
+        return self.serialize(format='custom')
     
 Emitter.register('custom', CustomDjangoEmitter, 'application/xml; charset=utf-8')
 

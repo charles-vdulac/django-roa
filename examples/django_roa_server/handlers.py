@@ -27,7 +27,6 @@ logger.addHandler(ch)
 
 
 class ROAHandler(BaseHandler):
-    model = RemotePage
 
     def flatten_dict(self, dct):
         return dict([ (str(k), dct.get(k)) for k in dct.keys() \
