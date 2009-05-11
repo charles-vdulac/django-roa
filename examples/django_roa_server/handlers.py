@@ -65,7 +65,7 @@ class ROAHandler(BaseHandler):
             queryset = queryset.order_by(*order_bys)
         
         # Counting
-        if 'count' in request.GET:
+        if 'count_objects' in request.GET:
             counter = queryset.count()
             logger.debug(u'Count: %s objects' % counter)
             return counter

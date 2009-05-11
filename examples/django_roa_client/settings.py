@@ -63,3 +63,6 @@ ROA_MODEL_NAME_MAPPING = (
     ('django_roa_client.', 'django_roa_server.'),
     ('remoteauth.', 'auth.'),
 )
+ROA_ARGS_NAMES_MAPPING = {
+    'COUNT': 'count_objects',
+}

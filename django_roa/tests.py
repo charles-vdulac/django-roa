@@ -87,7 +87,7 @@ A more complex example with empty values::
     >>> page.delete()
     >>> RemotePage.objects.all()
     []
-    >>> RemotePage.objects.count()
+    >>> RemotePage.objects.count() # test custom mapping too
     0
 
 

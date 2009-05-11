@@ -8,6 +8,7 @@ from restclient import Resource, ResourceNotFound, RequestFailed
 from django_roa.db.exceptions import ROAException
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
+ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 
 
 class Query(object):
@@ -87,41 +88,41 @@ class Query(object):
         parameters = {}
         # Counting
         if self.count:
-            parameters['count'] = True
+            parameters[ROA_ARGS_NAMES_MAPPING.get('COUNT', 'count')] = True
         
         # Filtering
         for k, v in self.filters.iteritems():
-            parameters['filter_%s' % k] = v
+            parameters['%s%s' % (ROA_ARGS_NAMES_MAPPING.get('FILTER_', 'filter_'), k)] = v
         for k, v in self.excludes.iteritems():
-            parameters['exclude_%s' % k] = v
+            parameters['%s%s' % (ROA_ARGS_NAMES_MAPPING.get('EXCLUDE_', 'exclude_'), k)] = v
         
         # Ordering
         if self.order_by:
             order_by = ','.join(self.order_by)
-            parameters['order_by'] = order_by
+            parameters[ROA_ARGS_NAMES_MAPPING.get('ORDER_BY', 'order_by')] = order_by
         
         # Slicing
         if self.limit_start:
-            parameters['limit_start'] = self.limit_start
+            parameters[ROA_ARGS_NAMES_MAPPING.get('LIMIT_START', 'limit_start')] = self.limit_start
         if self.limit_stop:
-            parameters['limit_stop'] = self.limit_stop
+            parameters[ROA_ARGS_NAMES_MAPPING.get('LIMIT_STOP', 'limit_stop')] = self.limit_stop
         
         # Format
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
-        parameters['format'] = ROA_FORMAT
+        parameters[ROA_ARGS_NAMES_MAPPING.get('FORMAT', 'format')] = ROA_FORMAT
         
         # M2M relations
         if self.m2m_add:
-            parameters['m2m_add'] = 1
-            parameters['m2m_ids'] = ','.join(self.m2m_ids)
-            parameters['m2m_field_name'] = self.m2m_field_name
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_ADD', 'm2m_add')] = 1
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_IDS', 'm2m_ids')] = ','.join(self.m2m_ids)
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
         if self.m2m_remove:
-            parameters['m2m_remove'] = 1
-            parameters['m2m_ids'] = ','.join(self.m2m_ids)
-            parameters['m2m_field_name'] = self.m2m_field_name
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_REMOVE', 'm2m_remove')] = 1
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_IDS', 'm2m_ids')] = ','.join(self.m2m_ids)
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
         if self.m2m_clear:
-            parameters['m2m_clear'] = 1
-            parameters['m2m_field_name'] = self.m2m_field_name
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_CLEAR', 'm2m_clear')] = 1
+            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
         
         #print parameters
         return parameters
