@@ -747,6 +747,16 @@ setting (registered manually here for test purpose)::
     >>> settings.ROA_FORMAT = initial_roa_format_setting
 
 
+Custom extra arguments
+----------------------
+
+    >>> initial_roa_custom_arg_setting = getattr(settings, 'ROA_CUSTOM_ARGS', {})
+    >>> settings.ROA_CUSTOM_ARGS = {'foo': 'bar'}
+    >>> RemotePage.objects.all()._as_url()
+    (u'http://127.0.0.1:8081/django_roa_server/remotepage/', {'foo': 'bar', 'format': 'django'})
+    >>> settings.ROA_CUSTOM_ARGS = initial_roa_custom_arg_setting
+
+
 Clean up
 --------
 ::

@@ -124,7 +124,7 @@ class Query(object):
             parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_CLEAR', 'm2m_clear')] = 1
             parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
         
-        #print parameters
+        parameters.update(getattr(settings, 'ROA_CUSTOM_ARGS', {}))
         return parameters
     
     ##########################################
@@ -375,3 +375,15 @@ class RemoteQuerySet(query.QuerySet):
             response = resource.put(**self.query.parameters)
         except RequestFailed, e:
             raise ROAException(e)
+
+    ###################
+    # PRIVATE METHODS #
+    ###################
+
+    def _as_url(self):
+        """
+        Returns the internal query's URL and parameters 
+        
+        as (u'url', {'arg_key': 'arg_value'}).
+        """
+        return self.model.get_resource_url_list(), self.query.parameters
