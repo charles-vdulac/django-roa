@@ -16,14 +16,7 @@ from django_roa_server.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithCustomSlug, \
     RemotePageWithOverriddenUrls, RemotePageWithRelations
 
-# create logger
-logger = logging.getLogger("django_roa_server log")
-logger.setLevel(logging.DEBUG)
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter("%(name)s - %(message)s"))
-logger.addHandler(ch)
+logger = logging.getLogger("django_roa_server")
 
 
 class ROAHandler(BaseHandler):

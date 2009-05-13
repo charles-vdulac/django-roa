@@ -1,4 +1,6 @@
 import sys
+import logging
+
 from django.conf import settings
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
@@ -12,6 +14,8 @@ from django.utils.functional import curry
 
 from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
+
+logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 
@@ -282,12 +286,16 @@ class ROAModel(models.Model):
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
             try:
+                logger.debug(u"""Modifying : "%s" through %s""" % \
+                    (self, resource.uri))
                 response = resource.put(payload=args, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
+                logger.debug(u"""Creating  : "%s" through %s""" % \
+                    (self, resource.uri))
                 response = resource.post(payload=args, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
@@ -304,9 +312,12 @@ class ROAModel(models.Model):
 
     def delete(self):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
-
+                
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail())
+        
+        logger.debug(u"""Deleting  : "%s" through %s""" % \
+            (self, resource.uri))
         response = resource.delete()
 
     delete.alters_data = True

@@ -48,6 +48,7 @@ SERIALIZATION_MODULES = {
     'django' : 'examples.django_roa_client.serializers',
 }
 
+## ROA custom settings
 ROA_MODELS = True   # set to False if you'd like to develop/test locally
 ROA_FORMAT = 'django' # json or xml
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
@@ -66,3 +67,15 @@ ROA_MODEL_NAME_MAPPING = (
 ROA_ARGS_NAMES_MAPPING = {
     'COUNT': 'count_objects',
 }
+
+## Logging settings
+import logging
+# create logger
+logger = logging.getLogger("django_roa")
+logger.setLevel(logging.DEBUG)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(logging.Formatter("%(name)s - %(message)s"))
+logger.addHandler(ch)
+

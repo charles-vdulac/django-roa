@@ -6,7 +6,7 @@ from django.utils import simplejson
 
 from piston.emitters import Emitter, DjangoEmitter
 
-logger = logging.getLogger("django_roa_server log")
+logger = logging.getLogger("django_roa_server")
 
 
 class ROADjangoEmitter(DjangoEmitter):

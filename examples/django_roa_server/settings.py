@@ -44,3 +44,14 @@ SERIALIZATION_MODULES = {
     'custom' : 'examples.django_roa_client.serializers',
 }
 PISTON_DISPLAY_ERRORS = False
+
+## Logging settings
+import logging
+# create logger
+logger = logging.getLogger("django_roa_server")
+logger.setLevel(logging.DEBUG)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(logging.Formatter("%(name)s - %(message)s"))
+logger.addHandler(ch)

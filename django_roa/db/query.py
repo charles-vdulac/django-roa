@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.db.models import query
 from django.core import serializers
@@ -6,6 +8,8 @@ from django.db.models.query_utils import Q
 
 from restclient import Resource, ResourceNotFound, RequestFailed
 from django_roa.db.exceptions import ROAException
+
+logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
@@ -186,7 +190,11 @@ class RemoteQuerySet(query.QuerySet):
         resource = Resource(self.model.get_resource_url_list())
 
         try:
-            response = resource.get(**self.query.parameters)
+            parameters = self.query.parameters
+            logger.debug(u"""Requesting: "%s" through %s
+                          with parameters "%s" """ % \
+                (self.model.__name__, resource.uri, parameters))
+            response = resource.get(**parameters)
         except ResourceNotFound:
             return
         except Exception, e:
@@ -214,7 +222,11 @@ class RemoteQuerySet(query.QuerySet):
         resource = Resource(clone.model.get_resource_url_list())
         
         try:
-            response = resource.get(**clone.query.parameters)
+            parameters = clone.query.parameters
+            logger.debug(u"""Counting  : "%s" through %s
+                          with parameters "%s" """ % \
+                (clone.model.__name__, resource.uri, parameters))
+            response = resource.get(**parameters)
         except ResourceNotFound:
             response = 0
         
@@ -343,7 +355,11 @@ class RemoteQuerySet(query.QuerySet):
         resource = Resource(instance.get_resource_url_detail())
         
         try:
-            response = resource.put(**self.query.parameters)
+            parameters = self.query.parameters
+            logger.debug(u"""Adding    : "%s" for "%s"
+                          with parameters "%s" """ % \
+                (objs, instance, parameters))
+            response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
 
@@ -358,7 +374,11 @@ class RemoteQuerySet(query.QuerySet):
         resource = Resource(instance.get_resource_url_detail())
         
         try:
-            response = resource.put(**self.query.parameters)
+            parameters = self.query.parameters
+            logger.debug(u"""Removing  : "%s" for "%s"
+                          with parameters "%s" """ % \
+                (objs, instance, parameters))
+            response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
 
@@ -372,7 +392,11 @@ class RemoteQuerySet(query.QuerySet):
         resource = Resource(instance.get_resource_url_detail())
         
         try:
-            response = resource.put(**self.query.parameters)
+            parameters = self.query.parameters
+            logger.debug(u"""Clearing  : items for "%s"
+                          with parameters "%s" """ % \
+                (instance, parameters))
+            response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
 
