@@ -286,16 +286,18 @@ class ROAModel(models.Model):
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
             try:
-                logger.debug(u"""Modifying : "%s" through %s""" % \
-                    (self, resource.uri))
+                logger.debug(u"""Modifying : "%s" through %s
+                              with parameters "%s" and "%s" """ % \
+                    (self, resource.uri, args, get_args))
                 response = resource.put(payload=args, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
-                logger.debug(u"""Creating  : "%s" through %s""" % \
-                    (self, resource.uri))
+                logger.debug(u"""Creating  : "%s" through %s
+                              with parameters "%s" and "%s" """ % \
+                    (self, resource.uri, args, get_args))
                 response = resource.post(payload=args, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
