@@ -272,8 +272,8 @@ class ROAModel(models.Model):
         get_args = {'format': ROA_FORMAT}
         
         serializer = serializers.get_serializer(ROA_FORMAT)
-        if hasattr(serializer, 'serialized_object'):
-            payload = serializer().serialized_object(self)
+        if hasattr(serializer, 'serialize_object'):
+            payload = serializer().serialize_object(self)
         else:
             payload = {}
             for field in meta.local_fields:
