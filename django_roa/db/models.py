@@ -262,43 +262,47 @@ class ROAModel(models.Model):
                 #self.save_base(raw, parent)
                 setattr(self, field.attname, self._get_pk_val(parent._meta))
 
-        args, get_args = {}, {}
-        for field in meta.local_fields:
-            
-            # Handle FK fields
-            if isinstance(field, models.ForeignKey):
-                field_attr = getattr(self, field.name)
-                if field_attr is None:
-                    args[field.attname] = None
+        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+        get_args = {'format': ROA_FORMAT}
+        
+        serializer = serializers.get_serializer(ROA_FORMAT)
+        if hasattr(serializer, 'serialized_object'):
+            payload = serializer.serialized_object(self)
+        else:
+            payload = {}
+            for field in meta.local_fields:
+                
+                # Handle FK fields
+                if isinstance(field, models.ForeignKey):
+                    field_attr = getattr(self, field.name)
+                    if field_attr is None:
+                        payload[field.attname] = None
+                    else:
+                        payload[field.attname] = field_attr.id
+                
+                # Handle all other fields
                 else:
-                    args[field.attname] = field_attr.id
-            
-            # Handle all other fields
-            else:
-                args[field.name] = field.value_to_string(self)
+                    payload[field.name] = field.value_to_string(self)
 
         pk_val = self._get_pk_val(meta)
         pk_set = pk_val is not None
-        
-        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
-        get_args["format"] = ROA_FORMAT
         
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
             try:
                 logger.debug(u"""Modifying : "%s" through %s
-                              with parameters "%s" and "%s" """ % \
-                    (self, resource.uri, args, get_args))
-                response = resource.put(payload=args, **get_args)
+                              with payload "%s" and GET args "%s" """ % \
+                    (self, resource.uri, payload, get_args))
+                response = resource.put(payload=payload, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
                 logger.debug(u"""Creating  : "%s" through %s
-                              with parameters "%s" and "%s" """ % \
-                    (self, resource.uri, args, get_args))
-                response = resource.post(payload=args, **get_args)
+                              with payload "%s" and GET args "%s" """ % \
+                    (self, resource.uri, payload, get_args))
+                response = resource.post(payload=payload, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         
