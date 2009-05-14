@@ -39,6 +39,7 @@ class Query(object):
         return self
     
     def get_count(self):
+        # Not used anymore
         self.count = True
     
     def clear_ordering(self):
@@ -90,9 +91,6 @@ class Query(object):
         Returns useful parameters as a dictionary.
         """
         parameters = {}
-        # Counting
-        if self.count:
-            parameters[ROA_ARGS_NAMES_MAPPING.get('COUNT', 'count')] = True
         
         # Filtering
         for k, v in self.filters.iteritems():
@@ -219,7 +217,10 @@ class RemoteQuerySet(query.QuerySet):
         clone = self._clone()
         clone.query.get_count()
         
-        resource = Resource(clone.model.get_resource_url_list())
+        # Instantiation of clone.model is necessary because we can't set
+        # a staticmethod for get_resource_url_count and avoid to set it
+        # for all model without relying on get_resource_url_list
+        resource = Resource(clone.model().get_resource_url_count())
         
         try:
             parameters = clone.query.parameters

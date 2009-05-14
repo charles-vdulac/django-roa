@@ -216,6 +216,9 @@ class ROAModelBase(ModelBase):
         if hasattr(cls, 'get_resource_url_list'):
             cls.get_resource_url_list = staticmethod(curry(get_resource_url_list, opts, cls.get_resource_url_list))
 
+        if hasattr(cls, 'get_resource_url_count'):
+            cls.get_resource_url_count = curry(get_resource_url_count, opts, cls.get_resource_url_count)
+
         if hasattr(cls, 'get_resource_url_detail'):
             cls.get_resource_url_detail = curry(get_resource_url_detail, opts, cls.get_resource_url_detail)
 
@@ -231,6 +234,9 @@ class ROAModel(models.Model):
     @staticmethod
     def get_resource_url_list():
         raise Exception, "Static method get_resource_url_list is not defined."
+    
+    def get_resource_url_count(self):
+        return u"%scount/" % (self.get_resource_url_list(),)
     
     def get_resource_url_detail(self):
         return u"%s%s/" % (self.get_resource_url_list(), self.pk)
@@ -338,6 +344,11 @@ def get_resource_url_list(opts, func, *args, **kwargs):
     key = '%s.%s' % (opts.app_label, opts.module_name)
     overridden = ROA_URL_OVERRIDES_LIST.get(key, False)
     return overridden and overridden or func(*args, **kwargs)
+
+def get_resource_url_count(opts, func, self, *args, **kwargs):
+    ROA_URL_OVERRIDES_COUNT = getattr(settings, 'ROA_URL_OVERRIDES_COUNT', {})
+    key = '%s.%s' % (opts.app_label, opts.module_name)
+    return ROA_URL_OVERRIDES_COUNT.get(key, func)(self, *args, **kwargs)
 
 def get_resource_url_detail(opts, func, self, *args, **kwargs):
     ROA_URL_OVERRIDES_DETAIL = getattr(settings, 'ROA_URL_OVERRIDES_DETAIL', {})

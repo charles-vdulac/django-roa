@@ -231,16 +231,41 @@ class ROAHandler(BaseHandler):
         except self.model.DoesNotExist:
             return rc.NOT_HERE
 
-class RemotePageHandler(ROAHandler):
-    model = RemotePage
 
-class RemotePageWithManyFieldsHandler(ROAHandler):
-    model = RemotePageWithManyFields
+class ROACountHandler(BaseHandler):
+    allowed_methods = ('GET', )
 
-class RemotePageWithBooleanFieldsHandler(ROAHandler):
-    model = RemotePageWithBooleanFields
+    def read(self, request, *args, **kwargs):
+        """
+        Retrieves the number of objects.
+        """
+        if not self.has_model():
+            return rc.NOT_IMPLEMENTED
+        
+        # Initialization
+        queryset = _get_queryset(self.model)
+        
+        # Filtering
+        filters, excludes = {}, {}
+        for k, v in request.GET.iteritems():
+            if k.startswith('filter_'):
+                filters[k[7:]] = v
+            if k.startswith('exclude_'):
+                excludes[k[8:]] = v
+        queryset = queryset.filter(*filters.items()).exclude(*excludes.items())
+        
+        # Ordering
+        if 'order_by' in request.GET:
+            order_bys = request.GET['order_by'].split(',')
+            queryset = queryset.order_by(*order_bys)
+        
+        # Counting
+        counter = queryset.count()
+        logger.debug(u'Count: %s objects' % counter)
+        return counter
 
-class RemotePageWithSlugHandler(ROAHandler):
+
+class ROAWithSlugHandler(ROAHandler):
     
     @staticmethod
     def _get_object(model, *args, **kwargs):
@@ -252,14 +277,48 @@ class RemotePageWithSlugHandler(ROAHandler):
         object = get_object_or_404(model, id=id, slug=slug)
         return object
     
-class RemotePageWithCustomSlugHandler(RemotePageWithSlugHandler):
+
+class RemotePageHandler(ROAHandler):
+    model = RemotePage
+
+class RemotePageCountHandler(ROACountHandler):
+    model = RemotePage
+
+
+class RemotePageWithManyFieldsHandler(ROAHandler):
+    model = RemotePageWithManyFields
+
+class RemotePageWithManyFieldsCountHandler(ROACountHandler):
+    model = RemotePageWithManyFields
+
+
+class RemotePageWithBooleanFieldsHandler(ROAHandler):
+    model = RemotePageWithBooleanFields
+
+class RemotePageWithBooleanFieldsCountHandler(ROACountHandler):
+    model = RemotePageWithBooleanFields
+
+
+class RemotePageWithCustomSlugHandler(ROAWithSlugHandler):
     model = RemotePageWithCustomSlug
+
+class RemotePageWithCustomSlugCountHandler(ROACountHandler):
+    model = RemotePageWithCustomSlug
+
     
-class RemotePageWithOverriddenUrlsHandler(RemotePageWithSlugHandler):
+class RemotePageWithOverriddenUrlsHandler(ROAWithSlugHandler):
     model = RemotePageWithOverriddenUrls
+
+class RemotePageWithOverriddenUrlsCountHandler(ROACountHandler):
+    model = RemotePageWithOverriddenUrls
+
 
 class RemotePageWithRelationsHandler(ROAHandler):
     model = RemotePageWithRelations
+
+class RemotePageWithRelationsCountHandler(ROACountHandler):
+    model = RemotePageWithRelations
+
     
 class UserHandler(ROAHandler):
     model = User
