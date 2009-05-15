@@ -315,7 +315,10 @@ class ROAModel(models.Model):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
 
-        result = serializers.deserialize(ROA_FORMAT, response).next()
+        if hasattr(serializer, 'deserialize_object'):
+            result = serializer(response).deserialize_object(response)
+        else:
+            result = serializers.deserialize(ROA_FORMAT, response).next()
 
         self.id = int(result.object.id)
         self = result.object
