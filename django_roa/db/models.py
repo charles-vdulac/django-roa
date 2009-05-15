@@ -11,6 +11,7 @@ from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception, get_absolute_url
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
 from django.utils.functional import curry
+from django.utils.encoding import force_unicode
 
 from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
@@ -296,24 +297,24 @@ class ROAModel(models.Model):
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
             try:
-                logger.debug("""Modifying : "%s" through %s
-                              with payload "%s" and GET args "%s" """ % \
-                    (unicode(self).encode(settings.DEFAULT_CHARSET), 
-                     resource.uri.encode(settings.DEFAULT_CHARSET),
-                     unicode(payload).encode(settings.DEFAULT_CHARSET), 
-                     unicode(get_args).encode(settings.DEFAULT_CHARSET)))
+                logger.debug(u"""Modifying : "%s" through %s
+                              with payload "%s" and GET args "%s" """ % (
+                              force_unicode(self), 
+                              force_unicode(resource.uri),
+                              force_unicode(payload), 
+                              force_unicode(get_args)))
                 response = resource.put(payload=payload, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
-                logger.debug("""Creating  : "%s" through %s
-                              with payload "%s" and GET args "%s" """ % \
-                    (unicode(self).encode(settings.DEFAULT_CHARSET), 
-                     resource.uri.encode(settings.DEFAULT_CHARSET),
-                     unicode(payload).encode(settings.DEFAULT_CHARSET), 
-                     unicode(get_args).encode(settings.DEFAULT_CHARSET)))
+                logger.debug(u"""Creating  : "%s" through %s
+                              with payload "%s" and GET args "%s" """ % (
+                              force_unicode(self), 
+                              force_unicode(resource.uri),
+                              force_unicode(payload), 
+                              force_unicode(get_args)))
                 response = resource.post(payload=payload, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
@@ -321,7 +322,7 @@ class ROAModel(models.Model):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
 
-        response = response.encode(settings.DEFAULT_CHARSET)
+        response = force_unicode(response).encode(settings.DEFAULT_CHARSET)
         deserializer = serializers.get_deserializer(ROA_FORMAT)
         if hasattr(deserializer, 'deserialize_object'):
             result = deserializer(response).deserialize_object(response)

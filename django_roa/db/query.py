@@ -5,6 +5,7 @@ from django.db.models import query
 from django.core import serializers
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.query_utils import Q
+from django.utils.encoding import force_unicode
 
 from restclient import Resource, ResourceNotFound, RequestFailed
 from django_roa.db.exceptions import ROAException
@@ -189,16 +190,18 @@ class RemoteQuerySet(query.QuerySet):
 
         try:
             parameters = self.query.parameters
-            logger.debug("""Requesting: "%s" through %s
-                          with parameters "%s" """ % \
-                (self.model.__name__, resource.uri, unicode(parameters).encode(settings.DEFAULT_CHARSET)))
+            logger.debug(u"""Requesting: "%s" through %s
+                          with parameters "%s" """ % (
+                          self.model.__name__, 
+                          resource.uri, 
+                          force_unicode(parameters)))
             response = resource.get(**parameters)
         except ResourceNotFound:
             return
         except Exception, e:
             raise ROAException(e)
 
-        response = response.encode(settings.DEFAULT_CHARSET)
+        response = force_unicode(response).encode(settings.DEFAULT_CHARSET)
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
         
@@ -225,9 +228,11 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = clone.query.parameters
-            logger.debug("""Counting  : "%s" through %s
-                          with parameters "%s" """ % \
-                (clone.model.__name__, resource.uri, unicode(parameters).encode(settings.DEFAULT_CHARSET)))
+            logger.debug(u"""Counting  : "%s" through %s
+                          with parameters "%s" """ % (
+                clone.model.__name__, 
+                resource.uri, 
+                force_unicode(parameters)))
             response = resource.get(**parameters)
         except ResourceNotFound:
             response = 0
@@ -358,11 +363,11 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = self.query.parameters
-            logger.debug("""Adding    : "%s" for "%s"
-                          with parameters "%s" """ % \
-                (", ".join([unicode(obj).encode(settings.DEFAULT_CHARSET) for obj in objs]), 
-                 unicode(instance).encode(settings.DEFAULT_CHARSET), 
-                 unicode(parameters).encode(settings.DEFAULT_CHARSET)))
+            logger.debug(u"""Adding    : "%s" for "%s"
+                          with parameters "%s" """ % (
+                          u", ".join([force_unicode(obj) for obj in objs]), 
+                          force_unicode(instance), 
+                          force_unicode(parameters)))
             response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
@@ -379,11 +384,11 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = self.query.parameters
-            logger.debug("""Removing  : "%s" for "%s"
-                          with parameters "%s" """ % \
-                (", ".join([unicode(obj).encode(settings.DEFAULT_CHARSET) for obj in objs]), 
-                 unicode(instance).encode(settings.DEFAULT_CHARSET), 
-                 unicode(parameters).encode(settings.DEFAULT_CHARSET)))
+            logger.debug(u"""Removing  : "%s" for "%s"
+                          with parameters "%s" """ % (
+                          u", ".join([force_unicode(obj) for obj in objs]), 
+                          force_unicode(instance), 
+                          force_unicode(parameters)))
             response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
@@ -399,10 +404,10 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = self.query.parameters
-            logger.debug("""Clearing  : items for "%s"
-                          with parameters "%s" """ % \
-                (unicode(instance).encode(settings.DEFAULT_CHARSET), 
-                 unicode(parameters).encode(settings.DEFAULT_CHARSET)))
+            logger.debug(u"""Clearing  : items for "%s"
+                          with parameters "%s" """ % (
+                          force_unicode(instance), 
+                          force_unicode(parameters)))
             response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
