@@ -10,7 +10,7 @@ class ROAException(Exception):
             self.msg = exception.message
             self.status_code = exception.status_code
         else:
-            self.msg = str(exception)
+            self.msg = str(exception).encode(settings.DEFAULT_CHARSET)
 
     def __str__(self):
         return ROA_DJANGO_ERRORS and self.parse_django_error() or self.msg
@@ -31,5 +31,5 @@ class ROAException(Exception):
                 else:
                     result.append("%s %s\n" % (title, line_content))
         result.append("Status code: %s" % self.status_code)
-        return " ".join(result)
+        return " ".join([line.encode(settings.DEFAULT_CHARSET) for line in result])
 

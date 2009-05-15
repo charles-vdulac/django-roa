@@ -71,7 +71,7 @@ class ROAHandler(BaseHandler):
         obj_list = list(queryset)
         if not obj_list:
             raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
-        logger.debug(u'Objects: %s retrieved' % obj_list)
+        logger.debug('Objects: %s retrieved' % [unicode(obj).encode(settings.DEFAULT_CHARSET) for obj in obj_list])
         return queryset
         
     def create(self, request, *args, **kwargs):
@@ -120,7 +120,7 @@ class ROAHandler(BaseHandler):
         
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
-        logger.debug(u'Object "%s" created' % object)
+        logger.debug('Object "%s" created' % unicode(object).encode(settings.DEFAULT_CHARSET))
         return response
 
     def update(self, request, *args, **kwargs):
@@ -143,7 +143,9 @@ class ROAHandler(BaseHandler):
             
             response = [self.model.objects.get(id=object.id)]
             #response = [object]
-            logger.debug(u'Object "%s" added M2M relations with ids %s' % (object, obj_ids_str))
+            logger.debug('Object "%s" added M2M relations with ids %s' % (
+                unicode(object).encode(settings.DEFAULT_CHARSET), 
+                obj_ids_str))
             return response
         
         # Remove M2M relations
@@ -155,7 +157,9 @@ class ROAHandler(BaseHandler):
             
             response = [self.model.objects.get(id=object.id)]
             #response = [object]
-            logger.debug(u'Object "%s" removed M2M relations with ids %s' % (object, obj_ids_str))
+            logger.debug('Object "%s" removed M2M relations with ids %s' % (
+                unicode(object).encode(settings.DEFAULT_CHARSET), 
+                obj_ids_str))
             return response
         
         # Remove M2M relations
@@ -165,7 +169,8 @@ class ROAHandler(BaseHandler):
             
             response = [self.model.objects.get(id=object.id)]
             #response = [object]
-            logger.debug(u'Object "%s" cleared M2M relations' % (object, ))
+            logger.debug('Object "%s" cleared M2M relations' % (
+                unicode(object).encode(settings.DEFAULT_CHARSET), ))
             return response
         
         m2m_data = {}
@@ -210,7 +215,9 @@ class ROAHandler(BaseHandler):
         
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
-        logger.debug(u'Object "%s" modified with %s' % (object, data.items()))
+        logger.debug('Object "%s" modified with %s' % (
+            unicode(object).encode(settings.DEFAULT_CHARSET), 
+            unicode(data.items()).encode(settings.DEFAULT_CHARSET)))
         return response
 
     def delete(self, request, *args, **kwargs):
@@ -223,7 +230,9 @@ class ROAHandler(BaseHandler):
         try:
             object = self._get_object(self.model, *args, **kwargs)
             object.delete()
-            logger.debug(u'Object "%s" deleted, remains %s' % (object, self.model.objects.all()))
+            logger.debug('Object "%s" deleted, remains %s' % (
+                unicode(object).encode(settings.DEFAULT_CHARSET), 
+                [unicode(object).encode(settings.DEFAULT_CHARSET) for object in self.model.objects.all()]))
 
             return rc.DELETED
         except self.model.MultipleObjectsReturned:
@@ -261,7 +270,7 @@ class ROACountHandler(BaseHandler):
         
         # Counting
         counter = queryset.count()
-        logger.debug(u'Count: %s objects' % counter)
+        logger.debug('Count: %s objects' % counter)
         return counter
 
 

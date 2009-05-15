@@ -189,15 +189,16 @@ class RemoteQuerySet(query.QuerySet):
 
         try:
             parameters = self.query.parameters
-            logger.debug(u"""Requesting: "%s" through %s
+            logger.debug("""Requesting: "%s" through %s
                           with parameters "%s" """ % \
-                (self.model.__name__, resource.uri, parameters))
+                (self.model.__name__, resource.uri, unicode(parameters).encode(settings.DEFAULT_CHARSET)))
             response = resource.get(**parameters)
         except ResourceNotFound:
             return
         except Exception, e:
             raise ROAException(e)
 
+        response = response.encode(settings.DEFAULT_CHARSET)
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
         
@@ -224,9 +225,9 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = clone.query.parameters
-            logger.debug(u"""Counting  : "%s" through %s
+            logger.debug("""Counting  : "%s" through %s
                           with parameters "%s" """ % \
-                (clone.model.__name__, resource.uri, parameters))
+                (clone.model.__name__, resource.uri, unicode(parameters).encode(settings.DEFAULT_CHARSET)))
             response = resource.get(**parameters)
         except ResourceNotFound:
             response = 0
@@ -357,9 +358,11 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = self.query.parameters
-            logger.debug(u"""Adding    : "%s" for "%s"
+            logger.debug("""Adding    : "%s" for "%s"
                           with parameters "%s" """ % \
-                (objs, instance, parameters))
+                (", ".join([unicode(obj).encode(settings.DEFAULT_CHARSET) for obj in objs]), 
+                 unicode(instance).encode(settings.DEFAULT_CHARSET), 
+                 unicode(parameters).encode(settings.DEFAULT_CHARSET)))
             response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
@@ -376,9 +379,11 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = self.query.parameters
-            logger.debug(u"""Removing  : "%s" for "%s"
+            logger.debug("""Removing  : "%s" for "%s"
                           with parameters "%s" """ % \
-                (objs, instance, parameters))
+                (", ".join([unicode(obj).encode(settings.DEFAULT_CHARSET) for obj in objs]), 
+                 unicode(instance).encode(settings.DEFAULT_CHARSET), 
+                 unicode(parameters).encode(settings.DEFAULT_CHARSET)))
             response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)
@@ -394,9 +399,10 @@ class RemoteQuerySet(query.QuerySet):
         
         try:
             parameters = self.query.parameters
-            logger.debug(u"""Clearing  : items for "%s"
+            logger.debug("""Clearing  : items for "%s"
                           with parameters "%s" """ % \
-                (instance, parameters))
+                (unicode(instance).encode(settings.DEFAULT_CHARSET), 
+                 unicode(parameters).encode(settings.DEFAULT_CHARSET)))
             response = resource.put(**parameters)
         except RequestFailed, e:
             raise ROAException(e)

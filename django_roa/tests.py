@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 r"""
 ==========
 Django ROA
@@ -91,7 +92,6 @@ A more complex example with empty values::
     0
 
 
-
 Fields
 ------
 
@@ -146,6 +146,7 @@ empty values even when it comes from the server::
     file_field 
     image_field 
     >>> default_page.delete()
+
 
 Same for boolean fields::
 
@@ -749,6 +750,7 @@ setting (registered manually here for test purpose)::
 
 Custom extra arguments
 ----------------------
+::
 
     >>> initial_roa_custom_arg_setting = getattr(settings, 'ROA_CUSTOM_ARGS', {})
     >>> settings.ROA_CUSTOM_ARGS = {'foo': 'bar'}

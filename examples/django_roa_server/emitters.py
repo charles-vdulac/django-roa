@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.core import serializers
 from django.http import HttpResponse
 from django.utils import simplejson
@@ -17,7 +18,7 @@ class ROADjangoEmitter(DjangoEmitter):
     """
     def render(self, request):
         response = super(ROADjangoEmitter, self).render(request, 'xml')
-        logger.debug(u"Response:\n%s" % response)
+        logger.debug("Response:\n%s" % str(response).decode(settings.DEFAULT_CHARSET))
         return response
     
 Emitter.register('django', ROADjangoEmitter, 'application/xml; charset=utf-8')
@@ -30,7 +31,7 @@ class CustomDjangoEmitter(DjangoEmitter):
     """
     def render(self, request):
         response = super(CustomDjangoEmitter, self).render(request, 'custom')
-        logger.debug(u"Response:\n%s" % response)
+        logger.debug("Response:\n%s" % response.decode(settings.DEFAULT_CHARSET))
         return response
     
 Emitter.register('custom', CustomDjangoEmitter, 'application/xml; charset=utf-8')

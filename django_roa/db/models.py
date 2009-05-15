@@ -296,18 +296,24 @@ class ROAModel(models.Model):
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())
             try:
-                logger.debug(u"""Modifying : "%s" through %s
+                logger.debug("""Modifying : "%s" through %s
                               with payload "%s" and GET args "%s" """ % \
-                    (self, resource.uri, payload, get_args))
+                    (unicode(self).encode(settings.DEFAULT_CHARSET), 
+                     resource.uri.encode(settings.DEFAULT_CHARSET),
+                     unicode(payload).encode(settings.DEFAULT_CHARSET), 
+                     unicode(get_args).encode(settings.DEFAULT_CHARSET)))
                 response = resource.put(payload=payload, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
         else:
             resource = Resource(self.get_resource_url_list())
             try:
-                logger.debug(u"""Creating  : "%s" through %s
+                logger.debug("""Creating  : "%s" through %s
                               with payload "%s" and GET args "%s" """ % \
-                    (self, resource.uri, payload, get_args))
+                    (unicode(self).encode(settings.DEFAULT_CHARSET), 
+                     resource.uri.encode(settings.DEFAULT_CHARSET),
+                     unicode(payload).encode(settings.DEFAULT_CHARSET), 
+                     unicode(get_args).encode(settings.DEFAULT_CHARSET)))
                 response = resource.post(payload=payload, **get_args)
             except RequestFailed, e:
                 raise ROAException(e)
@@ -315,6 +321,7 @@ class ROAModel(models.Model):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
 
+        response = response.encode(settings.DEFAULT_CHARSET)
         deserializer = serializers.get_deserializer(ROA_FORMAT)
         if hasattr(deserializer, 'deserialize_object'):
             result = deserializer(response).deserialize_object(response)
@@ -332,8 +339,9 @@ class ROAModel(models.Model):
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail())
         
-        logger.debug(u"""Deleting  : "%s" through %s""" % \
-            (self, resource.uri))
+        logger.debug("""Deleting  : "%s" through %s""" % \
+            (unicode(self).encode(settings.DEFAULT_CHARSET), 
+             resource.uri.encode(settings.DEFAULT_CHARSET)))
         response = resource.delete()
 
     delete.alters_data = True
