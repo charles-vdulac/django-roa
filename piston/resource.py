@@ -38,7 +38,8 @@ class Resource(object):
         # Erroring
         self.email_errors = getattr(settings, 'PISTON_EMAIL_ERRORS', True)
         self.display_errors = getattr(settings, 'PISTON_DISPLAY_ERRORS', True)
-    
+        self.stream = getattr(settings, 'PISTON_STREAM_OUTPUT', False)
+
     def determine_emitter(self, request, *args, **kwargs):
         """
         Function for determening which emitter to use
@@ -49,7 +50,7 @@ class Resource(object):
         since that pretty much makes sense. Refer to `Mimer` for
         that as well.
         """
-        em = kwargs.pop('emitter_format', False)
+        em = kwargs.pop('emitter_format', None)
         
         if not em:
             em = request.GET.get('format', 'json')
@@ -63,7 +64,7 @@ class Resource(object):
         that are different (OAuth stuff in `Authorization` header.)
         """
         if not self.authentication.is_authenticated(request):
-            if self.handler.anonymous and callable(self.handler.anonymous):
+            if hasattr(self.handler, 'anonymous') and callable(self.handler.anonymous):
                 handler = self.handler.anonymous()
                 anonymous = True
             else:
@@ -92,7 +93,8 @@ class Resource(object):
 
         # Support emitter both through (?P<emitter_format>) and ?format=emitter.
         em_format = self.determine_emitter(request, *args, **kwargs)
-        kwargs.pop('emitter_format', False)
+
+        kwargs.pop('emitter_format', None)
         
         # Clean up the request object a bit, since we might
         # very well have `oauth_`-headers in there, and we
@@ -101,9 +103,9 @@ class Resource(object):
         
         try:
             result = meth(request, *args, **kwargs)
-        except FormValidationError, form:
+        except FormValidationError, e:
             # TODO: Use rc.BAD_REQUEST here
-            return HttpResponse("Bad Request: %s" % form.errors, status=400)
+            return HttpResponse("Bad Request: %s" % e.form.errors, status=400)
         except TypeError, e:
             result = rc.BAD_REQUEST
             hm = HandlerMethod(meth)
@@ -152,9 +154,22 @@ class Resource(object):
         srl = emitter(result, typemapper, handler, handler.fields, anonymous)
         
         try:
-            return HttpResponse(srl.render(request), mimetype=ct)
+            """
+            Decide whether or not we want a generator here,
+            or we just want to buffer up the entire result
+            before sending it to the client. Won't matter for
+            smaller datasets, but larger will have an impact.
+            """
+            if self.stream: stream = srl.stream_render(request)
+            else: stream = srl.render(request)
+
+            resp = HttpResponse(stream, mimetype=ct)
+
+            resp.streaming = self.stream
+
+            return resp
         except HttpStatusCode, e:
-            return HttpResponse(e.message, status=e.code)
+            return HttpResponse(e.msg, status=e.code)
 
     @staticmethod
     def cleanup_request(request):

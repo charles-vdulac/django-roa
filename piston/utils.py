@@ -24,6 +24,7 @@ class rc_factory(object):
                  DELETED = ('', 204), # 204 says "Don't send a body!"
                  BAD_REQUEST = ('Bad Request', 400),
                  FORBIDDEN = ('Forbidden', 401),
+                 NOT_FOUND = ('Not Found', 404),
                  DUPLICATE_ENTRY = ('Conflict/Duplicate', 409),
                  NOT_HERE = ('Gone', 410),
                  NOT_IMPLEMENTED = ('Not Implemented', 501),
@@ -40,7 +41,7 @@ class rc_factory(object):
         except TypeError:
             raise AttributeError(attr)
 
-        return HttpResponse(r, c)
+        return HttpResponse(r, content_type='text/plain', status=c)
     
 rc = rc_factory()
     
@@ -49,8 +50,8 @@ class FormValidationError(Exception):
         self.form = form
 
 class HttpStatusCode(Exception):
-    def __init__(self, message, code=200):
-        self.message = message
+    def __init__(self, msg, code=200):
+        self.msg = msg
         self.code = code
 
 def validate(v_form, operation='POST'):
@@ -125,12 +126,26 @@ def throttle(max_requests, timeout=60*60, extra=''):
     return wrap
 
 def coerce_put_post(request):
+    """
+    Django doesn't particularly understand REST.
+    In case we send data over PUT, Django won't
+    actually look at the data and load it. We need
+    to twist its arm here.
+    
+    The try/except abominiation here is due to a bug
+    in mod_python. This should fix it.
+    """
     if request.method == "PUT":
-        request.method = "POST"
-        request._load_post_and_files()
-        request.method = "PUT"
+        try:
+            request.method = "POST"
+            request._load_post_and_files()
+            request.method = "PUT"
+        except AttributeError:
+            request.META['REQUEST_METHOD'] = 'POST'
+            request._load_post_and_files()
+            request.META['REQUEST_METHOD'] = 'PUT'
+            
         request.PUT = request.POST
-        del request._post
 
 class Mimer(object):
     TYPES = dict()
@@ -139,7 +154,10 @@ class Mimer(object):
         self.request = request
         
     def is_multipart(self):
-        return 'Content-Disposition: form-data;' in self.request.raw_post_data
+        content_type = self.content_type()
+        if content_type is not None:
+            return content_type.lstrip().startswith('multipart')
+        return False
 
     def loader_for_type(self, ctype):
         """
@@ -151,7 +169,7 @@ class Mimer(object):
                 return loadee
 
     def content_type(self):
-        return self.request.META.get('CONTENT_TYPE')
+        return self.request.META.get('CONTENT_TYPE', None)
 
     def translate(self):
         """
@@ -167,12 +185,12 @@ class Mimer(object):
         None for multipart form data (what your browser sends.)
         """    
         ctype = self.content_type()
+        self.request.content_type = ctype
         
         if not self.is_multipart() and ctype:
             loadee = self.loader_for_type(ctype)
             
             try:
-                self.request.content_type = ctype
                 self.request.data = loadee(self.request.raw_post_data)
                 
                 # Reset both POST and PUT from request, as its

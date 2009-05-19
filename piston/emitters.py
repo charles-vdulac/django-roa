@@ -1,3 +1,5 @@
+from __future__ import generators
+
 import types, decimal, types, re, inspect
 
 try:
@@ -50,7 +52,7 @@ class Emitter(object):
     
     def method_fields(self, data, fields):
         if not data:
-            return data
+            return { }
 
         has = dir(data)
         ret = dict()
@@ -75,7 +77,9 @@ class Emitter(object):
             """
             ret = None
             
-            if isinstance(thing, (tuple, list, QuerySet)):
+            if isinstance(thing, QuerySet):
+                ret = _qs(thing, fields=fields)
+            elif isinstance(thing, (tuple, list)):
                 ret = _list(thing)
             elif isinstance(thing, dict):
                 ret = _dict(thing)
@@ -118,6 +122,7 @@ class Emitter(object):
             """
             ret = { }
             handler = self.in_typemapper(type(data), self.anonymous)
+            get_absolute_uri = False
             
             if handler or fields:
                 v = lambda f: getattr(data, f.attname)
@@ -130,6 +135,9 @@ class Emitter(object):
                     mapped = self.in_typemapper(type(data), self.anonymous)
                     get_fields = set(mapped.fields)
                     exclude_fields = set(mapped.exclude).difference(get_fields)
+
+                    if 'absolute_uri' in get_fields:
+                        get_absolute_uri = True
                 
                     if not get_fields:
                         get_fields = set([ f.attname.replace("_id", "", 1)
@@ -139,6 +147,7 @@ class Emitter(object):
                     for exclude in exclude_fields:
                         if isinstance(exclude, basestring):
                             get_fields.discard(exclude)
+                            
                         elif isinstance(exclude, re._pattern_type):
                             for field in get_fields.copy():
                                 if exclude.match(field):
@@ -176,6 +185,9 @@ class Emitter(object):
                         if inst:
                             if hasattr(inst, 'all'):
                                 ret[model] = _related(inst, fields)
+                            elif callable(inst):
+                                if len(inspect.getargspec(inst)[0]) == 1:
+                                    ret[model] = _any(inst(), fields)
                             else:
                                 ret[model] = _model(inst, fields)
 
@@ -190,6 +202,9 @@ class Emitter(object):
                         if maybe:
                             if isinstance(maybe, (int, basestring)):
                                 ret[maybe_field] = _any(maybe)
+                            elif callable(maybe):
+                                if len(inspect.getargspec(maybe)[0]) == 1:
+                                    ret[maybe_field] = _any(maybe())
                         else:
                             handler_f = getattr(handler or self.handler, maybe_field, None)
 
@@ -219,12 +234,18 @@ class Emitter(object):
                 except: pass
             
             # absolute uri
-            if hasattr(data, 'get_absolute_url'):
+            if hasattr(data, 'get_absolute_url') and get_absolute_uri:
                 try: ret['absolute_uri'] = data.get_absolute_url()
                 except: pass
             
             return ret
         
+        def _qs(data, fields=()):
+            """
+            Querysets.
+            """
+            return [ _any(v, fields) for v in data ]
+                
         def _list(data):
             """
             Lists.
@@ -251,6 +272,15 @@ class Emitter(object):
         this is a job for the specific emitter below.
         """
         raise NotImplementedError("Please implement render.")
+        
+    def stream_render(self, request, stream=True):
+        """
+        Tells our patched middleware not to look
+        at the contents, and returns a generator
+        rather than the buffered string. Should be
+        more memory friendly for large datasets.
+        """
+        yield self.render(request)
         
     @classmethod
     def get(cls, format):
