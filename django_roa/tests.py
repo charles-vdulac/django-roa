@@ -92,6 +92,21 @@ A more complex example with empty values::
     0
 
 
+Unicode
+-------
+::
+
+    >>> RemotePage.objects.all()
+    []
+    >>> emilie = RemotePage.objects.create(title=u"\xc9milie")
+    >>> print emilie
+    Émilie (1)
+    >>> emilie = RemotePage.objects.get(title=u"\xc9milie")
+    >>> emilie
+    <RemotePage: Émilie (1)>
+    >>> emilie.delete()
+
+
 Fields
 ------
 
@@ -589,6 +604,35 @@ Now we can try to log in and navigate into the built-in admin::
     [<RemotePage: A fool remote page (5)>, <RemotePage: A fourth remote page (4)>]
     >>> response.context[-1]["cl"].result_count
     5
+
+
+Forms
+-----
+
+We verify that Forms' validation works as expected::
+
+    >>> from django_roa_client.forms import TestForm
+    >>> form = TestForm()
+    >>> form.is_valid()
+    False
+    >>> rp = RemotePage.objects.all()[0]
+    >>> form = TestForm(data={u'test_field': u'Test data', u'remote_page': rp.id})
+    >>> form.is_valid()
+    True
+    
+Same verification with ModelForms::
+
+    >>> from django_roa_client.forms import RemotePageForm
+    >>> form = RemotePageForm()
+    >>> form.is_valid()
+    False
+    >>> form = RemotePageForm(data={u'title': u'Test data'})
+    >>> form.is_valid()
+    True
+    >>> remote_page = form.save()
+    >>> remote_page
+    <RemotePage: Test data (6)>
+    >>> remote_page.delete()
 
 
 Home
