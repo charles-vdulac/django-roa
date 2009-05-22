@@ -18,7 +18,7 @@ getting django-roa running in the default setup, to wit:
 
 Now, you can go to ``examples/django_roa_client`` and run this command:
 
-    $ python manage.py test
+    $ python manage.py test django_roa_client
 
 It should return no error and you will be able to see logs from the test
 server which confirm that it works as expected: remote requests are done.
@@ -504,7 +504,6 @@ class ROARemoteAuthTests(ROAUserTestCase):
         bob.groups.add(group)
         self.assertEqual(repr(bob.groups.all()), '[<Group: Custom group>]')
         self.assertEqual(repr(bob.groups.all()[0].permissions.all()), '[<Permission: remoteauth | group | Custom permission to group model>]')
-        
 
     def test_permissions(self):
         bob = User.objects.create_superuser(username=u'bob', password=u'secret', email=u'bob@example.com')
@@ -545,6 +544,7 @@ class ROAExceptionsTests(ROAUserTestCase):
         """
         User.objects.create_user(username="alice", password="secret", email="alice@example.com")
         #User.objects.create_user(username="alice", password="secret", email="alice@example.com")
+
 
 class ROASettingsTests(ROATestCase):
 
