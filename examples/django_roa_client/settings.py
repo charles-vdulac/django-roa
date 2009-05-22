@@ -65,7 +65,7 @@ ROA_MODEL_NAME_MAPPING = (
     ('remoteauth.', 'auth.'),
 )
 ROA_ARGS_NAMES_MAPPING = {
-    'COUNT': 'count_objects',
+    'ORDER_BY': 'order',
 }
 
 ## Logging settings

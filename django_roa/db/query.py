@@ -234,10 +234,9 @@ class RemoteQuerySet(query.QuerySet):
                 resource.uri, 
                 force_unicode(parameters)))
             response = resource.get(**parameters)
-        except ResourceNotFound:
-            response = 0
+        except Exception, e:
+            raise ROAException(e)
         
-        clone.query.count = False
         return int(response)
 
     def latest(self, field_name=None):

@@ -52,16 +52,10 @@ class ROAHandler(BaseHandler):
                 excludes[k[8:]] = v
         queryset = queryset.filter(*filters.items()).exclude(*excludes.items())
         
-        # Ordering
-        if 'order_by' in request.GET:
-            order_bys = request.GET['order_by'].split(',')
+        # Ordering (test custom parameters' name)
+        if 'order' in request.GET:
+            order_bys = request.GET['order'].split(',')
             queryset = queryset.order_by(*order_bys)
-        
-        # Counting
-        if 'count_objects' in request.GET:
-            counter = queryset.count()
-            logger.debug(u'Count: %s objects' % counter)
-            return counter
         
         # Slicing
         limit_start = int(request.GET.get('limit_start', 0))
