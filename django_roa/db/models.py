@@ -11,7 +11,7 @@ from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception, get_absolute_url
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
 from django.utils.functional import curry
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_unicode, smart_unicode
 
 from restclient import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
@@ -269,6 +269,9 @@ class ROAModel(models.Model):
                 #self.save_base(raw, parent)
                 setattr(self, field.attname, self._get_pk_val(parent._meta))
 
+        pk_val = self._get_pk_val(meta)
+        pk_set = pk_val is not None
+
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         get_args = {'format': ROA_FORMAT}
         
@@ -286,13 +289,20 @@ class ROAModel(models.Model):
                         payload[field.attname] = None
                     else:
                         payload[field.attname] = field_attr.id
-                
+                                
                 # Handle all other fields
                 else:
                     payload[field.name] = field.value_to_string(self)
-
-        pk_val = self._get_pk_val(meta)
-        pk_set = pk_val is not None
+            
+            # Handle M2M relations in case of update
+            if force_update or pk_set and not self.id is None:
+                for field in meta.many_to_many:
+                    # First try to get ids from var set in query's add/remove/clear
+                    if hasattr(self, '%s_updated_ids' % field.attname):
+                        field_ids = getattr(self, '%s_updated_ids' % field.attname)
+                    else:
+                        field_ids = [obj.id for obj in field.value_from_object(self)]
+                    payload[field.attname] = ','.join(smart_unicode(id) for id in field_ids)
         
         if force_update or pk_set and not self.id is None:
             resource = Resource(self.get_resource_url_detail())

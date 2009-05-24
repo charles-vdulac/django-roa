@@ -28,9 +28,6 @@ class Query(object):
         self.where = False
         self.select_related = False
         self.max_depth = None
-        self.m2m_add = False
-        self.m2m_remove = False
-        self.m2m_clear = False
         self.extra_select = {}
     
     def can_filter(self):
@@ -71,20 +68,6 @@ class Query(object):
         self.select_related = field_dict
         self.related_select_cols = []
         self.related_select_fields = []
-
-    def _add_items(self, field, *objs):
-        self.m2m_add = True
-        self.m2m_ids = [str(obj.id) for obj in objs]
-        self.m2m_field_name = field.name
-    
-    def _remove_items(self, field, *objs):
-        self.m2m_remove = True
-        self.m2m_ids = [str(obj.id) for obj in objs]
-        self.m2m_field_name = field.name
-    
-    def _clear_items(self, field):
-        self.m2m_clear = True
-        self.m2m_field_name = field.name
     
     @property
     def parameters(self):
@@ -113,19 +96,6 @@ class Query(object):
         # Format
         ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         parameters[ROA_ARGS_NAMES_MAPPING.get('FORMAT', 'format')] = ROA_FORMAT
-        
-        # M2M relations
-        if self.m2m_add:
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_ADD', 'm2m_add')] = 1
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_IDS', 'm2m_ids')] = ','.join(self.m2m_ids)
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
-        if self.m2m_remove:
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_REMOVE', 'm2m_remove')] = 1
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_IDS', 'm2m_ids')] = ','.join(self.m2m_ids)
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
-        if self.m2m_clear:
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_CLEAR', 'm2m_clear')] = 1
-            parameters[ROA_ARGS_NAMES_MAPPING.get('M2M_FIELD_NAME', 'm2m_field_name')] = self.m2m_field_name
         
         parameters.update(getattr(settings, 'ROA_CUSTOM_ARGS', {}))
         return parameters
@@ -356,20 +326,22 @@ class RemoteQuerySet(query.QuerySet):
         """
         Adds m2m relations between ``instance`` object and ``objs``.
         """
-        self.query._add_items(field, *objs)
-        
-        resource = Resource(instance.get_resource_url_detail())
-        
-        try:
-            parameters = self.query.parameters
-            logger.debug(u"""Adding    : "%s" for "%s"
-                          with parameters "%s" """ % (
-                          u", ".join([force_unicode(obj) for obj in objs]), 
-                          force_unicode(instance), 
-                          force_unicode(parameters)))
-            response = resource.put(**parameters)
-        except RequestFailed, e:
-            raise ROAException(e)
+        if objs:
+            from django.db.models.base import Model
+            # Check that all the objects are of the right type
+            existing_ids = set(obj.id for obj in field.value_from_object(instance))
+            for obj in objs:
+                if isinstance(obj, self.model):
+                    existing_ids.add(obj._get_pk_val())
+                elif isinstance(obj, Model):
+                    raise TypeError, "'%s' instance expected" % self.model._meta.object_name
+                else:
+                    existing_ids.add(obj)
+            # FIXME: ugly but we set manually updated_ids to the instance
+            # before saving it, get back in save_model to send appropriated
+            # ids to the server
+            setattr(instance, '%s_updated_ids' % field.attname, existing_ids)
+            instance.save()
 
     def _remove_items(self, source_col_name=None, target_col_name=None, 
                       join_table=None, pk_val=None, instance=None, field=None, 
@@ -377,39 +349,28 @@ class RemoteQuerySet(query.QuerySet):
         """
         Removes m2m relations between ``instance`` object and ``objs``.
         """
-        self.query._remove_items(field, *objs)
-        
-        resource = Resource(instance.get_resource_url_detail())
-        
-        try:
-            parameters = self.query.parameters
-            logger.debug(u"""Removing  : "%s" for "%s"
-                          with parameters "%s" """ % (
-                          u", ".join([force_unicode(obj) for obj in objs]), 
-                          force_unicode(instance), 
-                          force_unicode(parameters)))
-            response = resource.put(**parameters)
-        except RequestFailed, e:
-            raise ROAException(e)
+        if objs:
+            from django.db.models.base import Model
+            # Check that all the objects are of the right type
+            existing_ids = set(obj.id for obj in field.value_from_object(instance))
+            for obj in objs:
+                if isinstance(obj, self.model):
+                    existing_ids.remove(obj._get_pk_val())
+                elif isinstance(obj, Model):
+                    raise TypeError, "'%s' instance expected" % self.model._meta.object_name
+                else:
+                    existing_ids.remove(obj)
+            setattr(instance, '%s_updated_ids' % field.attname, existing_ids)
+            instance.save()
 
     def _clear_items(self, source_col_name=None, join_table=None, pk_val=None, 
                      instance=None, field=None):
         """
         Clears m2m relations related to ``instance`` object.
         """
-        self.query._clear_items(field)
-        
-        resource = Resource(instance.get_resource_url_detail())
-        
-        try:
-            parameters = self.query.parameters
-            logger.debug(u"""Clearing  : items for "%s"
-                          with parameters "%s" """ % (
-                          force_unicode(instance), 
-                          force_unicode(parameters)))
-            response = resource.put(**parameters)
-        except RequestFailed, e:
-            raise ROAException(e)
+        setattr(instance, '%s_updated_ids' % field.attname, [])
+        instance.save()
+
 
     ###################
     # PRIVATE METHODS #

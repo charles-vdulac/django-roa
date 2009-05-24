@@ -79,19 +79,13 @@ class ROAHandler(BaseHandler):
         keys = data.keys()
         
         values = {}
-        m2m_data = {}
         for field in self.model._meta.local_fields:
             field_value = data.get(field.name, None)
             
             if field_value not in (u'', u'None'):
                 
-                # Handle M2M relations
-                if field.rel and isinstance(field.rel, models.ManyToManyRel):
-                    m2m_convert = field.rel.to._meta.pk.to_python
-                    m2m_data[field.name] = [m2m_convert(smart_unicode(pk)) for pk in field_value]
-                
                 # Handle FK fields
-                elif field.rel and isinstance(field.rel, models.ManyToOneRel):
+                if field.rel and isinstance(field.rel, models.ManyToOneRel):
                     field_value = data.get(field.attname, None)
                     if field_value not in (u'', u'None'):
                         values[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
@@ -108,9 +102,6 @@ class ROAHandler(BaseHandler):
                     values[field.name] = field_value
 
         object = self.model.objects.create(**values)
-        if m2m_data:
-            for accessor_name, object_list in m2m_data.items():
-                setattr(object, accessor_name, object_list)
         
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
@@ -125,64 +116,19 @@ class ROAHandler(BaseHandler):
             return rc.NOT_IMPLEMENTED
         
         data = request.PUT.copy()
-        get_data = request.GET.copy()
+        logger.debug('Received: %s as PUT data' % data)
         object = self._get_object(self.model, *args, **kwargs)
-
-        # Add M2M relations
-        if 'm2m_add' in get_data:
-            obj_ids_str = get_data['m2m_ids']
-            obj_ids = [int(obj_id) for obj_id in obj_ids_str]
-            m2m_field = getattr(object, get_data['m2m_field_name'])
-            m2m_field.add(*obj_ids)
-            
-            response = [self.model.objects.get(id=object.id)]
-            #response = [object]
-            logger.debug('Object "%s" added M2M relations with ids %s' % (
-                unicode(object).encode(settings.DEFAULT_CHARSET), 
-                obj_ids_str))
-            return response
         
-        # Remove M2M relations
-        if 'm2m_remove' in get_data:
-            obj_ids_str = get_data['m2m_ids']
-            obj_ids = [int(obj_id) for obj_id in obj_ids_str]
-            m2m_field = getattr(object, get_data['m2m_field_name'])
-            m2m_field.remove(*obj_ids)
-            
-            response = [self.model.objects.get(id=object.id)]
-            #response = [object]
-            logger.debug('Object "%s" removed M2M relations with ids %s' % (
-                unicode(object).encode(settings.DEFAULT_CHARSET), 
-                obj_ids_str))
-            return response
-        
-        # Remove M2M relations
-        if 'm2m_clear' in get_data:
-            m2m_field = getattr(object, get_data['m2m_field_name'])
-            m2m_field.clear()
-            
-            response = [self.model.objects.get(id=object.id)]
-            #response = [object]
-            logger.debug('Object "%s" cleared M2M relations' % (
-                unicode(object).encode(settings.DEFAULT_CHARSET), ))
-            return response
-        
-        m2m_data = {}
         for field in self.model._meta.local_fields:
             field_name = field.name
-                
-            # Handle M2M relations
-            if field.rel and isinstance(field.rel, models.ManyToManyRel):
-                if field_name in data:
-                    field_value = data[field_name]
-                    m2m_convert = field.rel.to._meta.pk.to_python
-                    m2m_data[field.name] = [m2m_convert(smart_unicode(pk)) for pk in field_value]
             
             # Handle FK fields
-            elif field.rel and isinstance(field.rel, models.ManyToOneRel):
+            if field.rel and isinstance(field.rel, models.ManyToOneRel):
                 field_value = data.get(field.attname, None)
-                if field_value is not None:
+                if field_value not in (u'', u'None', None):
                     field_value = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
+                else:
+                    field_value = None
                 setattr(object, field.attname, field_value)
             
             # Handle all other fields
@@ -203,9 +149,22 @@ class ROAHandler(BaseHandler):
                 setattr(object, field_name, field_value)
         
         object.save()
-        if m2m_data:
-            for accessor_name, object_list in m2m_data.items():
-                setattr(object, accessor_name, object_list)
+        
+        for field in self.model._meta.many_to_many:
+            field_value = data.get(field.attname, None)
+            m2m_field = getattr(object, field.attname)
+            if field_value in (u'', u'None', None):
+                m2m_field.clear()
+                logger.debug('M2M relations cleared for "%s"' % (
+                    unicode(object).encode(settings.DEFAULT_CHARSET), ))
+            else:
+                m2m_field.clear() # FIXME: find a clever way?
+                m2m_convert = field.rel.to._meta.pk.to_python
+                obj_ids = [m2m_convert(smart_unicode(pk)) for pk in field_value.split(',')]
+                m2m_field.add(*obj_ids)
+                logger.debug('M2M relations updated for "%s" with ids %s' % (
+                    unicode(object).encode(settings.DEFAULT_CHARSET), 
+                    obj_ids))
         
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
