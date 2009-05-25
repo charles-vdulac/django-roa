@@ -18,7 +18,6 @@ ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 
 class Query(object):
     def __init__(self):
-        self.count = False
         self.order_by = []
         self.filters = {}
         self.excludes = {}
@@ -35,10 +34,6 @@ class Query(object):
     
     def clone(self):
         return self
-    
-    def get_count(self):
-        # Not used anymore
-        self.count = True
     
     def clear_ordering(self):
         self.order_by = []
@@ -180,7 +175,6 @@ class RemoteQuerySet(query.QuerySet):
             obj = res.object
             yield obj
         
-        
     def count(self):
         """
         Returns the number of records as an integer.
@@ -189,12 +183,12 @@ class RemoteQuerySet(query.QuerySet):
         by the server.
         """
         clone = self._clone()
-        clone.query.get_count()
         
         # Instantiation of clone.model is necessary because we can't set
         # a staticmethod for get_resource_url_count and avoid to set it
         # for all model without relying on get_resource_url_list
-        resource = Resource(clone.model().get_resource_url_count())
+        instance = clone.model()
+        resource = Resource(instance.get_resource_url_count())
         
         try:
             parameters = clone.query.parameters
@@ -208,6 +202,57 @@ class RemoteQuerySet(query.QuerySet):
             raise ROAException(e)
         
         return int(response)
+
+    def _get_from_id(self, id):
+        """
+        Returns an object given an id, request directly with the
+        get_resource_url_detail method without filtering on ids
+        (as Django's ORM do).
+        """
+        clone = self._clone()
+        
+        # Instantiation of clone.model is necessary because we can't set
+        # a staticmethod for get_resource_url_detail and avoid to set it
+        # for all model without relying on get_resource_url_list
+        instance = clone.model()
+        instance.id = id
+        resource = Resource(instance.get_resource_url_detail())
+        
+        try:
+            parameters = clone.query.parameters
+            logger.debug(u"""Retrieving : "%s" through %s
+                          with parameters "%s" """ % (
+                clone.model.__name__, 
+                resource.uri, 
+                force_unicode(parameters)))
+            response = resource.get(**parameters)
+        except Exception, e:
+            raise ROAException(e)
+        
+        response = force_unicode(response).encode(settings.DEFAULT_CHARSET)
+        for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
+            response = response.replace(remote_name, local_name)
+        
+        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+        deserializer = serializers.get_deserializer(ROA_FORMAT)
+        if hasattr(deserializer, 'deserialize_object'):
+            result = deserializer(response).deserialize_object(response)
+        else:
+            result = deserializer(response).next()
+        
+        return result.object
+        
+    def get(self, *args, **kwargs):
+        """
+        Performs the query and returns a single object matching the given
+        keyword arguments.
+        """
+        # special case, get(id=X) directly request the resource URL and do not
+        # filter on ids like Django's ORM do.
+        if kwargs.keys() == ['id']:
+            return self._get_from_id(kwargs['id'])
+        else:
+            return super(RemoteQuerySet, self).get(*args, **kwargs)
 
     def latest(self, field_name=None):
         """
