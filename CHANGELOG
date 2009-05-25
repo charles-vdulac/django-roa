@@ -2,8 +2,24 @@
 Django-ROA's changelog
 ======================
 
+Version 1.3, 25 May 2009:
+-------------------------
+
+* First Open-Source release! (BSD license)
+* Handle ManyToMany relations in a RESTful way.
+* Support for unicode.
+* Support of custom de/serialization improved.
+* Addition of a Django command (inspectresources).
+* Add a couple of useful new settings (see documentation).
+* Switch tests to django-piston (0.2.1) and to unittests, use of logging.
+* Update py-restclient to the latest revision (1.3.2).
+* Backward incompatible changes: count is now handled by it's own URL via
+  get_resource_url_count (default is get_resource_url_list/count/ but you can
+  customize it).
+
+
 Version 1.2, 30 April 2009:
-------------------------------
+---------------------------
 
 * Update (Null)Boolean fields, Django doesn't allow anymore null=True.
 * Move documentation to BitBucket's wiki.
