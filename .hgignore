@@ -13,3 +13,5 @@ syntax: glob
 settings.py
 manage.py
 django
+dist/*
+django_roa.egg-info/PKG-INFO
