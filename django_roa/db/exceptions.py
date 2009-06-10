@@ -34,3 +34,6 @@ class ROAException(Exception):
         result.append("Status code: %s" % self.status_code)
         return u" ".join([force_unicode(line) for line in result])
 
+
+class ROANotImplementedYetException(Exception):
+    pass

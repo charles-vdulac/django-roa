@@ -8,7 +8,7 @@ from django.db.models.query_utils import Q
 from django.utils.encoding import force_unicode
 
 from restclient import Resource, ResourceNotFound, RequestFailed
-from django_roa.db.exceptions import ROAException
+from django_roa.db.exceptions import ROAException, ROANotImplementedYetException
 
 logger = logging.getLogger("django_roa")
 
@@ -360,6 +360,37 @@ class RemoteQuerySet(query.QuerySet):
         for field_name in field_names:
             clone.query.order_by.append(field_name)
         return clone
+
+    def extra(self, select=None, where=None, params=None, tables=None,
+              order_by=None, select_params=None):
+        """
+        Only to handle the case of the "cute trick" used in ModelForms (and
+        per extension admin) for unique and date constraints.
+        
+        Example: ``.extra(select={'a': 1}).values('a').order_by()``.
+        
+        http://code.djangoproject.com/browser/django/trunk/django/forms/models.py#L322
+        is an interesting documentation for details.
+        """
+        assert self.query.can_filter(), \
+                "Cannot change a query once a slice has been taken"
+        if select == {'a': 1}:
+            # Totally hackish but we need a fake object to deal with
+            # successive calls to values and order_by based on a count
+            # which is the less expensive action for our implementation.
+            class FakeInt(object):
+                def __init__(self, count):
+                    self.count = count
+                
+                def values(self, *fields):
+                    if fields == ('a',): # double check that it's our case
+                        return self
+                
+                def order_by(self):
+                    return self.count
+            
+            return FakeInt(self.count())
+        raise ROANotImplementedYetException, 'extra is not yet fully implemented.'
 
     #################################
     # METHODS THAT DO M2M RELATIONS #

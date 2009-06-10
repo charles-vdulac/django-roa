@@ -420,6 +420,11 @@ class ROAQuerysetTests(ROATestCase):
         self.assertEqual(repr(RemotePage.objects.all()[1:3]), '[<RemotePage: Another remote page (2)>, <RemotePage: Yet another remote page (3)>]')
         self.assertEqual(repr(RemotePage.objects.all()[0]), '<RemotePage: A remote page (1)>')
         
+    def test_extra(self):
+        self.assertEqual(bool(RemotePage.objects.all().extra(select={'a': 1}).values('a').order_by()), True)
+        RemotePage.objects.all().delete()
+        self.assertEqual(bool(RemotePage.objects.all().extra(select={'a': 1}).values('a').order_by()), False)
+        
     def test_combined(self):
         self.assertEqual(repr(RemotePage.objects.exclude(title__contains='yet').order_by('title', '-id')[:2]), '[<RemotePage: A remote page (1)>, <RemotePage: Another remote page (2)>]')
 
