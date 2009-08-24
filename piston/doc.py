@@ -1,6 +1,11 @@
 import inspect, handler
 
+from piston.handler import typemapper
+from piston.handler import handler_tracker
+
 from django.core.urlresolvers import get_resolver, get_callable, get_script_prefix
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
 def generate_doc(handler_cls):
     """
@@ -32,7 +37,8 @@ class HandlerMethod(object):
             else:
                 yield (arg, None)
         
-    def get_signature(self, parse_optional=True):
+    @property
+    def signature(self, parse_optional=True):
         spec = ""
 
         for argn, argdef in self.iter_args():
@@ -49,18 +55,25 @@ class HandlerMethod(object):
             return spec.replace("=None", "=<optional>")
             
         return spec
-
-    signature = property(get_signature)
         
-    def get_doc(self):
+    @property
+    def doc(self):
         return inspect.getdoc(self.method)
     
-    doc = property(get_doc)
-    
-    def get_name(self):
+    @property
+    def name(self):
         return self.method.__name__
-        
-    name = property(get_name)
+    
+    @property
+    def http_name(self):
+        if self.name == 'read':
+            return 'GET'
+        elif self.name == 'create':
+            return 'POST'
+        elif self.name == 'delete':
+            return 'DELETE'
+        elif self.name == 'update':
+            return 'PUT'
     
     def __repr__(self):
         return "<Method: %s>" % self.name
@@ -74,24 +87,45 @@ class HandlerDocumentation(object):
             met = getattr(self.handler, method)
             stale = inspect.getmodule(met) is handler
 
-            if met and (not stale or include_default):
-                yield HandlerMethod(met, stale)
+            if not self.handler.is_anonymous:
+                if met and (not stale or include_default):
+                    yield HandlerMethod(met, stale)
+            else:
+                if not stale or met.__name__ == "read" \
+                    and 'GET' in self.allowed_methods:
+                    
+                    yield HandlerMethod(met, stale)
+        
+    def get_all_methods(self):
+        return self.get_methods(include_default=True)
         
     @property
     def is_anonymous(self):
-        return False
+        return handler.is_anonymous
 
     def get_model(self):
         return getattr(self, 'model', None)
             
-    def get_doc(self):
+    @property
+    def has_anonymous(self):
+        return self.handler.anonymous
+            
+    @property
+    def anonymous(self):
+        if self.has_anonymous:
+            return HandlerDocumentation(self.handler.anonymous)
+            
+    @property
+    def doc(self):
         return self.handler.__doc__
     
-    doc = property(get_doc)
-
     @property
     def name(self):
         return self.handler.__name__
+    
+    @property
+    def allowed_methods(self):
+        return self.handler.allowed_methods
     
     def get_resource_uri_template(self):
         """
@@ -99,7 +133,6 @@ class HandlerDocumentation(object):
         
         See http://bitworking.org/projects/URI-Templates/
         """
-        
         def _convert(template, params=[]):
             """URI template converter"""
             paths = template % dict([p, "{%s}" % p] for p in params)
@@ -109,6 +142,7 @@ class HandlerDocumentation(object):
             resource_uri = self.handler.resource_uri()
             
             components = [None, [], {}]
+
             for i, value in enumerate(resource_uri):
                 components[i] = value
         
@@ -134,3 +168,24 @@ class HandlerDocumentation(object):
     
     def __repr__(self):
         return u'<Documentation for "%s">' % self.name
+
+def documentation_view(request):
+    """
+    Generic documentation view. Generates documentation
+    from the handlers you've defined.
+    """
+    docs = [ ]
+
+    for handler in handler_tracker: 
+        docs.append(generate_doc(handler))
+
+    def _compare(doc1, doc2): 
+       #handlers and their anonymous counterparts are put next to each other.
+       name1 = doc1.name.replace("Anonymous", "")
+       name2 = doc2.name.replace("Anonymous", "")
+       return cmp(name1, name2)    
+ 
+    docs.sort(_compare)
+       
+    return render_to_response('documentation.html', 
+        { 'docs': docs }, RequestContext(request))

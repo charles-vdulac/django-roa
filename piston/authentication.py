@@ -1,12 +1,18 @@
-from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
-from django.template import loader
-from django.conf import settings
-from django.core.urlresolvers import get_callable
+import binascii
 
 import oauth
-from store import DataStore
+from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.decorators import login_required
+from django.template import loader
+from django.contrib.auth import authenticate
+from django.conf import settings
+from django.core.urlresolvers import get_callable
+from django.core.exceptions import ImproperlyConfigured
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+
+from piston import forms
 
 class NoAuthentication(object):
     """
@@ -16,23 +22,6 @@ class NoAuthentication(object):
     """
     def is_authenticated(self, request):
         return True
-
-def django_auth(username, password):
-    """
-    Basic callback for `HttpBasicAuthentication`
-    which checks the username and password up
-    against Djangos built-in authentication system.
-    
-    On success, returns the `User`, *not* boolean!
-    """
-    try:
-        user = User.objects.get(username=username)
-        if user.check_password(password):
-            return user
-        else:
-            return False
-    except User.DoesNotExist:
-        return False
 
 class HttpBasicAuthentication(object):
     """
@@ -48,7 +37,7 @@ class HttpBasicAuthentication(object):
         This will usually be a `HttpResponse` object with
         some kind of challenge headers and 401 code on it.
     """
-    def __init__(self, auth_func=django_auth, realm='API'):
+    def __init__(self, auth_func=authenticate, realm='API'):
         self.auth_func = auth_func
         self.realm = realm
 
@@ -58,23 +47,51 @@ class HttpBasicAuthentication(object):
         if not auth_string:
             return False
             
-        (authmeth, auth) = auth_string.split(" ", 1)
-        
-        if not authmeth.lower() == 'basic':
+        try:
+            (authmeth, auth) = auth_string.split(" ", 1)
+
+            if not authmeth.lower() == 'basic':
+                return False
+
+            auth = auth.strip().decode('base64')
+            (username, password) = auth.split(':', 1)
+        except (ValueError, binascii.Error):
             return False
-            
-        auth = auth.strip().decode('base64')
-        (username, password) = auth.split(':', 1)
         
-        request.user = self.auth_func(username, password)
+        request.user = self.auth_func(username=username, password=password) \
+            or AnonymousUser()
         
-        return not request.user is False
+        return not request.user in (False, None, AnonymousUser())
         
     def challenge(self):
         resp = HttpResponse("Authorization Required")
         resp['WWW-Authenticate'] = 'Basic realm="%s"' % self.realm
         resp.status_code = 401
         return resp
+
+def load_data_store():
+    '''Load data store for OAuth Consumers, Tokens, Nonces and Resources
+    '''
+    path = getattr(settings, 'OAUTH_DATA_STORE', 'piston.store.DataStore')
+
+    # stolen from django.contrib.auth.load_backend
+    i = path.rfind('.')
+    module, attr = path[:i], path[i+1:]
+
+    try:
+        mod = __import__(module, {}, {}, attr)
+    except ImportError, e:
+        raise ImproperlyConfigured, 'Error importing OAuth data store %s: "%s"' % (module, e)
+
+    try:
+        cls = getattr(mod, attr)
+    except AttributeError:
+        raise ImproperlyConfigured, 'Module %s does not define a "%s" OAuth data store' % (module, attr)
+
+    return cls
+
+# Set the datastore here.
+oauth_datastore = load_data_store()
 
 def initialize_server_request(request):
     """
@@ -86,7 +103,7 @@ def initialize_server_request(request):
         query_string=request.environ.get('QUERY_STRING', ''))
         
     if oauth_request:
-        oauth_server = oauth.OAuthServer(DataStore(oauth_request))
+        oauth_server = oauth.OAuthServer(oauth_datastore(oauth_request))
         oauth_server.add_signature_method(oauth.OAuthSignatureMethod_PLAINTEXT())
         oauth_server.add_signature_method(oauth.OAuthSignatureMethod_HMAC_SHA1())
     else:
@@ -124,7 +141,13 @@ def oauth_request_token(request):
     return response
 
 def oauth_auth_view(request, token, callback, params):
-    return HttpResponse("Just a fake view for auth. %s, %s, %s" % (token, callback, params))
+    form = forms.OAuthAuthenticationForm(initial={
+        'oauth_token': token.key,
+        'oauth_callback': callback,
+        })
+
+    return render_to_response('piston/authorize_token.html',
+            { 'form': form }, RequestContext(request))
 
 @login_required
 def oauth_user_auth(request):
@@ -144,35 +167,34 @@ def oauth_user_auth(request):
         callback = None
         
     if request.method == "GET":
-        request.session['oauth'] = token.key
         params = oauth_request.get_normalized_parameters()
 
-        oauth_view = getattr(settings, 'OAUTH_AUTH_VIEW', 'oauth_auth_view')
-
-        return get_callable(oauth_view)(request, token, callback, params)
-    elif request.method == "POST":
-        if request.session.get('oauth', '') == token.key:
-            request.session['oauth'] = ''
-            
-            try:
-                if int(request.POST.get('authorize_access', '0')):
-                    token = oauth_server.authorize_token(token, request.user)
-                    args = '?'+token.to_string(only_key=True)
-                else:
-                    args = '?error=%s' % 'Access not granted by user.'
-                
-                if not callback:
-                    callback = getattr(settings, 'OAUTH_CALLBACK_VIEW')
-                    return get_callable(callback)(request, token)
-                    
-                response = HttpResponseRedirect(callback+args)
-                    
-            except oauth.OAuthError, err:
-                response = send_oauth_error(err)
+        oauth_view = getattr(settings, 'OAUTH_AUTH_VIEW', None)
+        if oauth_view is None:
+            return oauth_auth_view(request, token, callback, params)
         else:
-            response = HttpResponse('Action not allowed.')
+            return get_callable(oauth_view)(request, token, callback, params)
+    elif request.method == "POST":
+        try:
+            form = forms.OAuthAuthenticationForm(request.POST)
+            if form.is_valid():
+                token = oauth_server.authorize_token(token, request.user)
+                args = '?'+token.to_string(only_key=True)
+            else:
+                args = '?error=%s' % 'Access not granted by user.'
             
-        return response
+            if not callback:
+                callback = getattr(settings, 'OAUTH_CALLBACK_VIEW')
+                return get_callable(callback)(request, token)
+                
+            response = HttpResponseRedirect(callback+args)
+                
+        except oauth.OAuthError, err:
+            response = send_oauth_error(err)
+    else:
+        response = HttpResponse('Action not allowed.')
+            
+    return response
 
 def oauth_access_token(request):
     oauth_server, oauth_request = initialize_server_request(request)
@@ -266,4 +288,4 @@ class OAuthAuthentication(object):
     def validate_token(request, check_timestamp=True, check_nonce=True):
         oauth_server, oauth_request = initialize_server_request(request)
         return oauth_server.verify_request(oauth_request)
-        
+

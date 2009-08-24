@@ -1,6 +1,7 @@
 from __future__ import generators
 
-import types, decimal, types, re, inspect
+import decimal, re, inspect
+import copy
 
 try:
     # yaml isn't standard with python.  It shouldn't be required if it
@@ -8,6 +9,16 @@ try:
     import yaml
 except ImportError:
     yaml = None
+
+# Fallback since `any` isn't in Python <2.5
+try:
+    any
+except NameError:
+    def any(iterable):
+        for element in iterable:
+            if element:
+                return True
+        return False
 
 from django.db.models.query import QuerySet
 from django.db.models import Model, permalink
@@ -58,7 +69,7 @@ class Emitter(object):
         ret = dict()
             
         for field in fields:
-            if field in has:
+            if field in has and callable(field):
                 ret[field] = getattr(data, field)
         
         return ret
@@ -88,10 +99,14 @@ class Emitter(object):
             elif isinstance(thing, Model):
                 ret = _model(thing, fields=fields)
             elif isinstance(thing, HttpResponse):
-                raise HttpStatusCode(thing.content, code=thing.status_code)
-            elif isinstance(thing, types.FunctionType):
+                raise HttpStatusCode(thing)
+            elif inspect.isfunction(thing):
                 if not inspect.getargspec(thing)[0]:
                     ret = _any(thing())
+            elif hasattr(thing, '__emittable__'):
+                f = thing.__emittable__
+                if inspect.ismethod(f) and len(inspect.getargspec(f)[0]) == 1:
+                    ret = _any(f())
             else:
                 ret = smart_unicode(thing, strings_only=True)
 
@@ -157,9 +172,9 @@ class Emitter(object):
                     get_fields = set(fields)
 
                 met_fields = self.method_fields(handler, get_fields)
-
+                
                 for f in data._meta.local_fields:
-                    if f.serialize and f.attname not in met_fields:
+                    if f.serialize and not any([ p in met_fields for p in [ f.attname, f.name ]]):
                         if not f.rel:
                             if f.attname in get_fields:
                                 ret[f.attname] = _any(v(f))
@@ -177,7 +192,6 @@ class Emitter(object):
                 
                 # try to get the remainder of fields
                 for maybe_field in get_fields:
-                    
                     if isinstance(maybe_field, (list, tuple)):
                         model, fields = maybe_field
                         inst = getattr(data, model, None)
@@ -200,11 +214,11 @@ class Emitter(object):
                     else:                    
                         maybe = getattr(data, maybe_field, None)
                         if maybe:
-                            if isinstance(maybe, (int, basestring)):
-                                ret[maybe_field] = _any(maybe)
-                            elif callable(maybe):
+                            if callable(maybe):
                                 if len(inspect.getargspec(maybe)[0]) == 1:
                                     ret[maybe_field] = _any(maybe())
+                            else:
+                                ret[maybe_field] = _any(maybe)
                         else:
                             handler_f = getattr(handler or self.handler, maybe_field, None)
 
@@ -350,7 +364,7 @@ class JSONEmitter(Emitter):
     """
     def render(self, request):
         cb = request.GET.get('callback')
-        seria = simplejson.dumps(self.construct(), cls=DateTimeAwareJSONEncoder)
+        seria = simplejson.dumps(self.construct(), cls=DateTimeAwareJSONEncoder, ensure_ascii=False, indent=4)
 
         # Callback
         if cb:
