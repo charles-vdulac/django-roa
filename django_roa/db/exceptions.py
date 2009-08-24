@@ -14,7 +14,9 @@ class ROAException(Exception):
             self.msg = force_unicode(exception)
 
     def __str__(self):
-        return ROA_DJANGO_ERRORS and self.parse_django_error() or self.msg
+        if ROA_DJANGO_ERRORS and '<body>' in self.msg:
+            return self.parse_django_error()
+        return self.msg
     
     def parse_django_error(self):
         """Extract the summary part of a Django HTML error."""
