@@ -341,6 +341,7 @@ class RestClient(object):
                 size = len(body)
                 body = to_bytestring(body)
             elif isinstance(body, dict):
+                _headers.setdefault('Content-Type', "application/x-www-form-urlencoded; charset=utf-8")
                 body = form_encode(body)
                 size = len(body)
             else:
@@ -516,7 +517,7 @@ def form_encode(obj, charser="utf8"):
     for key, value in obj.items():
         tmp.append("%s=%s" % (url_quote(key), 
                 url_quote(value)))
-    return to_bytestring(";".join(tmp))
+    return to_bytestring("&".join(tmp))
 
 
 
