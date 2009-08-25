@@ -63,3 +63,12 @@ class RemotePageWithRelations(models.Model):
 
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
+
+
+class RemotePageWithNamedRelations(models.Model):
+    title = models.CharField(max_length=50)
+    first_page = models.ForeignKey(RemotePage, blank=True, null=True, related_name="from_first")
+    last_page = models.ForeignKey(RemotePage, blank=True, null=True, related_name="from_last")
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.id)

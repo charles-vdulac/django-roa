@@ -11,7 +11,8 @@ from django_roa_server.handlers import RemotePageHandler, \
     PermissionHandler, GroupHandler, RemotePageCountHandler, \
     RemotePageWithManyFieldsCountHandler, RemotePageWithBooleanFieldsCountHandler, \
     RemotePageWithCustomSlugCountHandler, RemotePageWithOverriddenUrlsCountHandler, \
-    RemotePageWithRelationsHandler
+    RemotePageWithRelationsHandler, RemotePageWithNamedRelationsHandler, \
+    RemotePageWithNamedRelationsCountHandler
 
 remote_pages = Resource(handler=RemotePageHandler)
 remote_pages_count = Resource(handler=RemotePageCountHandler)
@@ -31,6 +32,9 @@ remote_pages_with_overridden_urls_count = Resource(handler=RemotePageWithOverrid
 remote_pages_with_relations = Resource(handler=RemotePageWithRelationsHandler)
 remote_pages_with_relations_count = Resource(handler=RemotePageWithRelationsHandler)
 
+remote_pages_with_named_relations = Resource(handler=RemotePageWithNamedRelationsHandler)
+remote_pages_with_named_relations_count = Resource(handler=RemotePageWithNamedRelationsCountHandler)
+
 users = Resource(handler=UserHandler)
 messages = Resource(handler=MessageHandler)
 permissions = Resource(handler=PermissionHandler)
@@ -44,6 +48,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithcustomslug/count/$', remote_pages_with_custom_slug_count),
     url(r'^django_roa_server/remotepagewithoverriddenurls/count/$', remote_pages_with_overridden_urls_count),
     url(r'^django_roa_server/remotepagewithrelations/count/$', remote_pages_with_relations_count),
+    url(r'^django_roa_server/remotepagewithnamedrelations/count/$', remote_pages_with_named_relations_count),
     
     # Remote pages
     url(r'^django_roa_server/remotepage/?(?P<id>\d+)?/?$', remote_pages),
@@ -52,6 +57,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithcustomslug/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_custom_slug),
     url(r'^django_roa_server/remotepagewithoverriddenurls/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_overridden_urls),
     url(r'^django_roa_server/remotepagewithrelations/?(?P<id>\d+)?/?$', remote_pages_with_relations),
+    url(r'^django_roa_server/remotepagewithnamedrelations/?(?P<id>\d+)?/?$', remote_pages_with_named_relations),
     
     # Auth application
     url(r'^auth/user/?(?P<id>\d+)?/?$', users),

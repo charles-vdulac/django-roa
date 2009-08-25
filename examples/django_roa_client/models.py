@@ -103,3 +103,16 @@ class RemotePageWithRelations(Model):
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithrelations/'
+
+
+class RemotePageWithNamedRelations(Model):
+    title = models.CharField(max_length=50)
+    first_page = models.ForeignKey(RemotePage, blank=True, null=True, related_name="from_first")
+    last_page = models.ForeignKey(RemotePage, blank=True, null=True, related_name="from_last")
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.id)
+    
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/django_roa_server/remotepagewithnamedrelations/'

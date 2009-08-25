@@ -14,7 +14,8 @@ from piston.utils import rc
 
 from django_roa_server.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithCustomSlug, \
-    RemotePageWithOverriddenUrls, RemotePageWithRelations
+    RemotePageWithOverriddenUrls, RemotePageWithRelations, \
+    RemotePageWithNamedRelations
 
 logger = logging.getLogger("django_roa_server")
 
@@ -280,6 +281,13 @@ class RemotePageWithRelationsHandler(ROAHandler):
 
 class RemotePageWithRelationsCountHandler(ROACountHandler):
     model = RemotePageWithRelations
+
+    
+class RemotePageWithNamedRelationsHandler(ROAHandler):
+    model = RemotePageWithNamedRelations
+
+class RemotePageWithNamedRelationsCountHandler(ROACountHandler):
+    model = RemotePageWithNamedRelations
 
     
 class UserHandler(ROAHandler):

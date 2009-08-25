@@ -40,7 +40,8 @@ from restclient import RestClient
 from django_roa.remoteauth.models import User, Message, Group, Permission
 from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithRelations, \
-    RemotePageWithCustomSlug, RemotePageWithOverriddenUrls
+    RemotePageWithCustomSlug, RemotePageWithOverriddenUrls, \
+    RemotePageWithNamedRelations
 from django_roa_client.forms import TestForm, RemotePageForm
 
 class ROATestCase(TestCase):
@@ -341,6 +342,7 @@ class ROARelationsTests(ROATestCase):
         super(ROARelationsTests, self).tearDown()
         RemotePageWithManyFields.objects.all().delete()
         RemotePageWithRelations.objects.all().delete()
+        RemotePageWithNamedRelations.objects.all().delete()
 
     def test_empty_relation(self):
         relations_page = RemotePageWithRelations.objects.create()
@@ -360,6 +362,7 @@ class ROARelationsTests(ROATestCase):
         self.assertEqual(repr(relations_page.remote_page), '<RemotePage: A remote page (1)>')
         relations_page = RemotePageWithRelations.objects.get(id=relations_page.id)
         self.assertEqual(repr(relations_page.remote_page), '<RemotePage: A remote page (1)>')
+        self.assertEqual(repr(remote_page.remotepagewithrelations_set.all()), '[<RemotePageWithRelations:  (1)>]')
         relations_page.remote_page = another_remote_page
         relations_page.save()
         relations_page = RemotePageWithRelations.objects.get(id=relations_page.id)
@@ -388,6 +391,24 @@ class ROARelationsTests(ROATestCase):
         another_remote_page.delete()
         remote_page.delete()
         
+    def test_named_relation(self):
+        remote_page = RemotePage.objects.create(title=u'A remote page')
+        another_remote_page = RemotePage.objects.create(title=u'Another remote page')
+        named_relations_page = RemotePageWithNamedRelations.objects.create(first_page=remote_page, 
+                                                                           last_page=another_remote_page)
+        self.assertEqual(repr(named_relations_page.first_page), '<RemotePage: A remote page (1)>')
+        named_relations_page = RemotePageWithNamedRelations.objects.get(id=named_relations_page.id)
+        self.assertEqual(repr(named_relations_page.first_page), '<RemotePage: A remote page (1)>')
+        self.assertEqual(repr(remote_page.from_first.all()), '[<RemotePageWithNamedRelations:  (1)>]')
+        self.assertEqual(repr(another_remote_page.from_last.all()), '[<RemotePageWithNamedRelations:  (1)>]')
+        named_relations_page.first_page = another_remote_page
+        named_relations_page.save()
+        named_relations_page = RemotePageWithNamedRelations.objects.get(id=named_relations_page.id)
+        self.assertEqual(repr(named_relations_page.first_page), '<RemotePage: Another remote page (2)>')
+        named_relations_page.delete()
+        another_remote_page.delete()
+        remote_page.delete()
+
 
 class ROAQuerysetTests(ROATestCase):
     
