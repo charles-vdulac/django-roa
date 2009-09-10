@@ -111,11 +111,17 @@ class ROABaseTests(ROATestCase):
 class ROAUnicodeTests(ROATestCase):
     
     def test_remotepage(self):
-        emilie = RemotePage.objects.create(title=u"\xc9milie")
+        emilie = RemotePage.objects.create(title=u"Émilie")
         self.assertEqual(emilie.title, u'Émilie')
-        emilie = RemotePage.objects.get(title=u"\xc9milie")
+        emilie = RemotePage.objects.get(title=u"Émilie")
         self.assertEqual(emilie.title, u'Émilie')
-        emilie.delete()
+        amelie = emilie
+        amelie.title = u'Amélie'
+        amelie.save()
+        self.assertEqual(amelie.title, u'Amélie')
+        amelie = RemotePage.objects.get(title=u"Amélie")
+        self.assertEqual(amelie.title, u'Amélie')
+        amelie.delete()
 
 
 class ROAFieldsTests(ROATestCase):
