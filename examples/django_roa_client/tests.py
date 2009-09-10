@@ -41,7 +41,7 @@ from django_roa.remoteauth.models import User, Message, Group, Permission
 from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithRelations, \
     RemotePageWithCustomSlug, RemotePageWithOverriddenUrls, \
-    RemotePageWithNamedRelations
+    RemotePageWithNamedRelations, RemotePageWithProxy
 from django_roa_client.forms import TestForm, RemotePageForm
 
 class ROATestCase(TestCase):
@@ -407,6 +407,21 @@ class ROARelationsTests(ROATestCase):
         self.assertEqual(repr(named_relations_page.first_page), '<RemotePage: Another remote page (2)>')
         named_relations_page.delete()
         another_remote_page.delete()
+        remote_page.delete()
+
+    def test_proxy_relation(self):
+        remote_page = RemotePage.objects.create(title=u'A remote page')
+        proxy_remote_page = RemotePageWithProxy.objects.create(title=u'A proxy remote page')
+        self.assertEqual(repr(remote_page), '<RemotePage: A remote page (1)>')
+        self.assertEqual(repr(proxy_remote_page), '<RemotePageWithProxy: A proxy remote page (2)>')
+        self.assertEqual(repr(RemotePage.objects.all()), '[<RemotePage: A remote page (1)>, <RemotePage: A proxy remote page (2)>]')
+        self.assertEqual(repr(RemotePageWithProxy.objects.all()), '[<RemotePage: A remote page (1)>, <RemotePage: A proxy remote page (2)>]')
+        proxy_remote_page.title = u'A modified proxy remote page'
+        proxy_remote_page.save()
+        proxy_remote_page = RemotePageWithProxy.objects.get(id=2)
+        self.assertEqual(repr(proxy_remote_page), '<RemotePage: A modified proxy remote page (2)>')
+        self.assertEqual(repr(RemotePage.objects.all()[1]), '<RemotePage: A modified proxy remote page (2)>')
+        proxy_remote_page.delete()
         remote_page.delete()
 
 

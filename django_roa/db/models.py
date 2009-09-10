@@ -242,105 +242,130 @@ class ROAModel(models.Model):
     def get_resource_url_detail(self):
         return u"%s%s/" % (self.get_resource_url_list(), self.pk)
     
-    def save_base(self, raw=False, cls=None, force_insert=False,
-            force_update=False):
+    def save_base(self, raw=False, cls=None, origin=None,
+            force_insert=False, force_update=False):
+        """
+        Does the heavy-lifting involved in saving. Subclasses shouldn't need to
+        override this method. It's separate from save() in order to hide the
+        need for overrides of save() to pass around internal-only parameters
+        ('raw', 'cls', and 'origin').
+        """
         assert not (force_insert and force_update)
-        if not cls:
+        if cls is None:
             cls = self.__class__
-            meta = self._meta
-            signal = True
-            signals.pre_save.send(sender=self.__class__, instance=self, raw=raw)
+            meta = cls._meta
+            if not meta.proxy:
+                origin = cls
         else:
             meta = cls._meta
-            signal = False
-        
+
+        if origin:
+            signals.pre_save.send(sender=origin, instance=self, raw=raw)
+
         # If we are in a raw save, save the object exactly as presented.
         # That means that we don't try to be smart about saving attributes
         # that might have come from the parent class - we just save the
         # attributes we have been given to the class we have been given.
-        if not raw:
+        # We also go through this process to defer the save of proxy objects
+        # to their actual underlying model.
+        if not raw or meta.proxy:
+            if meta.proxy:
+                org = cls
+            else:
+                org = None
             for parent, field in meta.parents.items():
                 # At this point, parent's primary key field may be unknown
                 # (for example, from administration form which doesn't fill
                 # this field). If so, fill it.
-                if getattr(self, parent._meta.pk.attname) is None and getattr(self, field.attname) is not None:
+                if field and getattr(self, parent._meta.pk.attname) is None and getattr(self, field.attname) is not None:
                     setattr(self, parent._meta.pk.attname, getattr(self, field.attname))
-                
-                #self.save_base(raw, parent)
-                setattr(self, field.attname, self._get_pk_val(parent._meta))
 
-        pk_val = self._get_pk_val(meta)
-        pk_set = pk_val is not None
+                self.save_base(cls=parent, origin=org)
 
-        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
-        get_args = {'format': ROA_FORMAT}
-        
-        serializer = serializers.get_serializer(ROA_FORMAT)
-        if hasattr(serializer, 'serialize_object'):
-            payload = serializer().serialize_object(self)
-        else:
-            payload = {}
-            for field in meta.local_fields:
-                
-                # Handle FK fields
-                if isinstance(field, models.ForeignKey):
-                    field_attr = getattr(self, field.name)
-                    if field_attr is None:
-                        payload[field.attname] = None
-                    else:
-                        payload[field.attname] = field_attr.id
-                                
-                # Handle all other fields
-                else:
-                    payload[field.name] = field.value_to_string(self)
+                if field:
+                    setattr(self, field.attname, self._get_pk_val(parent._meta))
+            if meta.proxy:
+                return
+
+        if not meta.proxy:
+            pk_val = self._get_pk_val(meta)
+            pk_set = pk_val is not None
             
-            # Handle M2M relations in case of update
-            if force_update or pk_set and not self.id is None:
-                for field in meta.many_to_many:
-                    # First try to get ids from var set in query's add/remove/clear
-                    if hasattr(self, '%s_updated_ids' % field.attname):
-                        field_ids = getattr(self, '%s_updated_ids' % field.attname)
+            ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+            get_args = {'format': ROA_FORMAT}
+            
+            serializer = serializers.get_serializer(ROA_FORMAT)
+            if hasattr(serializer, 'serialize_object'):
+                payload = serializer().serialize_object(self)
+            else:
+                payload = {}
+                for field in meta.local_fields:
+                    
+                    # Handle FK fields
+                    if isinstance(field, models.ForeignKey):
+                        field_attr = getattr(self, field.name)
+                        if field_attr is None:
+                            payload[field.attname] = None
+                        else:
+                            payload[field.attname] = field_attr.id
+                                    
+                    # Handle all other fields
                     else:
-                        field_ids = [obj.id for obj in field.value_from_object(self)]
-                    payload[field.attname] = ','.join(smart_unicode(id) for id in field_ids)
+                        payload[field.name] = field.value_to_string(self)
+                
+                # Handle M2M relations in case of update
+                if force_update or pk_set and not self.id is None:
+                    for field in meta.many_to_many:
+                        # First try to get ids from var set in query's add/remove/clear
+                        if hasattr(self, '%s_updated_ids' % field.attname):
+                            field_ids = getattr(self, '%s_updated_ids' % field.attname)
+                        else:
+                            field_ids = [obj.id for obj in field.value_from_object(self)]
+                        payload[field.attname] = ','.join(smart_unicode(id) for id in field_ids)
+            
+            if force_update or pk_set and not self.id is None:
+                record_exists = True
+                resource = Resource(self.get_resource_url_detail())
+                try:
+                    logger.debug(u"""Modifying : "%s" through %s
+                                  with payload "%s" and GET args "%s" """ % (
+                                  force_unicode(self), 
+                                  force_unicode(resource.uri),
+                                  force_unicode(payload), 
+                                  force_unicode(get_args)))
+                    response = resource.put(payload=payload, **get_args)
+                except RequestFailed, e:
+                    raise ROAException(e)
+            else:
+                record_exists = False
+                resource = Resource(self.get_resource_url_list())
+                try:
+                    logger.debug(u"""Creating  : "%s" through %s
+                                  with payload "%s" and GET args "%s" """ % (
+                                  force_unicode(self), 
+                                  force_unicode(resource.uri),
+                                  force_unicode(payload), 
+                                  force_unicode(get_args)))
+                    response = resource.post(payload=payload, **get_args)
+                except RequestFailed, e:
+                    raise ROAException(e)
+            
+            for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
+                response = response.replace(remote_name, local_name)
+            
+            response = force_unicode(response).encode(settings.DEFAULT_CHARSET)
+            deserializer = serializers.get_deserializer(ROA_FORMAT)
+            if hasattr(deserializer, 'deserialize_object'):
+                result = deserializer(response).deserialize_object(response)
+            else:
+                result = deserializer(response).next()
+            
+            self.id = int(result.object.id)
+            self = result.object
         
-        if force_update or pk_set and not self.id is None:
-            resource = Resource(self.get_resource_url_detail())
-            try:
-                logger.debug(u"""Modifying : "%s" through %s
-                              with payload "%s" and GET args "%s" """ % (
-                              force_unicode(self), 
-                              force_unicode(resource.uri),
-                              force_unicode(payload), 
-                              force_unicode(get_args)))
-                response = resource.put(payload=payload, **get_args)
-            except RequestFailed, e:
-                raise ROAException(e)
-        else:
-            resource = Resource(self.get_resource_url_list())
-            try:
-                logger.debug(u"""Creating  : "%s" through %s
-                              with payload "%s" and GET args "%s" """ % (
-                              force_unicode(self), 
-                              force_unicode(resource.uri),
-                              force_unicode(payload), 
-                              force_unicode(get_args)))
-                response = resource.post(payload=payload, **get_args)
-            except RequestFailed, e:
-                raise ROAException(e)
-        
-        for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
-            response = response.replace(remote_name, local_name)
-
-        response = force_unicode(response).encode(settings.DEFAULT_CHARSET)
-        deserializer = serializers.get_deserializer(ROA_FORMAT)
-        if hasattr(deserializer, 'deserialize_object'):
-            result = deserializer(response).deserialize_object(response)
-        else:
-            result = deserializer(response).next()
-
-        self.id = int(result.object.id)
-        self = result.object
+        if origin:
+            signals.post_save.send(sender=origin, instance=self,
+                created=(not record_exists), raw=raw)
 
     save_base.alters_data = True
 

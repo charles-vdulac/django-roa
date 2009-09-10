@@ -49,6 +49,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithoverriddenurls/count/$', remote_pages_with_overridden_urls_count),
     url(r'^django_roa_server/remotepagewithrelations/count/$', remote_pages_with_relations_count),
     url(r'^django_roa_server/remotepagewithnamedrelations/count/$', remote_pages_with_named_relations_count),
+    url(r'^django_roa_server/remotepagewithproxy/count/$', remote_pages_count),
     
     # Remote pages
     url(r'^django_roa_server/remotepage/?(?P<id>\d+)?/?$', remote_pages),
@@ -58,6 +59,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithoverriddenurls/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_overridden_urls),
     url(r'^django_roa_server/remotepagewithrelations/?(?P<id>\d+)?/?$', remote_pages_with_relations),
     url(r'^django_roa_server/remotepagewithnamedrelations/?(?P<id>\d+)?/?$', remote_pages_with_named_relations),
+    url(r'^django_roa_server/remotepagewithproxy/?(?P<id>\d+)?/?$', remote_pages),
     
     # Auth application
     url(r'^auth/user/?(?P<id>\d+)?/?$', users),
