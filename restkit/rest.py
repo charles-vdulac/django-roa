@@ -41,12 +41,12 @@
 
 
 """
-restclient.rest
+restkit.rest
 ~~~~~~~~~~~~~~~
 
 This module provide a common interface for all HTTP equest. 
 
-    >>> from restclient import Resource
+    >>> from restkit import Resource
     >>> res = Resource('http://friendpaste.com')
     >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'})
     u'{"snippet": "hi!", "title": "", "id": "5rOqE9XTz7lccLgZoQS4IP", "language": "text", "revision": "386233396230"}'
@@ -55,9 +55,14 @@ This module provide a common interface for all HTTP equest.
 """
 
 import cgi
+import httplib
 import mimetypes
+import uuid
 import os
+import re
+import socket
 import StringIO
+import time
 import types
 import urllib
 
@@ -66,11 +71,15 @@ try:
 except ImportError:
     chardet = False
 
-from restclient.errors import *
-from restclient.transport import getDefaultHTTPTransport, HTTPTransportBase
-from restclient.utils import to_bytestring
+from restkit.errors import *
+from restkit.httpc import HttpClient, ResponseStream
+from restkit.utils import to_bytestring
 
-__all__ = ['Resource', 'RestClient', 'url_quote', 'url_encode']
+MIME_BOUNDARY = 'END_OF_PART'
+
+
+__all__ = ['Resource', 'RestClient', 'url_quote', 'url_encode', 
+'MultipartForm', 'multipart_form_encode', 'form_encode']
 
 __docformat__ = 'restructuredtext en'
 
@@ -79,34 +88,53 @@ class Resource(object):
     including authentication. 
 
     It can use pycurl, urllib2, httplib2 or any interface over
-    `restclient.http.HTTPClient`.
+    `restkit.http.HTTPClient`.
 
     """
-    def __init__(self, uri, transport=None, headers=None):
+    def __init__(self, uri, transport=None, headers=None, follow_redirect=True, 
+            force_follow_redirect=False, use_proxy=False, min_size=0, 
+            max_size=4, pool_class=None):
         """Constructor for a `Resource` object.
 
         Resource represent an HTTP resource.
 
         :param uri: str, full uri to the server.
         :param transport: any http instance of object based on 
-                `restclient.http.HTTPClient`. By default it will use 
+                `restkit.http.HTTPClient`. By default it will use 
                 a client based on `pycurl <http://pycurl.sourceforge.net/>`_ if 
                 installed or urllib2. You could also use 
-                `restclient.http.HTTPLib2HTTPClient`,a client based on 
+                `restkit.http.HTTPLib2HTTPClient`,a client based on 
                 `Httplib2 <http://code.google.com/p/httplib2/>`_ or make your
                 own depending of the option you need to access to the serve
                 (authentification, proxy, ....).
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
+        :param follow_redirect: boolean, default is True, allow the client to follow redirection
+        :param force_follow_redirect: boolean, default is False, force redirection on POST/PUT
+        :param use_proxy: boolean, default is False, if you want to use a proxy
+        :param min_size: minimum number of connections in the pool
+        :param max_size: maximum number of connection in the pool
+        :param pool_class: custom pool class
         """
 
-        self.client = RestClient(transport, headers=headers)
+        self.client = RestClient(transport, headers=headers, follow_redirect=follow_redirect,
+            force_follow_redirect=force_follow_redirect, use_proxy=use_proxy,
+            min_size=min_size, max_size=max_size, pool_class=pool_class)
         self.uri = uri
         self.transport = self.client.transport 
+        self.follow_redirect = follow_redirect
+        self.force_follow_redirect = force_follow_redirect
+        self.use_proxy = use_proxy
+        self.min_size = min_size
+        self.max_size = max_size
+        self.pool_class = pool_class
         self._headers = headers
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, self.uri)
+        
+    def add_authorization(self, obj_auth):
+        self.client.transport.add_authorization(obj_auth)
 
     def clone(self):
         """if you want to add a path to resource uri, you can do:
@@ -116,7 +144,10 @@ class Resource(object):
             resr2 = res.clone()
         
         """
-        obj = self.__class__(self.uri, transport=self.transport)
+        obj = self.__class__(self.uri, transport=self.transport, headers=self._headers,
+                follow_redirect=self.follow_redirect, force_follow_redirect=self.force_follow_redirect, 
+                use_proxy=self.use_proxy, min_size=self.min_size, max_size=self.max_size, 
+                pool_class=self.pool_class)
         return obj
    
     def __call__(self, path):
@@ -128,10 +159,13 @@ class Resource(object):
         """
 
         return type(self)(self.client.make_uri(self.uri, path),
-                transport=self.transport)
+                transport=self.transport, headers=self._headers,
+                follow_redirect=self.follow_redirect, force_follow_redirect=self.force_follow_redirect, 
+                use_proxy=self.use_proxy, min_size=self.min_size, max_size=self.max_size)
 
     
-    def get(self, path=None, headers=None, **params):
+    def get(self, path=None, headers=None, _stream=False, _stream_size=16384,
+            **params):
         """ HTTP GET         
         
         :param path: string  additionnal path to the uri
@@ -139,7 +173,8 @@ class Resource(object):
             be added to HTTP request.
         :param params: Optionnal parameterss added to the request.
         """
-        return self.request("GET", path=path, headers=headers, **params)
+        return self.request("GET", path=path, headers=headers, 
+            _stream=_stream, _stream_size=_stream_size, **params)
 
     def delete(self, path=None, headers=None, **params):
         """ HTTP DELETE
@@ -155,7 +190,8 @@ class Resource(object):
         """
         return self.request("HEAD", path=path, headers=headers, **params)
 
-    def post(self, path=None, payload=None, headers=None, **params):
+    def post(self, path=None, payload=None, headers=None, _stream=False, 
+            _stream_size=16384,**params):
         """ HTTP POST
 
         :param payload: string passed to the body of the request
@@ -165,31 +201,38 @@ class Resource(object):
         :param params: Optionnal parameterss added to the request
         """
 
-        return self.request("POST", path=path, payload=payload, headers=headers, **params)
+        return self.request("POST", path=path, payload=payload, headers=headers,
+            _stream=_stream, _stream_size=_stream_size, **params)
 
-    def put(self, path=None, payload=None, headers=None, **params):
+    def put(self, path=None, payload=None, headers=None, _stream=False, 
+            _stream_size=16384, **params):
         """ HTTP PUT
 
         see POST for params description.
         """
-        return self.request("PUT", path=path, payload=payload, headers=headers, **params)
+        return self.request("PUT", path=path, payload=payload, headers=headers, 
+            _stream=_stream, _stream_size=_stream_size, **params)
 
-    def request(self, method, path=None, payload=None, headers=None, **params):
+    def request(self, method, path=None, payload=None, headers=None, 
+            _stream=False, _stream_size=16384, **params):
         """ HTTP request
 
         This method may be the only one you want to override when
-        subclassing `restclient.rest.Resource`.
+        subclassing `restkit.rest.Resource`.
         
         :param payload: string or File object passed to the body of the request
         :param path: string  additionnal path to the uri
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
+        :param _stream: boolean, response return a ResponseStream object
+        :param _stream_size: int, size in bytes of response stream block
         :param params: Optionnal parameterss added to the request
         """
         _headers = self._headers or {}
         _headers.update(headers or {})
         return self.client.request(method, self.uri, path=path,
-                body=payload, headers=_headers, **params)
+                body=payload, headers=_headers, _stream=_stream, 
+                _stream_size=_stream_size, **params)
 
     def get_response(self):
         return self.client.get_response()
@@ -221,43 +264,66 @@ class RestClient(object):
     encode_keys = True
     safe = "/:"
 
-    def __init__(self, transport=None, headers=None):
+    def __init__(self, transport=None, headers=None, follow_redirect=True, 
+            force_follow_redirect=False, use_proxy=False, min_size=0, max_size=4, 
+            pool_class=None):
         """Constructor for a `RestClient` object.
 
         RestClient represent an HTTP client.
 
         :param transport: any http instance of object based on 
-                `restclient.transport.HTTPTransportBase`. By default it will use 
+                `restkit.transport.HTTPTransportBase`. By default it will use 
                 a client based on `pycurl <http://pycurl.sourceforge.net/>`_ if 
-                installed or `restclient.transport.HTTPLib2Transport`,a client based on 
+                installed or `restkit.transport.HTTPLib2Transport`,a client based on 
                 `Httplib2 <http://code.google.com/p/httplib2/>`_ or make your
                 own depending of the option you need to access to the serve
                 (authentification, proxy, ....).
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
+        :param follow_redirect: boolean, default is True, allow the client to follow redirection
+        :param force_follow_redirect: boolean, default is False, force redirection on POST/PUT
+        :param use_proxy: boolean, False, if you want to use a proxy
+        :param min_size: minimum number of connections in the pool
+        :param max_size: maximum number of connection in the pool
+        :param pool_class: custom Pool class
         """ 
 
         if transport is None:
-            transport = getDefaultHTTPTransport()
+            transport = HttpClient(follow_redirect=follow_redirect, force_follow_redirect=force_follow_redirect, 
+                            use_proxy=use_proxy, min_size=min_size, max_size=max_size, pool_class=pool_class)
 
         self.transport = transport
+        self.follow_redirect=follow_redirect
+        self.force_follow_redirect = force_follow_redirect
+        self.use_proxy = use_proxy
+        self.min_size = min_size
+        self.max_size = max_size
+        self.pool_class = pool_class
 
         self.status = None
         self.response = None
         self._headers = headers
-
-
-    def get(self, uri, path=None, headers=None, **params):
+        self._body_parts = []
+        
+        
+    def add_authorization(self, obj_auth):
+        self.transport.add_authorization(obj_auth)
+        
+    def get(self, uri, path=None, headers=None, _stream=False,
+            _stream_size=16384, **params):
         """ HTTP GET         
         
         :param uri: str, uri on which you make the request
         :param path: string  additionnal path to the uri
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
+        :param _stream: boolean, response return a ResponseStream object
+        :param _stream_size: int, size in bytes of response stream block
         :param params: Optionnal parameterss added to the request.
         """
 
-        return self.request('GET', uri, path=path, headers=headers, **params)
+        return self.request('GET', uri, path=path, headers=headers, 
+            _stream=_stream, _stream_size=_stream_size, **params)
 
     def head(self, uri, path=None, headers=None, **params):
         """ HTTP HEAD
@@ -273,7 +339,8 @@ class RestClient(object):
         """
         return self.request('DELETE', uri, path=path, headers=headers, **params)
 
-    def post(self, uri, path=None, body=None, headers=None, **params):
+    def post(self, uri, path=None, body=None, headers=None, _stream=False,
+            _stream_size=16384, **params):
         """ HTTP POST
 
         :param uri: str, uri on which you make the request
@@ -281,26 +348,32 @@ class RestClient(object):
         :param path: string  additionnal path to the uri
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
+        :param _stream: boolean, response return a ResponseStream object
+        :param _stream_size: int, size in bytes of response stream block
         :param params: Optionnal parameterss added to the request
         """
-        return self.request("POST", uri, path=path, body=body, headers=headers, **params)
+        return self.request("POST", uri, path=path, body=body, headers=headers, 
+            _stream=_stream, _stream_size=_stream_size, **params)
 
-    def put(self, uri, path=None, body=None, headers=None, **params):
+    def put(self, uri, path=None, body=None, headers=None, _stream=False, 
+            _stream_size=16384, **params):
         """ HTTP PUT
 
         see POST for params description.
         """
 
-        return self.request('PUT', uri, path=path, body=body, headers=headers, **params)
+        return self.request('PUT', uri, path=path, body=body, headers=headers, 
+            _stream=_stream, _stream_size=_stream_size, **params)
 
-    def request(self, method, uri, path=None, body=None, headers=None, **params):
+    def request(self, method, uri, path=None, body=None, headers=None, _stream=False, 
+        _stream_size=16384, **params):
         """ Perform HTTP call support GET, HEAD, POST, PUT and DELETE.
         
         Usage example, get friendpaste page :
 
         .. code-block:: python
 
-            from restclient import RestClient
+            from restkit import RestClient
             client = RestClient()
             page = resource.request('GET', 'http://friendpaste.com')
 
@@ -308,7 +381,7 @@ class RestClient(object):
 
         .. code-block:: python
 
-            from restclient import RestClient
+            from restkit import RestClient
             client = RestClient()
             client.request('GET', 'http://friendpaste.com/5rOqE9XTz7lccLgZoQS4IP'),
                 headers={'Accept': 'application/json'})
@@ -319,6 +392,8 @@ class RestClient(object):
         :param data: tring or File object.
         :param headers: dict, optionnal headers that will
             be added to HTTP request.
+        :param _stream: boolean, response return a ResponseStream object
+        :param _stream_size: int, size in bytes of response stream block
         :param params: Optionnal parameterss added to the request.
         
         :return: str.
@@ -328,9 +403,9 @@ class RestClient(object):
         _headers = self._headers or {}
         _headers.update(headers or {})
         
-        is_unicode = True
-        
-        if body and body is not None and 'Content-Length' not in headers:
+        self._body_parts = []
+        size = None
+        if body is not None:
             if isinstance(body, file):
                 try:
                     body.flush()
@@ -338,30 +413,40 @@ class RestClient(object):
                     pass
                 size = int(os.fstat(body.fileno())[6])
             elif isinstance(body, types.StringTypes):
-                size = len(body)
                 body = to_bytestring(body)
-            elif isinstance(body, dict):
-                _headers.setdefault('Content-Type', "application/x-www-form-urlencoded; charset=utf-8")
-                body = form_encode(body)
                 size = len(body)
-            else:
+            elif isinstance(body, dict):
+                content_type = headers.get('Content-Type')
+                if content_type is not None and content_type.startswith("multipart/form-data"):
+                    type_, opts = cgi.parse_header(content_type)
+                    boundary = opts.get('boundary', uuid.uuid4().hex)
+                    body, _headers = multipart_form_encode(body, _headers, boundary)
+                else:
+                    _headers['Content-Type'] = "application/x-www-form-urlencoded; charset=utf-8"
+                    body = form_encode(body)
+                    size = len(body)
+            elif isinstance(body, MultipartForm):
+                headers['Content-Type'] = "multipart/form-data; boundary=%s" % body.boundary
+                headers['Content-Length'] = str(body.get_size())
+                
+            if 'Content-Length' not in _headers and size is not None:
+                _headers['Content-Length'] = size
+            elif 'Content-Length' not in _headers:
                 raise RequestError('Unable to calculate '
                     'the length of the data parameter. Specify a value for '
                     'Content-Length')
-            _headers['Content-Length'] = size
             
             if 'Content-Type' not in headers:
-                type = None
+                type_ = None
                 if hasattr(body, 'name'):
-                    type = mimetypes.guess_type(body.name)[0]
-                _headers['Content-Type'] = type and type or 'application/octet-stream'
+                    type_ = mimetypes.guess_type(body.name)[0]
+                _headers['Content-Type'] = type_ and type_ or 'application/octet-stream'
                 
-        try:
-            resp, data = self.transport.request(self.make_uri(uri, path, **params), 
-                method=method, body=body, headers=_headers)
-        except TransportError, e:
-            raise RequestError(str(e))
-
+                
+        
+        resp, data = self.transport.request(self.make_uri(uri, path, **params), 
+                        method=method, body=body, headers=_headers, 
+                        stream=_stream, stream_size=_stream_size)
         self.status  = status_code = resp.status
         self.response = resp
         
@@ -376,6 +461,9 @@ class RestClient(object):
                 raise RequestFailed(data, http_code=status_code,
                     response=resp)
 
+        if isinstance(data, ResponseStream):
+            return data
+            
         # determine character encoding
         true_encoding, http_encoding, xml_encoding, sniffed_xml_encoding, \
         acceptable_content_type = _getCharacterEncoding(resp, data)
@@ -518,6 +606,124 @@ def form_encode(obj, charser="utf8"):
         tmp.append("%s=%s" % (url_quote(key), 
                 url_quote(value)))
     return to_bytestring("&".join(tmp))
+
+
+class BoundaryItem(object):
+    def __init__(self, name, value, fname=None, filetype=None, filesize=None):
+        self.name = url_quote(name)
+        if value is not None and not hasattr(value, 'read'):
+            value = url_quote(value)
+            self.size = len(value)
+        self.value = value
+        if fname is not None:
+            if isinstance(fname, unicode):
+                fname = fname.encode("utf-8").encode("string_escape").replace('"', '\\"')
+            else:
+                fname = fname.encode("string_escape").replace('"', '\\"')
+        self.fname = fname
+        if filetype is not None:
+            filetype = to_bytestring(filetype)
+        self.filetype = filetype
+        
+        if isinstance(value, file) and filesize is None:
+            try:
+                value.flush()
+            except IOError:
+                pass
+            self.size = int(os.fstat(value.fileno())[6])
+            
+    def encode_hdr(self, boundary):
+        """Returns the header of the encoding of this parameter"""
+        boundary = url_quote(boundary)
+        headers = ["--%s" % boundary]
+        if self.fname:
+            disposition = 'form-data; name="%s"; filename="%s"' % (self.name,
+                    self.fname)
+        else:
+            disposition = 'form-data; name="%s"' % self.name
+        headers.append("Content-Disposition: %s" % disposition)
+        if self.filetype:
+            filetype = self.filetype
+        else:
+            filetype = "text/plain; charset=utf-8"
+        headers.append("Content-Type: %s" % filetype)
+        headers.append("Content-Length: %i" % self.size)
+        headers.append("")
+        headers.append("")
+        return "\r\n".join(headers)
+
+    def encode(self, boundary):
+        """Returns the string encoding of this parameter"""
+        value = self.value
+        if re.search("^--%s$" % re.escape(boundary), value, re.M):
+            raise ValueError("boundary found in encoded string")
+
+        return "%s%s\r\n" % (self.encode_hdr(boundary), value)
+        
+    def iter_encode(self, boundary, blocksize=16384):
+        if not hasattr(self.value, "read"):
+            yield self.encode(boundary)
+        else:
+            yield self.encode_hdr(boundary)
+            yield self.encode(boundary)
+            while True:
+                block = self.value.read(blocksize)
+                if not block:
+                    yield "\r\n"
+                    break
+                yield block
+                
+                
+class MultipartForm(object):
+    
+    def __init__(self, params, boundary, headers):
+        self.boundary = boundary
+        self.boundaries = []
+        self.size = 0
+        
+        self.content_length = headers.get('Content-Length')
+        
+        if hasattr(params, 'items'):
+            params = params.items()
+            
+        for param in params:
+            name, value = param
+            if hasattr(value, "read"):
+                fname = getattr(value, 'name')
+                if fname is not None:
+                    filetype = ';'.join(filter(None, guess_type(fname)))
+                else:
+                    filetype = None
+                if not isinstance(value, file) and self.content_length is None:
+                    value = value.read()
+                    
+                boundary = BoundaryItem(name, value, fname, filetype)
+            else:
+                 boundary = BoundaryItem(name, value)
+            self.boundaries.append(boundary)
+
+    def get_size(self):
+        if self.content_length is not None:
+            return int(self.content_length)
+        size = 0
+        for boundary in self.boundaries:
+            size = size + boundary.size
+        return size
+        
+    def __iter__(self):
+        for boundary in self.boundaries:
+            for block in boundary.iter_encode(self.boundary):
+                yield block
+        yield "--%s--\r\n" % self.boundary
+                    
+
+def multipart_form_encode(params, headers, boundary):
+    headers = headers or {}
+    boundary = urllib.quote_plus(boundary)
+    body = MultipartForm(params, boundary, headers)
+    headers['Content-Type'] = "multipart/form-data; boundary=%s" % boundary
+    headers['Content-Length'] = str(body.get_size())
+    return body, headers
 
 
 
