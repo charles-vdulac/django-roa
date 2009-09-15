@@ -19,7 +19,7 @@ from django_roa.db.exceptions import ROAException
 logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
-
+ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 
 class ROAModelBase(ModelBase):
     def __new__(cls, name, bases, attrs):
@@ -325,7 +325,7 @@ class ROAModel(models.Model):
             
             if force_update or pk_set and not self.id is None:
                 record_exists = True
-                resource = Resource(self.get_resource_url_detail())
+                resource = Resource(self.get_resource_url_detail(), headers=ROA_HEADERS)
                 try:
                     logger.debug(u"""Modifying : "%s" through %s
                                   with payload "%s" and GET args "%s" """ % (
@@ -338,7 +338,7 @@ class ROAModel(models.Model):
                     raise ROAException(e)
             else:
                 record_exists = False
-                resource = Resource(self.get_resource_url_list())
+                resource = Resource(self.get_resource_url_list(), headers=ROA_HEADERS)
                 try:
                     logger.debug(u"""Creating  : "%s" through %s
                                   with payload "%s" and GET args "%s" """ % (

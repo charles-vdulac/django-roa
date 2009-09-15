@@ -14,6 +14,7 @@ logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
+ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 
 
 class Query(object):
@@ -151,7 +152,7 @@ class RemoteQuerySet(query.QuerySet):
         An iterator over the results from applying this QuerySet to the
         remote web service.
         """
-        resource = Resource(self.model.get_resource_url_list())
+        resource = Resource(self.model.get_resource_url_list(), headers=ROA_HEADERS)
 
         try:
             parameters = self.query.parameters
@@ -188,7 +189,7 @@ class RemoteQuerySet(query.QuerySet):
         # a staticmethod for get_resource_url_count and avoid to set it
         # for all model without relying on get_resource_url_list
         instance = clone.model()
-        resource = Resource(instance.get_resource_url_count())
+        resource = Resource(instance.get_resource_url_count(), headers=ROA_HEADERS)
         
         try:
             parameters = clone.query.parameters
@@ -216,7 +217,7 @@ class RemoteQuerySet(query.QuerySet):
         # for all model without relying on get_resource_url_list
         instance = clone.model()
         instance.id = id
-        resource = Resource(instance.get_resource_url_detail())
+        resource = Resource(instance.get_resource_url_detail(), headers=ROA_HEADERS)
         
         try:
             parameters = clone.query.parameters
