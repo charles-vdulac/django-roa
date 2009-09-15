@@ -2,6 +2,18 @@
 Django-ROA's changelog
 ======================
 
+Version 1.4, 15 September 2009:
+-------------------------------
+
+* Support for named relations.
+* Support for proxy models.
+* Fix a bug to deal with ModelForms
+* Switch from restclient to the latest tip of restkit (>0.8.2)
+* Update piston to the latest tip (>0.2.3rc1)
+* Introduce a new settings, ROA_HEADERS, to specify headers sent to the server
+* Better errors' feedback from the server
+
+
 Version 1.3, 25 May 2009:
 -------------------------
 
