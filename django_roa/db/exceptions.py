@@ -7,11 +7,13 @@ ROA_DJANGO_ERRORS = getattr(settings, 'ROA_DJANGO_ERRORS', False)
 
 class ROAException(Exception):
     def __init__(self, exception):
-        if ROA_DJANGO_ERRORS:
-            self.msg = exception.message
+        if ROA_DJANGO_ERRORS and 'message' in exception \
+                             and 'status_code' in exception:
+            self.msg = force_unicode(exception.message)
             self.status_code = exception.status_code
         else:
             self.msg = force_unicode(exception)
+            self.status_code = 'XXX'
 
     def __str__(self):
         if ROA_DJANGO_ERRORS and '<body>' in self.msg:
@@ -20,8 +22,10 @@ class ROAException(Exception):
     
     def parse_django_error(self):
         """Extract the summary part of a Django HTML error."""
-        summary = self.msg.split('<body>\n<div id="summary">\n  ', 1)[1]\
-                          .split('<th>Python Executable:</th>', 1)[0]
+        summary = self.msg.split(u'<body>\n<div id="summary">\n  ', 1)[1]\
+                          .split(u'<th>Python Executable:</th>', 1)[0]
+        traceback = self.msg.split(u'\n\nTraceback:', 1)[1]\
+                            .split(u'</textarea>', 1)[0]
         result = []
         title = None
         for line in strip_tags(summary).split('\n'):
@@ -34,7 +38,12 @@ class ROAException(Exception):
                 else:
                     result.append("%s %s\n" % (title, line_content))
         result.append("Status code: %s" % self.status_code)
-        return u" ".join([force_unicode(line) for line in result])
+        indent, indent2 = u'  ', u'    '
+        return u"%(summary)s %(traceback)s".strip() % {
+            'summary': indent.join(force_unicode(line) for line in result),
+            'traceback': indent2.join(force_unicode(line+"\n") \
+                                        for line in traceback.split('\n')),
+        }
 
 
 class ROANotImplementedYetException(Exception):
