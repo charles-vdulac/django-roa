@@ -1,12 +1,18 @@
+import time
 from django.http import HttpResponseNotAllowed, HttpResponseForbidden, HttpResponse, HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
 from django import get_version as django_version
+from django.core.mail import send_mail, mail_admins
+from django.conf import settings
+from django.utils.translation import ugettext as _
+from django.template import loader, TemplateDoesNotExist
+from django.contrib.sites.models import Site
 from decorator import decorator
 
 from datetime import datetime, timedelta
 
-__version__ = '0.2.2'
+__version__ = '0.2.3rc1'
 
 def get_version():
     return __version__
@@ -27,6 +33,7 @@ class rc_factory(object):
                  NOT_FOUND = ('Not Found', 404),
                  DUPLICATE_ENTRY = ('Conflict/Duplicate', 409),
                  NOT_HERE = ('Gone', 410),
+                 INTERNAL_ERROR = ('Internal Error', 500),
                  NOT_IMPLEMENTED = ('Not Implemented', 501),
                  THROTTLED = ('Throttled', 503))
 
@@ -102,24 +109,20 @@ def throttle(max_requests, timeout=60*60, extra=''):
             """
             ident += ':%s' % extra
     
-            now = datetime.now()
-            ts_key = 'throttle:ts:%s' % ident
-            timestamp = cache.get(ts_key)
-            offset = now + timedelta(seconds=timeout)
-    
-            if timestamp and timestamp < offset:
+            now = time.time()
+            count, expiration = cache.get(ident, (1, None))
+
+            if expiration is None:
+                expiration = now + timeout
+
+            if count >= max_requests and expiration > now:
                 t = rc.THROTTLED
-                wait = timeout - (offset-timestamp).seconds
+                wait = int(expiration - now)
                 t.content = 'Throttled, wait %d seconds.' % wait
-                
+                t['Retry-After'] = wait
                 return t
-                
-            count = cache.get(ident, 1)
-            cache.set(ident, count+1)
-            
-            if count >= max_requests:
-                cache.set(ts_key, offset, timeout)
-                cache.set(ident, 1)
+
+            cache.set(ident, (count+1, expiration), (expiration - now))
     
         return f(self, request, *args, **kwargs)
     return wrap
@@ -211,15 +214,15 @@ class Mimer(object):
         if not self.is_multipart() and ctype:
             loadee = self.loader_for_type(ctype)
             
-            if loadee:
-                try:
-                    self.request.data = loadee(self.request.raw_post_data)
+            try:
+                self.request.data = loadee(self.request.raw_post_data)
                     
-                    # Reset both POST and PUT from request, as its
-                    # misleading having their presence around.
-                    self.request.POST = self.request.PUT = dict()
-                except (TypeError, ValueError):
-                    raise MimerDataException
+                # Reset both POST and PUT from request, as its
+                # misleading having their presence around.
+                self.request.POST = self.request.PUT = dict()
+            except (TypeError, ValueError):
+                # This also catches if loadee is None.
+                raise MimerDataException
 
         return self.request
                 
@@ -261,3 +264,47 @@ def require_mime(*mimes):
 
 require_extended = require_mime('json', 'yaml', 'xml', 'pickle')
     
+def send_consumer_mail(consumer):
+    """
+    Send a consumer an email depending on what their status is.
+    """
+    try:
+        subject = settings.PISTON_OAUTH_EMAIL_SUBJECTS[consumer.status]
+    except AttributeError:
+        subject = "Your API Consumer for %s " % Site.objects.get_current().name
+        if consumer.status == "accepted":
+            subject += "was accepted!"
+        elif consumer.status == "canceled":
+            subject += "has been canceled."
+        elif consumer.status == "rejected":
+            subject += "has been rejected."
+        else: 
+            subject += "is awaiting approval."
+
+    template = "piston/mails/consumer_%s.txt" % consumer.status    
+    
+    try:
+        body = loader.render_to_string(template, 
+            { 'consumer' : consumer, 'user' : consumer.user })
+    except TemplateDoesNotExist:
+        """ 
+        They haven't set up the templates, which means they might not want
+        these emails sent.
+        """
+        return 
+
+    try:
+        sender = settings.PISTON_FROM_EMAIL
+    except AttributeError:
+        sender = settings.DEFAULT_FROM_EMAIL
+
+    send_mail(_(subject), body, sender, [consumer.user.email], fail_silently=True)
+
+    if consumer.status == 'pending' and len(settings.ADMINS):
+        mail_admins(_(subject), body, fail_silently=True)
+
+    if settings.DEBUG:
+        print "Mail being sent, to=%s" % consumer.user.email
+        print "Subject: %s" % _(subject)
+        print body
+
