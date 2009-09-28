@@ -74,9 +74,17 @@ class Query(object):
         
         # Filtering
         for k, v in self.filters.iteritems():
-            parameters['%s%s' % (ROA_ARGS_NAMES_MAPPING.get('FILTER_', 'filter_'), k)] = v
+            key = '%s%s' % (ROA_ARGS_NAMES_MAPPING.get('FILTER_', 'filter_'), k)
+            if key in ROA_ARGS_NAMES_MAPPING:
+                parameters[ROA_ARGS_NAMES_MAPPING[key]] = v
+            else:
+                parameters[key] = v
         for k, v in self.excludes.iteritems():
-            parameters['%s%s' % (ROA_ARGS_NAMES_MAPPING.get('EXCLUDE_', 'exclude_'), k)] = v
+            key = '%s%s' % (ROA_ARGS_NAMES_MAPPING.get('EXCLUDE_', 'exclude_'), k)
+            if key in ROA_ARGS_NAMES_MAPPING:
+                parameters[ROA_ARGS_NAMES_MAPPING[key]] = v
+            else:
+                parameters[key] = v
         
         # Ordering
         if self.order_by:
@@ -204,9 +212,9 @@ class RemoteQuerySet(query.QuerySet):
         
         return int(response)
 
-    def _get_from_id(self, id):
+    def _get_from_id_or_pk(self, id=None, pk=None):
         """
-        Returns an object given an id, request directly with the
+        Returns an object given an id or pk, request directly with the
         get_resource_url_detail method without filtering on ids
         (as Django's ORM do).
         """
@@ -217,6 +225,7 @@ class RemoteQuerySet(query.QuerySet):
         # for all model without relying on get_resource_url_list
         instance = clone.model()
         instance.id = id
+        instance.pk = pk
         resource = Resource(instance.get_resource_url_detail(), headers=ROA_HEADERS)
         
         try:
@@ -251,7 +260,9 @@ class RemoteQuerySet(query.QuerySet):
         # special case, get(id=X) directly request the resource URL and do not
         # filter on ids like Django's ORM do.
         if kwargs.keys() == ['id']:
-            return self._get_from_id(kwargs['id'])
+            return self._get_from_id_or_pk(id=kwargs['id'])
+        elif kwargs.keys() == ['pk']: # useful for admin which relies on pks
+            return self._get_from_id_or_pk(pk=kwargs['pk'])
         else:
             return super(RemoteQuerySet, self).get(*args, **kwargs)
 
