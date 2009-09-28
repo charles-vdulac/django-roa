@@ -99,4 +99,21 @@ class ConnectionPool(Pool):
         return make_connection(self.uri, self.use_proxy)
            
     def put(self, connection):
-        Pool.put(self, self.create())
+        if self.current_size > self.max_size:
+            self.current_size -= 1
+            # close the connection if needed
+            if connection.sock is not None:
+                connection.close()
+            return
+        
+        try:
+            response = connection.getresponse()
+            response.read()
+        except httplib.ResponseNotReady:
+            pass
+        except:
+            connection.close()
+            
+        if connection.sock is None:
+            connection = self.create()
+        Pool.put(self, connection)
