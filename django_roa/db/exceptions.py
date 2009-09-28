@@ -22,10 +22,13 @@ class ROAException(Exception):
     
     def parse_django_error(self):
         """Extract the summary part of a Django HTML error."""
-        summary = self.msg.split(u'<body>\n<div id="summary">\n  ', 1)[1]\
-                          .split(u'<th>Python Executable:</th>', 1)[0]
-        traceback = self.msg.split(u'\n\nTraceback:', 1)[1]\
-                            .split(u'</textarea>', 1)[0]
+        try:
+            summary = self.msg.split(u'<body>\n<div id="summary">\n  ', 1)[1]\
+                              .split(u'<th>Python Executable:</th>', 1)[0]
+            traceback = self.msg.split(u'\n\nTraceback:', 1)[1]\
+                                .split(u'</textarea>', 1)[0]
+        except IndexError:
+            return self.msg
         result = []
         title = None
         for line in strip_tags(summary).split('\n'):
