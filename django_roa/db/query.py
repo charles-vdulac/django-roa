@@ -224,8 +224,10 @@ class RemoteQuerySet(query.QuerySet):
         # a staticmethod for get_resource_url_detail and avoid to set it
         # for all model without relying on get_resource_url_list
         instance = clone.model()
-        instance.id = id
-        instance.pk = pk
+        if pk is None:
+            instance.id = id
+        else:
+            instance.pk = pk
         resource = Resource(instance.get_resource_url_detail(), headers=ROA_HEADERS)
         
         try:
