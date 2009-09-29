@@ -59,12 +59,4 @@ ROA_ARGS_NAMES_MAPPING = {
 
 ## Logging settings
 import logging
-# create logger
-logger = logging.getLogger("django_roa")
-logger.setLevel(logging.DEBUG)
-# create console handler and set level to debug
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter("%(name)s - %(message)s"))
-logger.addHandler(ch)
-
+logging.basicConfig(level=logging.DEBUG, format="%(name)s - %(message)s")
