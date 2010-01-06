@@ -92,10 +92,23 @@ class RemotePageWithOverriddenUrls(Model):
         return u'' # overridden by settings
 
 
+class RemotePageWithRelationsThrough(Model):
+    title = models.CharField(max_length=50)
+    remote_page_with_relations = models.ForeignKey("RemotePageWithRelations", blank=True, null=True)
+    remote_page_with_many_fields = models.ForeignKey("RemotePageWithManyFields", blank=True, null=True)
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.id)
+    
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/django_roa_server/remotepagewithrelationsthrough/'
+
+
 class RemotePageWithRelations(Model):
     title = models.CharField(max_length=50)
     remote_page = models.ForeignKey(RemotePage, blank=True, null=True)
-    remote_page_fields = models.ManyToManyField(RemotePageWithManyFields, blank=True, null=True)
+    remote_page_fields = models.ManyToManyField(RemotePageWithManyFields, through=RemotePageWithRelationsThrough, blank=True, null=True)
 
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)

@@ -41,7 +41,8 @@ from django_roa.remoteauth.models import User, Message, Group, Permission
 from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithRelations, \
     RemotePageWithCustomSlug, RemotePageWithOverriddenUrls, \
-    RemotePageWithNamedRelations, RemotePageWithProxy
+    RemotePageWithNamedRelations, RemotePageWithProxy, \
+    RemotePageWithRelationsThrough
 from django_roa_client.forms import TestForm, RemotePageForm
 
 class ROATestCase(TestCase):
@@ -381,17 +382,21 @@ class ROARelationsTests(ROATestCase):
         remote_page = RemotePageWithManyFields.objects.create(char_field=u'A remote page')
         another_remote_page = RemotePageWithManyFields.objects.create(char_field=u'Another remote page')
         relations_page = RemotePageWithRelations.objects.create(title=u'A remote relation page')
-        relations_page.remote_page_fields.add(remote_page)
+        relations_page_through = RemotePageWithRelationsThrough.objects.create(title=u'A remote relation page through', 
+                                                                               remote_page_with_relations=relations_page,
+                                                                               remote_page_with_many_fields=remote_page)
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[<RemotePageWithManyFields: RemotePageWithManyFields (1)>]')
         relations_page = RemotePageWithRelations.objects.get(id=relations_page.id)
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[<RemotePageWithManyFields: RemotePageWithManyFields (1)>]')
-        relations_page.remote_page_fields.add(another_remote_page)
+        another_relations_page_through = RemotePageWithRelationsThrough.objects.create(title=u'Another remote relation page through', 
+                                                                                       remote_page_with_relations=relations_page,
+                                                                                       remote_page_with_many_fields=another_remote_page)
         relations_page = RemotePageWithRelations.objects.get(id=relations_page.id)
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[<RemotePageWithManyFields: RemotePageWithManyFields (1)>, <RemotePageWithManyFields: RemotePageWithManyFields (2)>]')
         self.assertEqual(repr(remote_page.remotepagewithrelations_set.all()), '[<RemotePageWithRelations: A remote relation page (1)>]')
-        relations_page.remote_page_fields.remove(remote_page)
+        relations_page_through.delete()
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[<RemotePageWithManyFields: RemotePageWithManyFields (2)>]')
-        relations_page.remote_page_fields.clear()
+        another_relations_page_through.delete()
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[]')
         relations_page.delete()
         another_remote_page.delete()

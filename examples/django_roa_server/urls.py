@@ -12,7 +12,7 @@ from django_roa_server.handlers import RemotePageHandler, \
     RemotePageWithManyFieldsCountHandler, RemotePageWithBooleanFieldsCountHandler, \
     RemotePageWithCustomSlugCountHandler, RemotePageWithOverriddenUrlsCountHandler, \
     RemotePageWithRelationsHandler, RemotePageWithNamedRelationsHandler, \
-    RemotePageWithNamedRelationsCountHandler
+    RemotePageWithNamedRelationsCountHandler, RemotePageWithRelationsThroughHandler
 
 remote_pages = Resource(handler=RemotePageHandler)
 remote_pages_count = Resource(handler=RemotePageCountHandler)
@@ -32,6 +32,9 @@ remote_pages_with_overridden_urls_count = Resource(handler=RemotePageWithOverrid
 remote_pages_with_relations = Resource(handler=RemotePageWithRelationsHandler)
 remote_pages_with_relations_count = Resource(handler=RemotePageWithRelationsHandler)
 
+remote_pages_with_relations_through = Resource(handler=RemotePageWithRelationsThroughHandler)
+remote_pages_with_relations_through_count = Resource(handler=RemotePageWithRelationsThroughHandler)
+
 remote_pages_with_named_relations = Resource(handler=RemotePageWithNamedRelationsHandler)
 remote_pages_with_named_relations_count = Resource(handler=RemotePageWithNamedRelationsCountHandler)
 
@@ -48,6 +51,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithcustomslug/count/$', remote_pages_with_custom_slug_count),
     url(r'^django_roa_server/remotepagewithoverriddenurls/count/$', remote_pages_with_overridden_urls_count),
     url(r'^django_roa_server/remotepagewithrelations/count/$', remote_pages_with_relations_count),
+    url(r'^django_roa_server/remotepagewithrelationsthrough/count/$', remote_pages_with_relations_through_count),
     url(r'^django_roa_server/remotepagewithnamedrelations/count/$', remote_pages_with_named_relations_count),
     url(r'^django_roa_server/remotepagewithproxy/count/$', remote_pages_count),
     
@@ -58,6 +62,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithcustomslug/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_custom_slug),
     url(r'^django_roa_server/remotepagewithoverriddenurls/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_overridden_urls),
     url(r'^django_roa_server/remotepagewithrelations/?(?P<id>\d+)?/?$', remote_pages_with_relations),
+    url(r'^django_roa_server/remotepagewithrelationsthrough/?(?P<id>\d+)?/?$', remote_pages_with_relations_through),
     url(r'^django_roa_server/remotepagewithnamedrelations/?(?P<id>\d+)?/?$', remote_pages_with_named_relations),
     url(r'^django_roa_server/remotepagewithproxy/?(?P<id>\d+)?/?$', remote_pages),
     

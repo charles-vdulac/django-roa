@@ -15,7 +15,7 @@ from piston.utils import rc
 from django_roa_server.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithCustomSlug, \
     RemotePageWithOverriddenUrls, RemotePageWithRelations, \
-    RemotePageWithNamedRelations
+    RemotePageWithNamedRelations, RemotePageWithRelationsThrough
 
 logger = logging.getLogger("django_roa_server")
 
@@ -151,22 +151,6 @@ class ROAHandler(BaseHandler):
         
         object.save()
         
-        for field in self.model._meta.many_to_many:
-            field_value = data.get(field.attname, None)
-            m2m_field = getattr(object, field.attname)
-            if field_value in (u'', u'None', None):
-                m2m_field.clear()
-                logger.debug('M2M relations cleared for "%s"' % (
-                    unicode(object).encode(settings.DEFAULT_CHARSET), ))
-            else:
-                m2m_field.clear() # FIXME: find a clever way?
-                m2m_convert = field.rel.to._meta.pk.to_python
-                obj_ids = [m2m_convert(smart_unicode(pk)) for pk in field_value.split(',')]
-                m2m_field.add(*obj_ids)
-                logger.debug('M2M relations updated for "%s" with ids %s' % (
-                    unicode(object).encode(settings.DEFAULT_CHARSET), 
-                    obj_ids))
-        
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
         logger.debug('Object "%s" modified with %s' % (
@@ -281,6 +265,13 @@ class RemotePageWithRelationsHandler(ROAHandler):
 
 class RemotePageWithRelationsCountHandler(ROACountHandler):
     model = RemotePageWithRelations
+
+    
+class RemotePageWithRelationsThroughHandler(ROAHandler):
+    model = RemotePageWithRelationsThrough
+
+class RemotePageWithRelationsThroughCountHandler(ROACountHandler):
+    model = RemotePageWithRelationsThrough
 
     
 class RemotePageWithNamedRelationsHandler(ROAHandler):
