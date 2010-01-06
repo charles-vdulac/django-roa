@@ -114,6 +114,8 @@ class ROAModelBase(ModelBase):
                     new_class._meta.local_many_to_many):
                 raise FieldError("Proxy model '%s' contains model fields."
                         % name)
+            while base._meta.proxy:
+                base = base._meta.proxy_for_model
             new_class._meta.setup_proxy(base)
 
         # Do the appropriate setup for any model parents.
@@ -121,6 +123,7 @@ class ROAModelBase(ModelBase):
                 if isinstance(f, OneToOneField)])
 
         for base in parents:
+            original_base = base
             if not hasattr(base, '_meta'):
                 # Things without _meta aren't functional models, so they're
                 # uninteresting parents.
@@ -165,7 +168,7 @@ class ROAModelBase(ModelBase):
             # Proxy models inherit the non-abstract managers from their base,
             # unless they have redefined any of them.
             if is_proxy:
-                new_class.copy_managers(base._meta.concrete_managers)
+                new_class.copy_managers(original_base._meta.concrete_managers)
 
             # Inherit virtual fields (like GenericForeignKey) from the parent
             # class
@@ -242,8 +245,8 @@ class ROAModel(models.Model):
     def get_resource_url_detail(self):
         return u"%s%s/" % (self.get_resource_url_list(), self.pk)
     
-    def save_base(self, raw=False, cls=None, origin=None,
-            force_insert=False, force_update=False):
+    def save_base(self, raw=False, cls=None, origin=None, force_insert=False, 
+            force_update=False, using=None):
         """
         Does the heavy-lifting involved in saving. Subclasses shouldn't need to
         override this method. It's separate from save() in order to hide the
@@ -259,7 +262,7 @@ class ROAModel(models.Model):
         else:
             meta = cls._meta
 
-        if origin:
+        if origin and not meta.auto_created:
             signals.pre_save.send(sender=origin, instance=self, raw=raw)
 
         # If we are in a raw save, save the object exactly as presented.
@@ -381,6 +384,13 @@ class ROAModel(models.Model):
         response = resource.delete()
 
     delete.alters_data = True
+
+    def _get_unique_checks(self):
+        """
+        We don't want to check unicity that way for now.
+        """
+        unique_checks, date_checks = [], []
+        return unique_checks, date_checks
 
 
 ##############################################

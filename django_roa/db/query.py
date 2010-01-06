@@ -64,7 +64,7 @@ class Query(object):
         self.select_related = field_dict
         self.related_select_cols = []
         self.related_select_fields = []
-    
+
     @property
     def parameters(self):
         """
@@ -135,6 +135,7 @@ class RemoteQuerySet(query.QuerySet):
         self._result_cache = None
         self._iter = None
         self._sticky_filter = False
+        self._db = False
         
         self.params = {}
     
@@ -406,65 +407,21 @@ class RemoteQuerySet(query.QuerySet):
             return FakeInt(self.count())
         raise ROANotImplementedYetException, 'extra is not yet fully implemented.'
 
-    #################################
-    # METHODS THAT DO M2M RELATIONS #
-    #################################
-
-    def _add_items(self, source_col_name=None, target_col_name=None, 
-                   join_table=None, pk_val=None, instance=None, field=None, 
-                   *objs):
-        """
-        Adds m2m relations between ``instance`` object and ``objs``.
-        """
-        if objs:
-            from django.db.models.base import Model
-            # Check that all the objects are of the right type
-            existing_ids = set(obj.id for obj in field.value_from_object(instance))
-            for obj in objs:
-                if isinstance(obj, self.model):
-                    existing_ids.add(obj._get_pk_val())
-                elif isinstance(obj, Model):
-                    raise TypeError, "'%s' instance expected" % self.model._meta.object_name
-                else:
-                    existing_ids.add(obj)
-            # FIXME: ugly but we set manually updated_ids to the instance
-            # before saving it, get back in save_model to send appropriated
-            # ids to the server
-            setattr(instance, '%s_updated_ids' % field.attname, existing_ids)
-            instance.save()
-
-    def _remove_items(self, source_col_name=None, target_col_name=None, 
-                      join_table=None, pk_val=None, instance=None, field=None, 
-                      *objs):
-        """
-        Removes m2m relations between ``instance`` object and ``objs``.
-        """
-        if objs:
-            from django.db.models.base import Model
-            # Check that all the objects are of the right type
-            existing_ids = set(obj.id for obj in field.value_from_object(instance))
-            for obj in objs:
-                if isinstance(obj, self.model):
-                    existing_ids.remove(obj._get_pk_val())
-                elif isinstance(obj, Model):
-                    raise TypeError, "'%s' instance expected" % self.model._meta.object_name
-                else:
-                    existing_ids.remove(obj)
-            setattr(instance, '%s_updated_ids' % field.attname, existing_ids)
-            instance.save()
-
-    def _clear_items(self, source_col_name=None, join_table=None, pk_val=None, 
-                     instance=None, field=None):
-        """
-        Clears m2m relations related to ``instance`` object.
-        """
-        setattr(instance, '%s_updated_ids' % field.attname, [])
-        instance.save()
-
-
     ###################
     # PRIVATE METHODS #
     ###################
+
+    def _clone(self, klass=None, setup=False, **kwargs):
+        if klass is None:
+            klass = self.__class__
+        query = self.query.clone()
+        if self._sticky_filter:
+            query.filter_is_sticky = True
+        c = klass(model=self.model, query=query)
+        c.__dict__.update(kwargs)
+        if setup and hasattr(c, '_setup_query'):
+            c._setup_query()
+        return c
 
     def _as_url(self):
         """

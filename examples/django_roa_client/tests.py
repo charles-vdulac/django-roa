@@ -485,7 +485,9 @@ class ROAAdminTests(ROAUserTestCase):
         response = c.login(username=u'bob', password=u'secret')
         self.assertEqual(response, True)
         response = c.get('/admin/')
-        self.assertEqual(repr(response.context[-1]["user"]), '<User: bob>')
+        # ._wrapped necessary because we compare string, comparison should 
+        # work with User.objects.get(username="bob") but slower...
+        self.assertEqual(repr(response.context[-1]["user"]._wrapped), '<User: bob>')
         response = c.get('/admin/django_roa_client/remotepage/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(repr(response.context[-1]["cl"].result_list), '[<RemotePage: Still another remote page (4)>, <RemotePage: Yet another remote page (3)>]')

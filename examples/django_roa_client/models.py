@@ -2,7 +2,7 @@
 from django.db import models
 from django.template.defaultfilters import slugify
 
-from django_roa import Model, Manager
+from django_roa import Model
 
 class RemotePage(Model):
     title = models.CharField(max_length=50, blank=True, null=True)
@@ -62,7 +62,7 @@ class RemotePageWithCustomSlug(Model):
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
 
-    def save(self, force_insert=False, force_update=False):
+    def save(self, force_insert=False, force_update=False, using=None):
         if not self.slug:
             self.slug = slugify(self.title)
         super(RemotePageWithCustomSlug, self).save(force_insert, force_update)
@@ -82,7 +82,7 @@ class RemotePageWithOverriddenUrls(Model):
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.id)
 
-    def save(self, force_insert=False, force_update=False):
+    def save(self, force_insert=False, force_update=False, using=None):
         if not self.slug:
             self.slug = slugify(self.title)
         super(RemotePageWithOverriddenUrls, self).save(force_insert, force_update)
