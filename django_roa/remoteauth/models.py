@@ -23,16 +23,34 @@ class Permission(Model, DjangoPermission):
         return u'http://127.0.0.1:8081/auth/permission/'
 
 
+class GroupPermissionThrough(Model):
+    permission = models.ForeignKey(Permission)
+    group = models.ForeignKey("Group")
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/auth/grouppermissionthrough/'
+
+
 class Group(Model, DjangoGroup):
     """
     Inherits methods from Django's Group model.
     """
     name = models.CharField(_('name'), max_length=80, unique=True)
-    permissions = models.ManyToManyField(Permission, verbose_name=_('permissions'), blank=True)
+    permissions = models.ManyToManyField(Permission, through=GroupPermissionThrough, verbose_name=_('permissions'), blank=True)
 
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/auth/group/'
+
+
+class UserGroupThrough(Model):
+    group = models.ForeignKey(Group)
+    user = models.ForeignKey("User")
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/auth/usergroupthrough/'
 
 
 class UserManager(Manager, DjangoUserManager):
@@ -54,7 +72,7 @@ class User(Model, DjangoUser):
     is_superuser = models.BooleanField(_('superuser status'), default=False, help_text=_("Designates that this user has all permissions without explicitly assigning them."))
     last_login = models.DateTimeField(_('last login'), default=datetime.datetime.now)
     date_joined = models.DateTimeField(_('date joined'), default=datetime.datetime.now)
-    groups = models.ManyToManyField(Group, verbose_name=_('groups'), blank=True,
+    groups = models.ManyToManyField(Group, through=UserGroupThrough, verbose_name=_('groups'), blank=True,
         help_text=_("In addition to the permissions manually assigned, this user will also get all permissions granted to each group he/she is in."))
     user_permissions = models.ManyToManyField(Permission, verbose_name=_('user permissions'), blank=True)
     objects = UserManager()
