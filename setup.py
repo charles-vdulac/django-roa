@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name = 'django-roa',
-    version = '1.4',
+    version = '1.5',
     url = 'http://code.welldev.org/django-roa/wiki/Home',
 	download_url = 'http://code.welldev.org/django-roa/downloads/',
     license = 'BSD',

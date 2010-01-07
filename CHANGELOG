@@ -2,6 +2,20 @@
 Django-ROA's changelog
 ======================
 
+Version 1.5, 7 January 2010:
+----------------------------
+
+* Support for Django 1.2 alpha, no more patch required.
+* Handle ManyToMany relations only with the required "through" argument,
+  it allows you to define a URL for this resource.
+* Update restkit to the latest tip (>0.9.2)
+* Update piston to the latest tip (>0.2.3rc1)
+* Deprecate "remoteauth" application for now, mapping of M2M relations is not
+  fully compatible, you should still be able to use the User model though but
+  Permissions and Groups' relation will not be correct anymore.
+  This is still a work in progress, suggestions welcome!
+
+
 Version 1.4, 15 September 2009:
 -------------------------------
 
