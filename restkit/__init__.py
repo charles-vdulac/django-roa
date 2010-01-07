@@ -24,8 +24,8 @@ USER_AGENT = "restkit/%s" % __version__
 debuglevel = 0
 
 from restkit.errors import *
-from restkit.httpc import HttpClient
-from restkit.rest import *
+from restkit.httpc import HttpClient, HTTPResponse, ResponseStream
+from restkit.rest import Resource, RestClient
 
 
 

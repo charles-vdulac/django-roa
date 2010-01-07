@@ -18,14 +18,69 @@
 """
 exception classes.
 """
+import restkit
+import warnings
 
+class deprecated_property(object):
+    """
+    Wraps a decorator, with a deprecation warning or error
+    """
+    def __init__(self, decorator, attr, message, warning=True):
+        self.decorator = decorator
+        self.attr = attr
+        self.message = message
+        self.warning = warning
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        self.warn()
+        return self.decorator.__get__(obj, type)
+
+    def __set__(self, obj, value):
+        self.warn()
+        self.decorator.__set__(obj, value)
+
+    def __delete__(self, obj):
+        self.warn()
+        self.decorator.__delete__(obj)
+
+    def __repr__(self):
+        return '<Deprecated attribute %s: %r>' % (
+            self.attr,
+            self.decorator)
+
+    def warn(self):
+        if not self.warning:
+            raise DeprecationWarning(
+                'The attribute %s is deprecated: %s' % (self.attr, self.message))
+        else:
+            warnings.warn(
+                'The attribute %s is deprecated: %s' % (self.attr, self.message),
+                DeprecationWarning,
+                stacklevel=3)
+                
+                    
 class ResourceError(Exception):
-
+    """ default error class """
     def __init__(self, msg=None, http_code=None, response=None):
         self.msg = msg or ''
-        self.status_code = http_code
+        self.status = http_code
         self.response = response
         Exception.__init__(self)
+        
+    def _status_int__get(self):
+        """
+        The status as an integer
+        """
+        return self.status
+    def _status_int__set(self, http_code):
+        self.status = http_code
+    status_int = property(_status_int__get, _status_int__set, doc=_status_int__get.__doc__)
+        
+    status_code = deprecated_property(
+        status_int, 'status_code', 'use .status_int instead',
+        warning=False)
         
     def _get_message(self):
         return self.msg
@@ -37,11 +92,12 @@ class ResourceError(Exception):
         if self.msg:
             return self.msg
         try:
-            return self._fmt % self.__dict__
+            return str(self.__dict__)
         except (NameError, ValueError, KeyError), e:
             return 'Unprintable exception %s: %s' \
                 % (self.__class__.__name__, str(e))
-        
+                
+
 class ResourceNotFound(ResourceError):
     """Exception raised when no resource was found at the given url. 
     """
@@ -83,3 +139,6 @@ class TransportError(Exception):
 class ResponseError(Exception):
     """ Error raised while getting response or decompressing response stream"""
     
+
+class ProxyError(Exception):
+    """ raised when proxy error happend"""

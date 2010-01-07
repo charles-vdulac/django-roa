@@ -353,10 +353,11 @@ class ROAModel(models.Model):
                 except RequestFailed, e:
                     raise ROAException(e)
             
+            response = force_unicode(response.body).encode(settings.DEFAULT_CHARSET)
+            
             for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
                 response = response.replace(remote_name, local_name)
             
-            response = force_unicode(response).encode(settings.DEFAULT_CHARSET)
             deserializer = serializers.get_deserializer(ROA_FORMAT)
             if hasattr(deserializer, 'deserialize_object'):
                 result = deserializer(response).deserialize_object(response)
