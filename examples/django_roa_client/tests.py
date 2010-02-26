@@ -36,7 +36,7 @@ from django.utils._decimal import Decimal
 from django.core.serializers import register_serializer
 from django.contrib.contenttypes.models import ContentType
 
-from restkit import RestClient
+from restkit import Resource
 from django_roa.remoteauth.models import User, Message, Group, Permission
 from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithRelations, \
@@ -636,8 +636,8 @@ class ROASettingsTests(ROATestCase):
         settings.ROA_FORMAT = 'custom'
         page = RemotePage.objects.create(title=u'A custom serialized page')
         self.assertEqual(repr(page), '<RemotePage: A custom serialized page (1)>')
-        rc = RestClient()
-        response = rc.get('http://127.0.0.1:8081/django_roa_server/remotepage/?format=custom')
+        r = Resource('http://127.0.0.1:8081/django_roa_server/remotepage/')
+        response = r.get(**{'format': 'custom'})
         self.assertEqual(repr(response.body), '\'<?xml version="1.0" encoding="utf-8"?>\\n<django-test version="1.0">\\n <object pk="1" model="django_roa_server.remotepage">\\n  <field type="CharField" name="title">A custom serialized page</field>\\n </object>\\n</django-test>\'')
         self.assertEqual(len(RemotePage.objects.all()), 1)
         page = RemotePage.objects.get(id=page.id)

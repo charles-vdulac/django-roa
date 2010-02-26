@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -
 #
-# Copyright (c) 2008, 2009 Benoit Chesneau <benoitc@e-engura.com> 
-#
-# Permission to use, copy, modify, and distribute this software for any
-# purpose with or without fee is hereby granted, provided that the above
-# copyright notice and this permission notice appear in all copies.
-#
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+# This file is part of restkit released under the MIT license. 
+# See the NOTICE for more information.
+
 
 import restkit.errors
 import webob.exc
 
 class WebobResourceError(webob.exc.WSGIHTTPException):
+    """
+    Wrapper to return webob exceptions instead of restkit errors. Usefull
+    for those who want to build `WSGI <http://wsgi.org/wsgi/>`_ applications
+    speaking directly to others via HTTP.
+    
+    To do it place somewhere in your application the function 
+    `wrap_exceptions`::
+    
+        wrap_exceptions()
+
+    It will automatically replace restkit errors by webob exceptions.
+    """
 
     def __init__(self, msg=None, http_code=None, response=None):
         webob.exc.WSGIHTTPException.__init__(self)
@@ -39,11 +41,8 @@ class WebobResourceError(webob.exc.WSGIHTTPException):
         return int(self.status.split()[0])
     def _status_int__set(self, value):
         self.status = value
-    status_int = property(_status_int__get, _status_int__set, doc=_status_int__get.__doc__)
-    
-    status_code = restkit.errors.deprecated_property(
-        status_int, 'status_code', 'use .status_int instead',
-        warning=False)
+    status_int = property(_status_int__get, _status_int__set, 
+        doc=_status_int__get.__doc__)
 
     def _get_message(self):
         return self.explanation
