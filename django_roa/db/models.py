@@ -386,7 +386,7 @@ class ROAModel(models.Model):
 
     delete.alters_data = True
 
-    def _get_unique_checks(self):
+    def _get_unique_checks(self, exclude=None):
         """
         We don't want to check unicity that way for now.
         """
