@@ -11,12 +11,12 @@ import socket
 import StringIO
 import urlparse
 
-from restkit import __version__
-from restkit.errors import RequestError, InvalidUrl, RedirectLimit
-from restkit.parser import Parser
-from restkit import sock
-from restkit import tee
-from restkit import util
+from libs.restkit import __version__
+from libs.restkit.errors import RequestError, InvalidUrl, RedirectLimit
+from libs.restkit.parser import Parser
+from libs.restkit import sock
+from libs.restkit import tee
+from libs.restkit import util
 
 MAX_FOLLOW_REDIRECTS = 5
 

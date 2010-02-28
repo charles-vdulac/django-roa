@@ -10,7 +10,7 @@ import re
 import urllib
 
 
-from restkit.util import to_bytestring, url_quote
+from libs.restkit.util import to_bytestring, url_quote
 
 MIME_BOUNDARY = 'END_OF_PART'
 

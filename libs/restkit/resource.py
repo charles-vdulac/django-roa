@@ -10,7 +10,7 @@ restkit.resource
 
 This module provide a common interface for all HTTP equest. 
 
-    >>> from restkit import Resource
+    >>> from libs.restkit import Resource
     >>> res = Resource('http://friendpaste.com')
     >>> res.get('/5rOqE9XTz7lccLgZoQS4IP',headers={'Accept': 'application/json'}).body
     u'{"snippet": "hi!", "title": "", "id": "5rOqE9XTz7lccLgZoQS4IP", "language": "text", "revision": "386233396230"}'
@@ -23,13 +23,13 @@ import mimetypes
 import uuid
 import urlparse
 
-from restkit.errors import ResourceNotFound, Unauthorized, RequestFailed,\
+from libs.restkit.errors import ResourceNotFound, Unauthorized, RequestFailed,\
 ParserError, RequestError
-from restkit.forms import MultipartForm, multipart_form_encode, form_encode
-from restkit.client import HttpConnection
-from restkit.filters import BasicAuth
-from restkit import util
-from restkit import pool
+from libs.restkit.forms import MultipartForm, multipart_form_encode, form_encode
+from libs.restkit.client import HttpConnection
+from libs.restkit.filters import BasicAuth
+from libs.restkit import util
+from libs.restkit import pool
 
 class Resource(object):
     """A class that can be instantiated for access to a RESTful resource, 

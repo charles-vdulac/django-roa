@@ -8,7 +8,7 @@ Threadsafe Pool class
 """
 
 import collections
-from restkit import sock
+from libs.restkit import sock
 
 class PoolInterface(object):
     """ abstract class from which all connection 

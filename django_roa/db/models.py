@@ -13,7 +13,7 @@ from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneF
 from django.utils.functional import curry
 from django.utils.encoding import force_unicode, smart_unicode
 
-from restkit import Resource, RequestFailed
+from libs.restkit import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
 logger = logging.getLogger("django_roa")

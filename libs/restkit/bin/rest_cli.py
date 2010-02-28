@@ -11,8 +11,8 @@ import urllib
 
 from urlparse import parse_qs as parse_qs
 
-import restkit
-from restkit import httpc
+import libs.restkit
+from libs.restkit import httpc
 
 class Url(object):
     def __init__(self, string):

@@ -14,7 +14,7 @@ import os
 import StringIO
 import tempfile
 
-from restkit.sock import MAX_BODY, CHUNK_SIZE, recv
+from libs.restkit.sock import MAX_BODY, CHUNK_SIZE, recv
 
 class TeeInput(object):
     

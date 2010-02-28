@@ -9,8 +9,8 @@ import eventlet
 from eventlet import queue
 from eventlet.timeout import Timeout
 
-from restkit.pool import PoolInterface
-from restkit import sock
+from libs.restkit.pool import PoolInterface
+from libs.restkit import sock
 
 class EventletPool(PoolInterface):
     """
@@ -21,8 +21,8 @@ class EventletPool(PoolInterface):
     
         import eventlet
         eventlet.monkey_patch(all=False, socket=True, select=True)
-        from restkit import request
-        from restkit.ext.eventlet_pool import EventletPool
+        from libs.restkit import request
+        from libs.restkit.ext.eventlet_pool import EventletPool
         pool = EventletPool()
         r = request('http://openbsd.org', pool_instance=pool)
     """

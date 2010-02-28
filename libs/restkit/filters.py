@@ -30,11 +30,11 @@ import os
 import urlparse
 
 
-from restkit.errors import InvalidUrl
-from restkit.parser import Parser
-from restkit import sock
-from restkit import util
-from restkit import __version__
+from libs.restkit.errors import InvalidUrl
+from libs.restkit.parser import Parser
+from libs.restkit import sock
+from libs.restkit import util
+from libs.restkit import __version__
 
 class BasicAuth(object):
     """ Simple filter to manage basic authentification"""

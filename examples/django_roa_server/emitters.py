@@ -5,7 +5,7 @@ from django.core import serializers
 from django.http import HttpResponse
 from django.utils import simplejson
 
-from piston.emitters import Emitter, DjangoEmitter
+from libs.piston.emitters import Emitter, DjangoEmitter
 
 logger = logging.getLogger("django_roa_server")
 

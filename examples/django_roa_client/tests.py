@@ -36,7 +36,7 @@ from django.utils._decimal import Decimal
 from django.core.serializers import register_serializer
 from django.contrib.contenttypes.models import ContentType
 
-from restkit import Resource
+from libs.restkit import Resource
 from django_roa.remoteauth.models import User, Message, Group, Permission
 from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithRelations, \

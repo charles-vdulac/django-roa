@@ -9,13 +9,13 @@ version_info = (1, 0, 0)
 __version__ =  ".".join(map(str, version_info))
 
 try:
-    from restkit.errors import ResourceNotFound, Unauthorized, RequestFailed,\
+    from libs.restkit.errors import ResourceNotFound, Unauthorized, RequestFailed,\
 RedirectLimit, RequestError, InvalidUrl, ResponseError, ProxyError, ResourceError
-    from restkit.client import HttpConnection, HttpResponse
-    from restkit.resource import Resource
-    from restkit.pool import ConnectionPool
-    from restkit.filters import BasicAuth, SimpleProxy
-    from restkit.oauth2.filter import OAuthFilter
+    from libs.restkit.client import HttpConnection, HttpResponse
+    from libs.restkit.resource import Resource
+    from libs.restkit.pool import ConnectionPool
+    from libs.restkit.filters import BasicAuth, SimpleProxy
+    from libs.restkit.oauth2.filter import OAuthFilter
 except ImportError:
     import traceback
     traceback.print_exc()

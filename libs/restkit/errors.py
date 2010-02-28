@@ -6,7 +6,7 @@
 """
 exception classes.
 """
-from restkit.util import deprecated_property
+from libs.restkit.util import deprecated_property
                     
 class ResourceError(Exception):
     """ default error class """

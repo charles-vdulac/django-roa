@@ -6,8 +6,8 @@
 
 import urlparse
 
-from restkit.errors import BadStatusLine, ParserError
-from restkit.util import normalize_name
+from libs.restkit.errors import BadStatusLine, ParserError
+from libs.restkit.util import normalize_name
 
 class Parser(object):
 

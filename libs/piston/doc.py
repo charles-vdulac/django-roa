@@ -1,7 +1,7 @@
 import inspect, handler
 
-from piston.handler import typemapper
-from piston.handler import handler_tracker
+from libs.piston.handler import typemapper
+from libs.piston.handler import handler_tracker
 
 from django.core.urlresolvers import get_resolver, get_callable, get_script_prefix
 from django.shortcuts import render_to_response

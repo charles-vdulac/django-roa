@@ -4,7 +4,7 @@
 # See the NOTICE for more information.
 
 
-import restkit.errors
+import libs.restkit.errors
 import webob.exc
 
 class WebobResourceError(webob.exc.WSGIHTTPException):
