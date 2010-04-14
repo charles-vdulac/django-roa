@@ -10,7 +10,7 @@ from django.db.models import signals
 from django.db.models.options import Options
 from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception, get_absolute_url
-from django.db.models.fields.related import OneToOneRel, ManyToOneRel, OneToOneField
+from django.db.models.fields.related import OneToOneField
 from django.utils.functional import curry
 from django.utils.encoding import force_unicode, smart_unicode
 
@@ -57,7 +57,8 @@ class ROAModelBase(ModelBase):
             new_class.add_to_class('DoesNotExist',
                     subclass_exception('DoesNotExist', ObjectDoesNotExist, module))
             new_class.add_to_class('MultipleObjectsReturned',
-                    subclass_exception('MultipleObjectsReturned', MultipleObjectsReturned, module))
+                    subclass_exception('MultipleObjectsReturned', 
+                                       MultipleObjectsReturned, module))
             if base_meta and not base_meta.abstract:
                 # Non-abstract child classes inherit some attributes from their
                 # non-abstract parent (unless an ABC comes before it in the
@@ -78,8 +79,10 @@ class ROAModelBase(ModelBase):
             else:
                 # Proxy classes do inherit parent's default manager, if none is
                 # set explicitly.
-                new_class._default_manager = new_class._default_manager._copy_to_model(new_class)
-                new_class._base_manager = new_class._base_manager._copy_to_model(new_class)
+                new_class._default_manager = \
+                        new_class._default_manager._copy_to_model(new_class)
+                new_class._base_manager = \
+                        new_class._base_manager._copy_to_model(new_class)
 
         # Bail out early if we have already created this class.
         m = get_model(new_class._meta.app_label, name, False)
@@ -102,15 +105,18 @@ class ROAModelBase(ModelBase):
             for parent in [cls for cls in parents if hasattr(cls, '_meta')]:
                 if parent._meta.abstract:
                     if parent._meta.fields:
-                        raise TypeError("Abstract base class containing model fields not permitted for proxy model '%s'." % name)
+                        raise TypeError("Abstract base class containing model "\
+                                        "fields not permitted for proxy model '%s'." % name)
                     else:
                         continue
                 if base is not None:
-                    raise TypeError("Proxy model '%s' has more than one non-abstract model base class." % name)
+                    raise TypeError("Proxy model '%s' has more than one " \
+                                    "non-abstract model base class." % name)
                 else:
                     base = parent
             if base is None:
-                    raise TypeError("Proxy model '%s' has no non-abstract model base class." % name)
+                    raise TypeError("Proxy model '%s' has no non-abstract " \
+                                    "model base class." % name)
             if (new_class._meta.local_fields or
                     new_class._meta.local_many_to_many):
                 raise FieldError("Proxy model '%s' contains model fields."
@@ -206,26 +212,34 @@ class ROAModelBase(ModelBase):
         opts._prepare(cls)
 
         if opts.order_with_respect_to:
-            cls.get_next_in_order = curry(cls._get_next_or_previous_in_order, is_next=True)
-            cls.get_previous_in_order = curry(cls._get_next_or_previous_in_order, is_next=False)
-            setattr(opts.order_with_respect_to.rel.to, 'get_%s_order' % cls.__name__.lower(), curry(method_get_order, cls))
-            setattr(opts.order_with_respect_to.rel.to, 'set_%s_order' % cls.__name__.lower(), curry(method_set_order, cls))
+            cls.get_next_in_order = curry(cls._get_next_or_previous_in_order, 
+                                          is_next=True)
+            cls.get_previous_in_order = curry(cls._get_next_or_previous_in_order, 
+                                              is_next=False)
+            setattr(opts.order_with_respect_to.rel.to, 'get_%s_order' \
+                    % cls.__name__.lower(), curry(method_get_order, cls))
+            setattr(opts.order_with_respect_to.rel.to, 'set_%s_order' \
+                    % cls.__name__.lower(), curry(method_set_order, cls))
 
         # Give the class a docstring -- its definition.
         if cls.__doc__ is None:
-            cls.__doc__ = "%s(%s)" % (cls.__name__, ", ".join([f.attname for f in opts.fields]))
+            cls.__doc__ = "%s(%s)" % (cls.__name__, 
+                                      ", ".join([f.attname for f in opts.fields]))
 
         if hasattr(cls, 'get_absolute_url'):
             cls.get_absolute_url = curry(get_absolute_url, opts, cls.get_absolute_url)
 
         if hasattr(cls, 'get_resource_url_list'):
-            cls.get_resource_url_list = staticmethod(curry(get_resource_url_list, opts, cls.get_resource_url_list))
+            cls.get_resource_url_list = staticmethod(curry(get_resource_url_list, 
+                                                           opts, cls.get_resource_url_list))
 
         if hasattr(cls, 'get_resource_url_count'):
-            cls.get_resource_url_count = curry(get_resource_url_count, opts, cls.get_resource_url_count)
+            cls.get_resource_url_count = curry(get_resource_url_count, opts, 
+                                               cls.get_resource_url_count)
 
         if hasattr(cls, 'get_resource_url_detail'):
-            cls.get_resource_url_detail = curry(get_resource_url_detail, opts, cls.get_resource_url_detail)
+            cls.get_resource_url_detail = curry(get_resource_url_detail, opts, 
+                                                cls.get_resource_url_detail)
 
         signals.class_prepared.send(sender=cls)
 
@@ -281,7 +295,8 @@ class ROAModel(models.Model):
                 # At this point, parent's primary key field may be unknown
                 # (for example, from administration form which doesn't fill
                 # this field). If so, fill it.
-                if field and getattr(self, parent._meta.pk.attname) is None and getattr(self, field.attname) is not None:
+                if field and getattr(self, parent._meta.pk.attname) is None \
+                   and getattr(self, field.attname) is not None:
                     setattr(self, parent._meta.pk.attname, getattr(self, field.attname))
 
                 self.save_base(cls=parent, origin=org)
@@ -376,7 +391,9 @@ class ROAModel(models.Model):
     save_base.alters_data = True
 
     def delete(self):
-        assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
+        assert self._get_pk_val() is not None, "%s object can't be deleted " \
+                "because its %s attribute is set to None." \
+                % (self._meta.object_name, self._meta.pk.attname)
                 
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail())
