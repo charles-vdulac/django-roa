@@ -86,7 +86,7 @@ class HttpBasicSimple(HttpBasicAuthentication):
 def load_data_store():
     '''Load data store for OAuth Consumers, Tokens, Nonces and Resources
     '''
-    path = getattr(settings, 'OAUTH_DATA_STORE', 'piston.store.DataStore')
+    path = getattr(settings, 'OAUTH_DATA_STORE', 'libs.piston.store.DataStore')
 
     # stolen from django.contrib.auth.load_backend
     i = path.rfind('.')

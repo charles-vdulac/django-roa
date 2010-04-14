@@ -1,4 +1,5 @@
 import sys
+import copy
 import logging
 
 from django.conf import settings
@@ -262,7 +263,7 @@ class ROAModel(models.Model):
         else:
             meta = cls._meta
 
-        if origin and not meta.auto_created:
+        if origin and not getattr(meta, "auto_created", False):
             signals.pre_save.send(sender=origin, instance=self, raw=raw)
 
         # If we are in a raw save, save the object exactly as presented.
@@ -296,6 +297,7 @@ class ROAModel(models.Model):
             
             ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
             get_args = {'format': ROA_FORMAT}
+            get_args.update(getattr(settings, "ROA_CUSTOM_ARGS", {}))
             
             serializer = serializers.get_serializer(ROA_FORMAT)
             if hasattr(serializer, 'serialize_object'):
@@ -310,7 +312,7 @@ class ROAModel(models.Model):
                         if field_attr is None:
                             payload[field.attname] = None
                         else:
-                            payload[field.attname] = field_attr.id
+                            payload[field.attname] = field_attr.pk
                                     
                     # Handle all other fields
                     else:

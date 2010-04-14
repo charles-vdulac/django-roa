@@ -10,8 +10,10 @@ syntax: glob
 *.svn
 *.orig
 *.old
+*.swp
 settings.py
 manage.py
 django
 dist/*
+build/
 django_roa.egg-info/PKG-INFO
