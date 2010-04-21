@@ -401,7 +401,9 @@ class ROAModel(models.Model):
         logger.debug("""Deleting  : "%s" through %s""" % \
             (unicode(self).encode(settings.DEFAULT_CHARSET), 
              resource.uri.encode(settings.DEFAULT_CHARSET)))
-        response = resource.delete()
+
+        delete_args = getattr(settings, "ROA_CUSTOM_ARGS", {})
+        response = resource.delete(**delete_args)
 
     delete.alters_data = True
 
