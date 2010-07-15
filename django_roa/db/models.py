@@ -11,7 +11,7 @@ from django.db.models.options import Options
 from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception, get_absolute_url
 from django.db.models.fields.related import OneToOneField
-from django.utils.functional import curry
+from django.utils.functional import curry, update_wrapper
 from django.utils.encoding import force_unicode, smart_unicode
 
 from libs.restkit import Resource, RequestFailed
@@ -54,11 +54,14 @@ class ROAModelBase(ModelBase):
 
         new_class.add_to_class('_meta', Options(meta, **kwargs))
         if not abstract:
-            new_class.add_to_class('DoesNotExist',
-                    subclass_exception('DoesNotExist', ObjectDoesNotExist, module))
-            new_class.add_to_class('MultipleObjectsReturned',
-                    subclass_exception('MultipleObjectsReturned', 
-                                       MultipleObjectsReturned, module))
+            new_class.add_to_class('DoesNotExist', subclass_exception('DoesNotExist',
+                    tuple(x.DoesNotExist
+                            for x in parents if hasattr(x, '_meta') and not x._meta.abstract)
+                                    or (ObjectDoesNotExist,), module))
+            new_class.add_to_class('MultipleObjectsReturned', subclass_exception('MultipleObjectsReturned',
+                    tuple(x.MultipleObjectsReturned
+                            for x in parents if hasattr(x, '_meta') and not x._meta.abstract)
+                                    or (MultipleObjectsReturned,), module))
             if base_meta and not base_meta.abstract:
                 # Non-abstract child classes inherit some attributes from their
                 # non-abstract parent (unless an ABC comes before it in the
@@ -227,7 +230,8 @@ class ROAModelBase(ModelBase):
                                       ", ".join([f.attname for f in opts.fields]))
 
         if hasattr(cls, 'get_absolute_url'):
-            cls.get_absolute_url = curry(get_absolute_url, opts, cls.get_absolute_url)
+            cls.get_absolute_url = update_wrapper(curry(get_absolute_url, opts, cls.get_absolute_url),
+                                                  cls.get_absolute_url)
 
         if hasattr(cls, 'get_resource_url_list'):
             cls.get_resource_url_list = staticmethod(curry(get_resource_url_list, 
@@ -398,9 +402,8 @@ class ROAModel(models.Model):
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail())
         
-        logger.debug("""Deleting  : "%s" through %s""" % \
-            (unicode(self).encode(settings.DEFAULT_CHARSET), 
-             resource.uri.encode(settings.DEFAULT_CHARSET)))
+        logger.debug(u"""Deleting  : "%s" through %s""" % \
+            (unicode(self), unicode(resource.uri)))
 
         delete_args = getattr(settings, "ROA_CUSTOM_ARGS", {})
         response = resource.delete(**delete_args)
