@@ -14,7 +14,7 @@ from django.db.models.fields.related import OneToOneField
 from django.utils.functional import curry, update_wrapper
 from django.utils.encoding import force_unicode, smart_unicode
 
-from libs.restkit import Resource, RequestFailed
+from restkit import Resource, RequestFailed
 from django_roa.db.exceptions import ROAException
 
 logger = logging.getLogger("django_roa")

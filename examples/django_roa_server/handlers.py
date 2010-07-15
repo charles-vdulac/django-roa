@@ -9,8 +9,8 @@ from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, _get_queryset
 from django.utils.encoding import smart_unicode
 
-from libs.piston.handler import BaseHandler, AnonymousBaseHandler
-from libs.piston.utils import rc
+from piston.handler import BaseHandler, AnonymousBaseHandler
+from piston.utils import rc
 
 from django_roa_server.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithCustomSlug, \

@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
 
-from libs.piston.resource import Resource
-from libs.piston.authentication import HttpBasicAuthentication
+from piston.resource import Resource
+from piston.authentication import HttpBasicAuthentication
 
 from django_roa_server.handlers import RemotePageHandler, \
     RemotePageWithManyFieldsHandler, RemotePageWithBooleanFieldsHandler, \
