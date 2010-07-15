@@ -2,6 +2,15 @@
 Django-ROA's changelog
 ======================
 
+Version 1.6, 16 July 2010:
+--------------------------
+
+* Switch to pip's requirements.txt file for external dependencies (restkit and
+  piston, note that the later is only useful for tests).
+* @cyril fixed a lot of bugs, see changeset 86a68259e83e for details. Thanks!
+* @cyrilrbt fixed missing ROA_CUSTOM_ARGS on delete. Thanks!
+
+
 Version 1.5, 7 January 2010:
 ----------------------------
 
