@@ -66,7 +66,7 @@ class ROAHandler(BaseHandler):
         obj_list = list(queryset)
         if not obj_list:
             raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
-        logger.debug('Objects: %s retrieved' % [unicode(obj).encode(settings.DEFAULT_CHARSET) for obj in obj_list])
+        logger.debug(u'Objects: %s retrieved' % [unicode(obj) for obj in obj_list])
         return queryset
         
     def create(self, request, *args, **kwargs):
@@ -106,7 +106,7 @@ class ROAHandler(BaseHandler):
         
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
-        logger.debug('Object "%s" created' % unicode(object).encode(settings.DEFAULT_CHARSET))
+        logger.debug(u'Object "%s" created' % unicode(object))
         return response
 
     def update(self, request, *args, **kwargs):
@@ -117,7 +117,7 @@ class ROAHandler(BaseHandler):
             return rc.NOT_IMPLEMENTED
         
         data = request.PUT.copy()
-        logger.debug('Received: %s as PUT data' % data)
+        logger.debug(u'Received: %s as PUT data' % data)
         object = self._get_object(self.model, *args, **kwargs)
         
         for field in self.model._meta.local_fields:
@@ -153,9 +153,8 @@ class ROAHandler(BaseHandler):
         
         response = [self.model.objects.get(id=object.id)]
         #response = [object]
-        logger.debug('Object "%s" modified with %s' % (
-            unicode(object).encode(settings.DEFAULT_CHARSET), 
-            unicode(data.items()).encode(settings.DEFAULT_CHARSET)))
+        logger.debug(u'Object "%s" modified with %s' % (
+            unicode(object), unicode(data.items())))
         return response
 
     def delete(self, request, *args, **kwargs):
@@ -168,9 +167,9 @@ class ROAHandler(BaseHandler):
         try:
             object = self._get_object(self.model, *args, **kwargs)
             object.delete()
-            logger.debug('Object "%s" deleted, remains %s' % (
-                unicode(object).encode(settings.DEFAULT_CHARSET), 
-                [unicode(object).encode(settings.DEFAULT_CHARSET) for object in self.model.objects.all()]))
+            logger.debug(u'Object "%s" deleted, remains %s' % (
+                unicode(object), 
+                [unicode(object) for object in self.model.objects.all()]))
 
             return rc.DELETED
         except self.model.MultipleObjectsReturned:
@@ -208,7 +207,7 @@ class ROACountHandler(BaseHandler):
         
         # Counting
         counter = queryset.count()
-        logger.debug('Count: %s objects' % counter)
+        logger.debug(u'Count: %s objects' % counter)
         return counter
 
 

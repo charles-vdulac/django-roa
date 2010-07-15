@@ -28,11 +28,11 @@ application into your own project, otherwise it will fail. Django do not
 handle very well projects inside projects.
 """
 from datetime import time, date, datetime
+from decimal import Decimal
 
 from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from django.utils._decimal import Decimal
 from django.core.serializers import register_serializer
 from django.contrib.contenttypes.models import ContentType
 
@@ -236,11 +236,11 @@ class ROAFieldsTests(ROATestCase):
         page = RemotePageWithManyFields.objects.create(decimal_field=1.55)
         self.assertEqual(page.decimal_field, 1.55)
         page = RemotePageWithManyFields.objects.get(id=page.id)
-        self.assertEqual(repr(page.decimal_field), 'Decimal("1.55")')
+        self.assertEqual(repr(page.decimal_field), "Decimal('1.55')")
         page.decimal_field = 20.09
         page.save()
         page = RemotePageWithManyFields.objects.get(id=page.id)
-        self.assertEqual(repr(page.decimal_field), 'Decimal("20.09")')
+        self.assertEqual(repr(page.decimal_field), "Decimal('20.09')")
         page.delete()
 
     def test_email_field(self):
