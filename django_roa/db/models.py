@@ -374,7 +374,7 @@ class ROAModel(models.Model):
                 except RequestFailed, e:
                     raise ROAException(e)
             
-            response = force_unicode(response.body).encode(settings.DEFAULT_CHARSET)
+            response = force_unicode(response.body_string()).encode(settings.DEFAULT_CHARSET)
             
             for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
                 response = response.replace(remote_name, local_name)
