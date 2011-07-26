@@ -385,7 +385,10 @@ class ROAModel(models.Model):
             else:
                 result = deserializer(response).next()
             
-            self.id = int(result.object.id)
+            try:
+                self.id = int(result.object.id)
+            except ValueError:
+                self.id = result.object.id
             self = result.object
         
         if origin:
