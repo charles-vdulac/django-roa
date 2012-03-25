@@ -177,7 +177,7 @@ class RemoteQuerySet(query.QuerySet):
         except Exception, e:
             raise ROAException(e)
 
-        response = force_unicode(response.body).encode(DEFAULT_CHARSET)
+        response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
 
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
@@ -245,7 +245,7 @@ class RemoteQuerySet(query.QuerySet):
             raise ROAException(e)
         
 
-        response = force_unicode(response.body).encode(DEFAULT_CHARSET)
+        response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
 
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
