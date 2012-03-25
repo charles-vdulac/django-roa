@@ -8,6 +8,8 @@ from django.core.serializers import base
 from django.core.serializers.json import Serializer as JSONSerializer
 from django.core.serializers.python import _get_model
 
+DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
+
 class Serializer(JSONSerializer):
     pass
 
@@ -36,7 +38,7 @@ def Deserializer(stream_or_string, **options):
         # Handle each field
         for (field_name, field_value) in obj.iteritems():
             if isinstance(field_value, str):
-                field_value = smart_unicode(field_value, options.get("encoding", settings.DEFAULT_CHARSET), strings_only=True)
+                field_value = smart_unicode(field_value, options.get("encoding", DEFAULT_CHARSET), strings_only=True)
         
             try:
                 field = Model._meta.get_field(field_name)

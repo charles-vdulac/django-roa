@@ -4,6 +4,8 @@ from django.utils.xmlutils import SimplerXMLGenerator
 from django.core.serializers.xml_serializer import Serializer as XMLSerializer, \
                                                    Deserializer as XMLDeserializer
 
+DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
+
 class Serializer(XMLSerializer):
     """
     A test serializer which removes ``django-objects`` xml tag from default
@@ -14,7 +16,7 @@ class Serializer(XMLSerializer):
         """
         Start serialization -- open the XML document and the root element.
         """
-        self.xml = SimplerXMLGenerator(self.stream, self.options.get("encoding", settings.DEFAULT_CHARSET))
+        self.xml = SimplerXMLGenerator(self.stream, self.options.get("encoding", DEFAULT_CHARSET))
         self.xml.startDocument()
         self.xml.startElement("django-test", {"version" : "1.0"})
 

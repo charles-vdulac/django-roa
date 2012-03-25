@@ -15,7 +15,7 @@ logger = logging.getLogger("django_roa")
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
-
+DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
 class Query(object):
     def __init__(self):
@@ -176,7 +176,7 @@ class RemoteQuerySet(query.QuerySet):
         except Exception, e:
             raise ROAException(e)
 
-        response = force_unicode(response.body).encode(settings.DEFAULT_CHARSET)
+        response = force_unicode(response.body).encode(DEFAULT_CHARSET)
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
         
@@ -242,7 +242,7 @@ class RemoteQuerySet(query.QuerySet):
         except Exception, e:
             raise ROAException(e)
         
-        response = force_unicode(response.body).encode(settings.DEFAULT_CHARSET)
+        response = force_unicode(response.body).encode(DEFAULT_CHARSET)
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
         
