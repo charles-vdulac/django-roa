@@ -38,17 +38,22 @@ def Deserializer(stream_or_string, **options):
         # Handle each field
         for (field_name, field_value) in obj.iteritems():
             if isinstance(field_value, str):
-                field_value = smart_unicode(field_value, options.get("encoding", DEFAULT_CHARSET), strings_only=True)
+                field_value = smart_unicode(
+                                field_value, 
+                                options.get("encoding", DEFAULT_CHARSET),
+                                strings_only=True)
         
             try:
                 field = Model._meta.get_field(field_name)
-            except models.fields.FieldDoesNotExist:
+            except models.FieldDoesNotExist:
                 continue
         
             # Handle FK fields
             if field.rel and isinstance(field.rel, models.ManyToOneRel):
                 if field_value is not None:
-                    data[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value['id'])
+                    data[field.attname] = field.rel.to._meta.\
+                        get_field(field.rel.field_name).\
+                        to_python(field_value['id'])
                 else:
                     data[field.attname] = None
 
@@ -57,4 +62,3 @@ def Deserializer(stream_or_string, **options):
                 data[field.name] = field.to_python(field_value)
         
         yield base.DeserializedObject(Model(**data), m2m_data)
-        

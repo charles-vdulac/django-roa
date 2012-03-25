@@ -23,6 +23,7 @@ logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
+ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -318,7 +319,6 @@ class ROAModel(models.Model):
             pk_val = self._get_pk_val(meta)
             pk_set = pk_val is not None
             
-            ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
             get_args = {'format': ROA_FORMAT}
             get_args.update(getattr(settings, "ROA_CUSTOM_ARGS", {}))
             

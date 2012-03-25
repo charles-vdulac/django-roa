@@ -15,6 +15,7 @@ logger = logging.getLogger("django_roa")
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
+ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -99,7 +100,6 @@ class Query(object):
             parameters[ROA_ARGS_NAMES_MAPPING.get('LIMIT_STOP', 'limit_stop')] = self.limit_stop
         
         # Format
-        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         parameters[ROA_ARGS_NAMES_MAPPING.get('FORMAT', 'format')] = ROA_FORMAT
         
         parameters.update(getattr(settings, 'ROA_CUSTOM_ARGS', {}))
@@ -182,7 +182,6 @@ class RemoteQuerySet(query.QuerySet):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
         
-        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         for res in serializers.deserialize(ROA_FORMAT, response):
             obj = res.object
             yield obj
@@ -243,14 +242,12 @@ class RemoteQuerySet(query.QuerySet):
             response = resource.get(**parameters)
         except Exception, e:
             raise ROAException(e)
-        
 
         response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
 
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
         
-        ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
         deserializer = serializers.get_deserializer(ROA_FORMAT)
         if hasattr(deserializer, 'deserialize_object'):
             result = deserializer(response).deserialize_object(response)
