@@ -4,12 +4,14 @@ import logging
 
 from django.conf import settings
 from django.core import serializers
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned, FieldError
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned,\
+    FieldError
 from django.db import models
 from django.db.models import signals
 from django.db.models.options import Options
 from django.db.models.loading import register_models, get_model
-from django.db.models.base import ModelBase, subclass_exception, get_absolute_url
+from django.db.models.base import ModelBase, subclass_exception, \
+    get_absolute_url, method_get_order, method_set_order
 from django.db.models.fields.related import OneToOneField
 from django.utils.functional import curry, update_wrapper
 from django.utils.encoding import force_unicode, smart_unicode
@@ -21,6 +23,7 @@ logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
+
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
 class ROAModelBase(ModelBase):
@@ -346,7 +349,7 @@ class ROAModel(models.Model):
                             field_ids = getattr(self, '%s_updated_ids' % field.attname)
                         else:
                             field_ids = [obj.id for obj in field.value_from_object(self)]
-                        payload[field.attname] = ','.join(smart_unicode(id) for id in field_ids)
+                        payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_ids)
             
             if force_update or pk_set and not self.id is None:
                 record_exists = True
