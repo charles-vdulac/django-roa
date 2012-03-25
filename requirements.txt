@@ -3,3 +3,4 @@ PIL==1.1.7
 -e hg+http://bitbucket.org/jespern/django-piston@87c0fcfb74658ff25d41a0866a0a059944a0065d#egg=django_piston-tip
 -e git://github.com/benoitc/restkit@65b2ef8101cb6ff73a4e842ee40aa85adeeec565#egg=restkit-2.0.4
 wsgiref==0.1.2
+simplejson==2.4.0
