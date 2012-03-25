@@ -1,4 +1,4 @@
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 class Command(NoArgsCommand):
     help = "Introspects the models and outputs a representation of resources."

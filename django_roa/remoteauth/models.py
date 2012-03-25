@@ -3,8 +3,7 @@ import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission as DjangoPermission, \
     User as DjangoUser, Group as DjangoGroup, \
-    UserManager as DjangoUserManager, Message as DjangoMessage, \
-    get_hexdigest, check_password
+    UserManager as DjangoUserManager, Message as DjangoMessage
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 

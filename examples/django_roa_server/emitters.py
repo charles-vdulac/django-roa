@@ -1,9 +1,6 @@
 import logging
 
 from django.conf import settings
-from django.core import serializers
-from django.http import HttpResponse
-from django.utils import simplejson
 
 from piston.emitters import Emitter, DjangoEmitter
 

@@ -1,13 +1,9 @@
 import logging
 
-from django.conf import settings
 from django.contrib.auth.models import User, Message, Group, Permission
-from django.core.exceptions import ObjectDoesNotExist
-from django.core import serializers
 from django.db import models
-from django.http import Http404, HttpResponse, HttpResponseNotAllowed
+from django.http import Http404
 from django.shortcuts import get_object_or_404, _get_queryset
-from django.utils.encoding import smart_unicode
 
 from piston.handler import BaseHandler, AnonymousBaseHandler
 from piston.utils import rc
@@ -37,12 +33,16 @@ class ROAHandler(BaseHandler):
         if not self.has_model():
             return rc.NOT_IMPLEMENTED
         
+        logger.debug('Args: %s' % str(args))
+        logger.debug('Kwargs: %s' % str(kwargs))
+        
         if kwargs.values() != [None]:
             # Returns a single object
             return [self._get_object(self.model, *args, **kwargs)]
         
         # Initialization
         queryset = _get_queryset(self.model)
+        logger.debug('Before filters: %s' % str(queryset))
         
         # Filtering
         filters, excludes = {}, {}
@@ -52,6 +52,10 @@ class ROAHandler(BaseHandler):
             if k.startswith('exclude_'):
                 excludes[k[8:]] = v
         queryset = queryset.filter(*filters.items()).exclude(*excludes.items())
+        
+        logger.debug('Filters: %s' % str(filters))
+        logger.debug('Excludes: %s' % str(excludes))
+        logger.debug('After filters: %s' % str(queryset))
         
         # Ordering (test custom parameters' name)
         if 'order' in request.GET:
@@ -77,7 +81,6 @@ class ROAHandler(BaseHandler):
             return rc.NOT_IMPLEMENTED
         
         data = request.POST.copy()
-        keys = data.keys()
         
         values = {}
         for field in self.model._meta.local_fields:
@@ -102,11 +105,10 @@ class ROAHandler(BaseHandler):
                             field_value = float(field_value)
                     values[field.name] = field_value
 
-        object = self.model.objects.create(**values)
+        obj = self.model.objects.create(**values)
         
-        response = [self.model.objects.get(id=object.id)]
-        #response = [object]
-        logger.debug(u'Object "%s" created' % unicode(object))
+        response = [self.model.objects.get(id=obj.id)]
+        logger.debug(u'Object "%s" created' % unicode(obj))
         return response
 
     def update(self, request, *args, **kwargs):
@@ -118,7 +120,7 @@ class ROAHandler(BaseHandler):
         
         data = request.PUT.copy()
         logger.debug(u'Received: %s as PUT data' % data)
-        object = self._get_object(self.model, *args, **kwargs)
+        obj = self._get_object(self.model, *args, **kwargs)
         
         for field in self.model._meta.local_fields:
             field_name = field.name
@@ -130,7 +132,7 @@ class ROAHandler(BaseHandler):
                     field_value = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
                 else:
                     field_value = None
-                setattr(object, field.attname, field_value)
+                setattr(obj, field.attname, field_value)
             
             # Handle all other fields
             elif field_name in data:
@@ -147,14 +149,13 @@ class ROAHandler(BaseHandler):
                 elif isinstance(field, models.fields.CharField):
                     if field_value is None:
                         field_value = u''
-                setattr(object, field_name, field_value)
+                setattr(obj, field_name, field_value)
         
-        object.save()
+        obj.save()
         
-        response = [self.model.objects.get(id=object.id)]
-        #response = [object]
+        response = [self.model.objects.get(id=obj.id)]
         logger.debug(u'Object "%s" modified with %s' % (
-            unicode(object), unicode(data.items())))
+            unicode(obj), unicode(data.items())))
         return response
 
     def delete(self, request, *args, **kwargs):
@@ -165,11 +166,11 @@ class ROAHandler(BaseHandler):
             raise NotImplementedError
         
         try:
-            object = self._get_object(self.model, *args, **kwargs)
-            object.delete()
+            obj = self._get_object(self.model, *args, **kwargs)
+            obj.delete()
             logger.debug(u'Object "%s" deleted, remains %s' % (
-                unicode(object), 
-                [unicode(object) for object in self.model.objects.all()]))
+                unicode(obj), 
+                [unicode(obj) for obj in self.model.objects.all()]))
 
             return rc.DELETED
         except self.model.MultipleObjectsReturned:
@@ -219,10 +220,10 @@ class ROAWithSlugHandler(ROAHandler):
         
         Useful when the slug is a combination of many fields.
         """
-        id, slug = kwargs['object_slug'].split('-', 1)
-        object = get_object_or_404(model, id=id, slug=slug)
-        return object
-    
+        pk, slug = kwargs['object_slug'].split('-', 1)
+        obj = get_object_or_404(model, id=pk)
+        return obj
+
 
 class RemotePageHandler(ROAHandler):
     model = RemotePage
@@ -251,7 +252,7 @@ class RemotePageWithCustomSlugHandler(ROAWithSlugHandler):
 class RemotePageWithCustomSlugCountHandler(ROACountHandler):
     model = RemotePageWithCustomSlug
 
-    
+
 class RemotePageWithOverriddenUrlsHandler(ROAWithSlugHandler):
     model = RemotePageWithOverriddenUrls
 
@@ -265,21 +266,21 @@ class RemotePageWithRelationsHandler(ROAHandler):
 class RemotePageWithRelationsCountHandler(ROACountHandler):
     model = RemotePageWithRelations
 
-    
+
 class RemotePageWithRelationsThroughHandler(ROAHandler):
     model = RemotePageWithRelationsThrough
 
 class RemotePageWithRelationsThroughCountHandler(ROACountHandler):
     model = RemotePageWithRelationsThrough
 
-    
+
 class RemotePageWithNamedRelationsHandler(ROAHandler):
     model = RemotePageWithNamedRelations
 
 class RemotePageWithNamedRelationsCountHandler(ROACountHandler):
     model = RemotePageWithNamedRelations
 
-    
+
 class UserHandler(ROAHandler):
     model = User
 
@@ -288,6 +289,6 @@ class MessageHandler(ROAHandler):
 
 class PermissionHandler(ROAHandler):
     model = Permission
-    
+
 class GroupHandler(ROAHandler):
     model = Group

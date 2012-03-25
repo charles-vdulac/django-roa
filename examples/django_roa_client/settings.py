@@ -49,7 +49,7 @@ SERIALIZATION_MODULES = {
 }
 
 ## ROA custom settings
-ROA_MODELS = True   # set to False if you'd like to develop/test locally
+ROA_MODELS = True # set to False if you'd like to develop/test locally
 ROA_FORMAT = 'django' # json or xml
 # specify the headers sent to the ws from restkit
 ROA_HEADERS = {

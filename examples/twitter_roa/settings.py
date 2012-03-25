@@ -45,7 +45,7 @@ SERIALIZATION_MODULES = {
 }
 
 ## ROA custom settings
-ROA_MODELS = True   # set to False if you'd like to develop/test locally
+ROA_MODELS = True # set to False if you'd like to develop/test locally
 ROA_FORMAT = 'twitter' # json or xml
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
 

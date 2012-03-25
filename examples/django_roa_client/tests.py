@@ -28,7 +28,6 @@ application into your own project, otherwise it will fail. Django do not
 handle very well projects inside projects.
 """
 from datetime import time, date, datetime
-from decimal import Decimal
 
 from django.test import TestCase
 from django.conf import settings
