@@ -28,7 +28,7 @@ def Deserializer(stream_or_string, **options):
         object_list = [object_list]
     for obj in object_list:
         # Look up the model and starting build a dict of data for it.
-        if 'name' in obj:
+        if 'screen_name' in obj:
             Model = _get_model('twitter_roa.user')
         else:
             Model = _get_model("twitter_roa.tweet")
@@ -60,5 +60,4 @@ def Deserializer(stream_or_string, **options):
             # Handle all other fields
             else:
                 data[field.name] = field.to_python(field_value)
-        
         yield base.DeserializedObject(Model(**data), m2m_data)

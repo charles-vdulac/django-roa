@@ -4,8 +4,8 @@ from django_roa import Model, Manager
 from django_roa.db.query import RemoteQuerySet
 
 class User(Model):
-    name = models.CharField(max_length=50)
-    screen_name = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
+    screen_name = models.CharField(max_length=255)
     description = models.TextField()
 
     def __unicode__(self):
@@ -13,7 +13,10 @@ class User(Model):
 
     @staticmethod
     def get_resource_url_list():
-        return u'http://twitter.com/users/show.json'
+        return u'http://api.twitter.com/1/users/lookup.json?screen_name=twitterapi,twitter,twittersearch,twittermedia,twittermobile'
+    
+    def get_resource_url_count(self):
+        return User.get_resource_url_list()
 
 
 class FakeCountRemoteQuerySet(RemoteQuerySet):
@@ -41,4 +44,4 @@ class Tweet(Model):
 
     @staticmethod
     def get_resource_url_list():
-        return u'http://twitter.com/statuses/public_timeline.json'
+        return u'http://api.twitter.com/1/statuses/public_timeline.json'

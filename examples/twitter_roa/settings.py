@@ -50,11 +50,15 @@ ROA_FORMAT = 'twitter' # json or xml
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
 
 ROA_URL_OVERRIDES_DETAIL = {
-    'twitter_roa.tweet': lambda o: u'http://twitter.com/statuses/show/%s.json' % o.id,
-    'twitter_roa.user': lambda o: u'http://twitter.com/users/show/%s.json' % o.id,
+    'twitter_roa.tweet': lambda o: u'http://api.twitter.com/1/statuses/show/%s.json' % o.id,
+    'twitter_roa.user': lambda o: u'http://api.twitter.com/1/users/show.json?user_id=%s' % o.id,
 }
 ROA_ARGS_NAMES_MAPPING = {
     'filter_id__exact': 'user_id',
+}
+ROA_CUSTOM_ARGS = {
+    'include_entities': 'false',
+    'skip_status': 'true',
 }
 
 ## Logging settings
