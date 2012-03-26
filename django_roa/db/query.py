@@ -212,7 +212,12 @@ class RemoteQuerySet(query.QuerySet):
         except Exception, e:
             raise ROAException(e)
         
-        return int(response.body_string())
+        cnt = 0
+        try:
+            cnt = int(response.body_string())
+        except: pass
+        
+        return cnt
 
     def _get_from_id_or_pk(self, id=None, pk=None):
         """
@@ -263,11 +268,28 @@ class RemoteQuerySet(query.QuerySet):
         """
         # special case, get(id=X) directly request the resource URL and do not
         # filter on ids like Django's ORM do.
-        if kwargs.keys() == ['id']:
-            return self._get_from_id_or_pk(id=kwargs['id'])
-        elif kwargs.keys() == ['pk']: # useful for admin which relies on pks
-            return self._get_from_id_or_pk(pk=kwargs['pk'])
+        kws = kwargs.copy()
+        # check if it's a related field retrieving its model instance
+        if len(kws.keys()) == 1:
+            for kw in kws.keys():
+                if kw.endswith('__exact'):
+                    # strip the "_exact" suffix since we want to retrieve it by ID/PK
+                    kwargs[kw[:-len('__exact')]] = kws[kw]
+                    kws[kw[:-len('__exact')]] = kws[kw]
+                    del kws[kw]
+
+        if kws.keys() == ['id']:
+            del kws['id']
+            return self._get_from_id_or_pk(id=kwargs['id'], **kws)
+        elif kws.keys() == ['pk']: # useful for admin which relies on pks
+            del kws['pk']
+            return self._get_from_id_or_pk(pk=kwargs['pk'], **kws)
+        # check the case of PK attribute with custom name
+        elif kws.keys() == [self.model._meta.pk.attname]:
+            del kws[self.model._meta.pk.attname]
+            return self._get_from_id_or_pk(pk=kwargs[self.model._meta.pk.attname], **kws)
         else:
+            # filter the request rather than retrieve (get) it
             return super(RemoteQuerySet, self).get(*args, **kwargs)
 
     def latest(self, field_name=None):
