@@ -71,6 +71,11 @@ ROA_MODEL_NAME_MAPPING = (
 ROA_ARGS_NAMES_MAPPING = {
     'ORDER_BY': 'order',
 }
+# Enable HTTP authentication through django-piston
+from restkit import BasicAuth
+ROA_FILTERS = [ BasicAuth('django-roa', 'roa'), ]
+# Disable authentication through django-piston
+#ROA_FILTERS = []
 
 ## Logging settings
 import logging

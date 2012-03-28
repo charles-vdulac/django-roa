@@ -16,6 +16,7 @@ ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -162,8 +163,9 @@ class RemoteQuerySet(query.QuerySet):
         An iterator over the results from applying this QuerySet to the
         remote web service.
         """
-        resource = Resource(self.model.get_resource_url_list(), headers=ROA_HEADERS)
-
+        resource = Resource(self.model.get_resource_url_list(),
+                            headers=ROA_HEADERS,
+                            filters=ROA_FILTERS)
         try:
             parameters = self.query.parameters
             logger.debug(u"""Requesting: "%s" through %s
@@ -199,8 +201,9 @@ class RemoteQuerySet(query.QuerySet):
         # a staticmethod for get_resource_url_count and avoid to set it
         # for all model without relying on get_resource_url_list
         instance = clone.model()
-        resource = Resource(instance.get_resource_url_count(), headers=ROA_HEADERS)
-        
+        resource = Resource(instance.get_resource_url_count(),
+                            headers=ROA_HEADERS,
+                            filters=ROA_FILTERS)
         try:
             parameters = clone.query.parameters
             logger.debug(u"""Counting  : "%s" through %s
@@ -219,7 +222,7 @@ class RemoteQuerySet(query.QuerySet):
         
         return cnt
 
-    def _get_from_id_or_pk(self, id=None, pk=None):
+    def _get_from_id_or_pk(self, id=None, pk=None, **kwargs):
         """
         Returns an object given an id or pk, request directly with the
         get_resource_url_detail method without filtering on ids
@@ -235,8 +238,10 @@ class RemoteQuerySet(query.QuerySet):
             instance.id = id
         else:
             instance.pk = pk
-        resource = Resource(instance.get_resource_url_detail(), headers=ROA_HEADERS)
-        
+        resource = Resource(instance.get_resource_url_detail(),
+                            headers=ROA_HEADERS,
+                            filters=ROA_FILTERS,
+                            **kwargs)
         try:
             parameters = clone.query.parameters
             logger.debug(u"""Retrieving : "%s" through %s

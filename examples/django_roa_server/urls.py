@@ -13,34 +13,42 @@ from django_roa_server.handlers import RemotePageHandler, \
     RemotePageWithRelationsHandler, RemotePageWithNamedRelationsHandler, \
     RemotePageWithNamedRelationsCountHandler, RemotePageWithRelationsThroughHandler
 
-remote_pages = Resource(handler=RemotePageHandler)
-remote_pages_count = Resource(handler=RemotePageCountHandler)
+# Enable HTTP authentication through django-piston
+ad = { 'authentication': HttpBasicAuthentication(
+   realm="django-roa-server", 
+   auth_func = lambda username, password: username == 'django-roa' and password == 'roa'
+)}
+# Disable authentication through django-piston
+#ad = { 'authentication': None}
 
-remote_pages_with_many_fields = Resource(handler=RemotePageWithManyFieldsHandler)
-remote_pages_with_many_fields_count = Resource(handler=RemotePageWithManyFieldsCountHandler)
+remote_pages = Resource(handler=RemotePageHandler, **ad)
+remote_pages_count = Resource(handler=RemotePageCountHandler, **ad)
 
-remote_pages_with_boolean_fields = Resource(handler=RemotePageWithBooleanFieldsHandler)
-remote_pages_with_boolean_fields_count = Resource(handler=RemotePageWithBooleanFieldsCountHandler)
+remote_pages_with_many_fields = Resource(handler=RemotePageWithManyFieldsHandler, **ad)
+remote_pages_with_many_fields_count = Resource(handler=RemotePageWithManyFieldsCountHandler, **ad)
 
-remote_pages_with_custom_slug = Resource(handler=RemotePageWithCustomSlugHandler)
-remote_pages_with_custom_slug_count = Resource(handler=RemotePageWithCustomSlugCountHandler)
+remote_pages_with_boolean_fields = Resource(handler=RemotePageWithBooleanFieldsHandler, **ad)
+remote_pages_with_boolean_fields_count = Resource(handler=RemotePageWithBooleanFieldsCountHandler, **ad)
 
-remote_pages_with_overridden_urls = Resource(handler=RemotePageWithOverriddenUrlsHandler)
-remote_pages_with_overridden_urls_count = Resource(handler=RemotePageWithOverriddenUrlsCountHandler)
+remote_pages_with_custom_slug = Resource(handler=RemotePageWithCustomSlugHandler, **ad)
+remote_pages_with_custom_slug_count = Resource(handler=RemotePageWithCustomSlugCountHandler, **ad)
 
-remote_pages_with_relations = Resource(handler=RemotePageWithRelationsHandler)
-remote_pages_with_relations_count = Resource(handler=RemotePageWithRelationsHandler)
+remote_pages_with_overridden_urls = Resource(handler=RemotePageWithOverriddenUrlsHandler, **ad)
+remote_pages_with_overridden_urls_count = Resource(handler=RemotePageWithOverriddenUrlsCountHandler, **ad)
 
-remote_pages_with_relations_through = Resource(handler=RemotePageWithRelationsThroughHandler)
-remote_pages_with_relations_through_count = Resource(handler=RemotePageWithRelationsThroughHandler)
+remote_pages_with_relations = Resource(handler=RemotePageWithRelationsHandler, **ad)
+remote_pages_with_relations_count = Resource(handler=RemotePageWithRelationsHandler, **ad)
 
-remote_pages_with_named_relations = Resource(handler=RemotePageWithNamedRelationsHandler)
-remote_pages_with_named_relations_count = Resource(handler=RemotePageWithNamedRelationsCountHandler)
+remote_pages_with_relations_through = Resource(handler=RemotePageWithRelationsThroughHandler, **ad)
+remote_pages_with_relations_through_count = Resource(handler=RemotePageWithRelationsThroughHandler, **ad)
 
-users = Resource(handler=UserHandler)
-messages = Resource(handler=MessageHandler)
-permissions = Resource(handler=PermissionHandler)
-groups = Resource(handler=GroupHandler)
+remote_pages_with_named_relations = Resource(handler=RemotePageWithNamedRelationsHandler, **ad)
+remote_pages_with_named_relations_count = Resource(handler=RemotePageWithNamedRelationsCountHandler, **ad)
+
+users = Resource(handler=UserHandler, **ad)
+messages = Resource(handler=MessageHandler, **ad)
+permissions = Resource(handler=PermissionHandler, **ad)
+groups = Resource(handler=GroupHandler, **ad)
 
 urlpatterns = patterns('',
     # Remote pages counts

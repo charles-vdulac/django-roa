@@ -44,6 +44,8 @@ from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithRelationsThrough
 from django_roa_client.forms import TestForm, RemotePageForm
 
+ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
+
 class ROATestCase(TestCase):
     
     def setUp(self):
@@ -51,7 +53,6 @@ class ROATestCase(TestCase):
 
     def tearDown(self):
         RemotePage.objects.all().delete()
- 
 
 class ROAUserTestCase(ROATestCase):
     
@@ -635,7 +636,7 @@ class ROASettingsTests(ROATestCase):
         settings.ROA_FORMAT = 'custom'
         page = RemotePage.objects.create(title=u'A custom serialized page')
         self.assertEqual(repr(page), '<RemotePage: A custom serialized page (1)>')
-        r = Resource('http://127.0.0.1:8081/django_roa_server/remotepage/')
+        r = Resource('http://127.0.0.1:8081/django_roa_server/remotepage/', filters=ROA_FILTERS)
         response = r.get(**{'format': 'custom'})
         self.assertEqual(repr(response.body_string()), '\'<?xml version="1.0" encoding="utf-8"?>\\n<django-test version="1.0">\\n <object pk="1" model="django_roa_server.remotepage">\\n  <field type="CharField" name="title">A custom serialized page</field>\\n </object>\\n</django-test>\'')
         self.assertEqual(len(RemotePage.objects.all()), 1)

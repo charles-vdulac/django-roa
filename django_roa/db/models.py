@@ -24,6 +24,7 @@ logger = logging.getLogger("django_roa")
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -353,7 +354,9 @@ class ROAModel(models.Model):
             
             if force_update or pk_set and not self.id is None:
                 record_exists = True
-                resource = Resource(self.get_resource_url_detail(), headers=ROA_HEADERS)
+                resource = Resource(self.get_resource_url_detail(),
+                                    headers=ROA_HEADERS,
+                                    filters=ROA_FILTERS)
                 try:
                     logger.debug(u"""Modifying : "%s" through %s
                                   with payload "%s" and GET args "%s" """ % (
@@ -366,7 +369,9 @@ class ROAModel(models.Model):
                     raise ROAException(e)
             else:
                 record_exists = False
-                resource = Resource(self.get_resource_url_list(), headers=ROA_HEADERS)
+                resource = Resource(self.get_resource_url_list(),
+                                    headers=ROA_HEADERS,
+                                    filters=ROA_FILTERS)
                 try:
                     logger.debug(u"""Creating  : "%s" through %s
                                   with payload "%s" and GET args "%s" """ % (
@@ -407,7 +412,9 @@ class ROAModel(models.Model):
                 % (self._meta.object_name, self._meta.pk.attname)
                 
         # Deletion in cascade should be done server side.
-        resource = Resource(self.get_resource_url_detail())
+        resource = Resource(self.get_resource_url_detail(),
+                            headers=ROA_HEADERS,
+                            filters=ROA_FILTERS)
         
         logger.debug(u"""Deleting  : "%s" through %s""" % \
             (unicode(self), unicode(resource.uri)))
