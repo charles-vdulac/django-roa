@@ -342,16 +342,16 @@ class ROAModel(models.Model):
                         payload[field.name] = field.value_to_string(self)
 
                 # Handle M2M relations in case of update
-                if force_update or pk_set and not self.id is None:
+                if force_update or pk_set and not self.pk is None:
                     for field in meta.many_to_many:
                         # First try to get ids from var set in query's add/remove/clear
                         if hasattr(self, '%s_updated_ids' % field.attname):
-                            field_ids = getattr(self, '%s_updated_ids' % field.attname)
+                            field_pks = getattr(self, '%s_updated_ids' % field.attname)
                         else:
-                            field_ids = [obj.id for obj in field.value_from_object(self)]
-                        payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_ids)
+                            field_pks = [obj.pk for obj in field.value_from_object(self)]
+                        payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_pks)
 
-            if force_update or pk_set and not self.id is None:
+            if force_update or pk_set and not self.pk is None:
                 record_exists = True
                 resource = Resource(self.get_resource_url_detail(),
                                     headers=ROA_HEADERS,
@@ -394,9 +394,9 @@ class ROAModel(models.Model):
                 result = deserializer(response).next()
 
             try:
-                self.id = int(result.object.id)
+                self.pk = int(result.object.pk)
             except ValueError:
-                self.id = result.object.id
+                self.pk = result.object.pk
             self = result.object
 
         if origin:
