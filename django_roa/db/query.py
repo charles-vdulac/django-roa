@@ -15,7 +15,7 @@ logger = logging.getLogger("django_roa")
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
-ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')

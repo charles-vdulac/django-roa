@@ -23,7 +23,7 @@ logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
-ROA_FORMAT = getattr(settings, "ROA_FORMAT", 'json')
+ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
@@ -221,9 +221,9 @@ class ROAModelBase(ModelBase):
         opts._prepare(cls)
 
         if opts.order_with_respect_to:
-            cls.get_next_in_order = curry(cls._get_next_or_previous_in_order, 
+            cls.get_next_in_order = curry(cls._get_next_or_previous_in_order,
                                           is_next=True)
-            cls.get_previous_in_order = curry(cls._get_next_or_previous_in_order, 
+            cls.get_previous_in_order = curry(cls._get_next_or_previous_in_order,
                                               is_next=False)
             setattr(opts.order_with_respect_to.rel.to, 'get_%s_order' \
                     % cls.__name__.lower(), curry(method_get_order, cls))
@@ -232,23 +232,24 @@ class ROAModelBase(ModelBase):
 
         # Give the class a docstring -- its definition.
         if cls.__doc__ is None:
-            cls.__doc__ = "%s(%s)" % (cls.__name__, 
+            cls.__doc__ = "%s(%s)" % (cls.__name__,
                                       ", ".join([f.attname for f in opts.fields]))
 
         if hasattr(cls, 'get_absolute_url'):
-            cls.get_absolute_url = update_wrapper(curry(get_absolute_url, opts, cls.get_absolute_url),
+            cls.get_absolute_url = update_wrapper(curry(get_absolute_url,
+                                                        opts, cls.get_absolute_url),
                                                   cls.get_absolute_url)
 
         if hasattr(cls, 'get_resource_url_list'):
-            cls.get_resource_url_list = staticmethod(curry(get_resource_url_list, 
+            cls.get_resource_url_list = staticmethod(curry(get_resource_url_list,
                                                            opts, cls.get_resource_url_list))
 
         if hasattr(cls, 'get_resource_url_count'):
-            cls.get_resource_url_count = curry(get_resource_url_count, opts, 
+            cls.get_resource_url_count = curry(get_resource_url_count, opts,
                                                cls.get_resource_url_count)
 
         if hasattr(cls, 'get_resource_url_detail'):
-            cls.get_resource_url_detail = curry(get_resource_url_detail, opts, 
+            cls.get_resource_url_detail = curry(get_resource_url_detail, opts,
                                                 cls.get_resource_url_detail)
 
         signals.class_prepared.send(sender=cls)
@@ -263,14 +264,14 @@ class ROAModel(models.Model):
     @staticmethod
     def get_resource_url_list():
         raise Exception, "Static method get_resource_url_list is not defined."
-    
+
     def get_resource_url_count(self):
         return u"%scount/" % (self.get_resource_url_list(),)
-    
+
     def get_resource_url_detail(self):
         return u"%s%s/" % (self.get_resource_url_list(), self.pk)
-    
-    def save_base(self, raw=False, cls=None, origin=None, force_insert=False, 
+
+    def save_base(self, raw=False, cls=None, origin=None, force_insert=False,
             force_update=False, using=None):
         """
         Does the heavy-lifting involved in saving. Subclasses shouldn't need to
@@ -319,17 +320,16 @@ class ROAModel(models.Model):
         if not meta.proxy:
             pk_val = self._get_pk_val(meta)
             pk_set = pk_val is not None
-            
+
             get_args = {'format': ROA_FORMAT}
             get_args.update(getattr(settings, "ROA_CUSTOM_ARGS", {}))
-            
+
             serializer = serializers.get_serializer(ROA_FORMAT)
             if hasattr(serializer, 'serialize_object'):
                 payload = serializer().serialize_object(self)
             else:
                 payload = {}
                 for field in meta.local_fields:
-                    
                     # Handle FK fields
                     if isinstance(field, models.ForeignKey):
                         field_attr = getattr(self, field.name)
@@ -337,11 +337,10 @@ class ROAModel(models.Model):
                             payload[field.attname] = None
                         else:
                             payload[field.attname] = field_attr.pk
-                                    
                     # Handle all other fields
                     else:
                         payload[field.name] = field.value_to_string(self)
-                
+
                 # Handle M2M relations in case of update
                 if force_update or pk_set and not self.id is None:
                     for field in meta.many_to_many:
@@ -351,7 +350,7 @@ class ROAModel(models.Model):
                         else:
                             field_ids = [obj.id for obj in field.value_from_object(self)]
                         payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_ids)
-            
+
             if force_update or pk_set and not self.id is None:
                 record_exists = True
                 resource = Resource(self.get_resource_url_detail(),
@@ -360,9 +359,9 @@ class ROAModel(models.Model):
                 try:
                     logger.debug(u"""Modifying : "%s" through %s
                                   with payload "%s" and GET args "%s" """ % (
-                                  force_unicode(self), 
+                                  force_unicode(self),
                                   force_unicode(resource.uri),
-                                  force_unicode(payload), 
+                                  force_unicode(payload),
                                   force_unicode(get_args)))
                     response = resource.put(payload=payload, **get_args)
                 except RequestFailed, e:
@@ -375,31 +374,31 @@ class ROAModel(models.Model):
                 try:
                     logger.debug(u"""Creating  : "%s" through %s
                                   with payload "%s" and GET args "%s" """ % (
-                                  force_unicode(self), 
+                                  force_unicode(self),
                                   force_unicode(resource.uri),
-                                  force_unicode(payload), 
+                                  force_unicode(payload),
                                   force_unicode(get_args)))
                     response = resource.post(payload=payload, **get_args)
                 except RequestFailed, e:
                     raise ROAException(e)
-            
+
             response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
-            
+
             for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
                 response = response.replace(remote_name, local_name)
-            
+
             deserializer = serializers.get_deserializer(ROA_FORMAT)
             if hasattr(deserializer, 'deserialize_object'):
                 result = deserializer(response).deserialize_object(response)
             else:
                 result = deserializer(response).next()
-            
+
             try:
                 self.id = int(result.object.id)
             except ValueError:
                 self.id = result.object.id
             self = result.object
-        
+
         if origin:
             signals.post_save.send(sender=origin, instance=self,
                 created=(not record_exists), raw=raw)
@@ -410,17 +409,17 @@ class ROAModel(models.Model):
         assert self._get_pk_val() is not None, "%s object can't be deleted " \
                 "because its %s attribute is set to None." \
                 % (self._meta.object_name, self._meta.pk.attname)
-                
+
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail(),
                             headers=ROA_HEADERS,
                             filters=ROA_FILTERS)
-        
+
         logger.debug(u"""Deleting  : "%s" through %s""" % \
             (unicode(self), unicode(resource.uri)))
 
         delete_args = getattr(settings, "ROA_CUSTOM_ARGS", {})
-        response = resource.delete(**delete_args)
+        resource.delete(**delete_args)
 
     delete.alters_data = True
 
@@ -436,18 +435,19 @@ class ROAModel(models.Model):
 # HELPER FUNCTIONS (CURRIED MODEL FUNCTIONS) #
 ##############################################
 
+ROA_URL_OVERRIDES_LIST = getattr(settings, 'ROA_URL_OVERRIDES_LIST', {})
+ROA_URL_OVERRIDES_COUNT = getattr(settings, 'ROA_URL_OVERRIDES_COUNT', {})
+ROA_URL_OVERRIDES_DETAIL = getattr(settings, 'ROA_URL_OVERRIDES_DETAIL', {})
+
 def get_resource_url_list(opts, func, *args, **kwargs):
-    ROA_URL_OVERRIDES_LIST = getattr(settings, 'ROA_URL_OVERRIDES_LIST', {})
     key = '%s.%s' % (opts.app_label, opts.module_name)
     overridden = ROA_URL_OVERRIDES_LIST.get(key, False)
     return overridden and overridden or func(*args, **kwargs)
 
 def get_resource_url_count(opts, func, self, *args, **kwargs):
-    ROA_URL_OVERRIDES_COUNT = getattr(settings, 'ROA_URL_OVERRIDES_COUNT', {})
     key = '%s.%s' % (opts.app_label, opts.module_name)
     return ROA_URL_OVERRIDES_COUNT.get(key, func)(self, *args, **kwargs)
 
 def get_resource_url_detail(opts, func, self, *args, **kwargs):
-    ROA_URL_OVERRIDES_DETAIL = getattr(settings, 'ROA_URL_OVERRIDES_DETAIL', {})
     key = '%s.%s' % (opts.app_label, opts.module_name)
     return ROA_URL_OVERRIDES_DETAIL.get(key, func)(self, *args, **kwargs)
