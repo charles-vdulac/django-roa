@@ -23,6 +23,8 @@ DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 class Query(object):
     def __init__(self):
         self.order_by = []
+        self.extra_order_by = []
+        self.default_ordering = []
         self.filters = {}
         self.excludes = {}
         self.filterable = True
