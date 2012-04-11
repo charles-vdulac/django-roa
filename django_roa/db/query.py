@@ -216,12 +216,13 @@ class RemoteQuerySet(query.QuerySet):
             response = resource.get(**parameters)
         except Exception, e:
             raise ROAException(e)
-        
+
+        # TODO: create a test for the following code
         cnt = 0
         try:
             cnt = int(response.body_string())
-        except: pass
-        
+        except ValueError: pass
+
         return cnt
 
     def _get_from_id_or_pk(self, id=None, pk=None, **kwargs):
@@ -231,7 +232,7 @@ class RemoteQuerySet(query.QuerySet):
         (as Django's ORM do).
         """
         clone = self._clone()
-        
+
         # Instantiation of clone.model is necessary because we can't set
         # a staticmethod for get_resource_url_detail and avoid to set it
         # for all model without relying on get_resource_url_list
@@ -259,15 +260,15 @@ class RemoteQuerySet(query.QuerySet):
 
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
-        
+
         deserializer = serializers.get_deserializer(ROA_FORMAT)
         if hasattr(deserializer, 'deserialize_object'):
             result = deserializer(response).deserialize_object(response)
         else:
             result = deserializer(response).next()
-        
+
         return result.object
-        
+
     def get(self, *args, **kwargs):
         """
         Performs the query and returns a single object matching the given
@@ -275,28 +276,28 @@ class RemoteQuerySet(query.QuerySet):
         """
         # special case, get(id=X) directly request the resource URL and do not
         # filter on ids like Django's ORM do.
-        kws = kwargs.copy()
-        # check if it's a related field retrieving its model instance
-        if len(kws.keys()) == 1:
-            for kw in kws.keys():
-                if kw.endswith('__exact'):
-                    # strip the "_exact" suffix since we want to retrieve it by ID/PK
-                    kwargs[kw[:-len('__exact')]] = kws[kw]
-                    kws[kw[:-len('__exact')]] = kws[kw]
-                    del kws[kw]
 
-        if kws.keys() == ['id']:
-            del kws['id']
-            return self._get_from_id_or_pk(id=kwargs['id'], **kws)
-        elif kws.keys() == ['pk']: # useful for admin which relies on pks
-            del kws['pk']
-            return self._get_from_id_or_pk(pk=kwargs['pk'], **kws)
+        # keep the custom attribute name of model for later use
+        custom_pk = self.model._meta.pk.attname
+        # check PK, ID or custom PK attribute name for exact match filters 
+        exact_match = [attr for attr in ['id__exact', 'pk__exact', '%s__exact' % custom_pk] if attr in kwargs.keys()]
+        # common way of getting particular object
+        if kwargs.keys() == ['id']:
+            return self._get_from_id_or_pk(id=kwargs['id'])
+        # useful for admin which relies on PKs
+        elif kwargs.keys() == ['pk']:
+            return self._get_from_id_or_pk(pk=kwargs['pk'])
         # check the case of PK attribute with custom name
-        elif kws.keys() == [self.model._meta.pk.attname]:
-            del kws[self.model._meta.pk.attname]
-            return self._get_from_id_or_pk(pk=kwargs[self.model._meta.pk.attname], **kws)
+        elif kwargs.keys() == [custom_pk]:
+            # TODO: create a test for this case
+            return self._get_from_id_or_pk(pk=kwargs[custom_pk])
+        # check if there's an exact match filter
+        elif len(exact_match) == 1:
+            # TODO: create a test for this case
+            # use the value of exact match filter to retrieve object by PK
+            return self._get_from_id_or_pk(pk=kwargs[exact_match[0]])
         else:
-            # filter the request rather than retrieve (get) it
+            # filter the request rather than retrieve it through get method
             return super(RemoteQuerySet, self).get(*args, **kwargs)
 
     def latest(self, field_name=None):
