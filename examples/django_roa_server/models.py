@@ -4,7 +4,7 @@ class RemotePage(models.Model):
     title = models.CharField(max_length=50, blank=True, null=True)
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
 
 class RemotePageWithManyFields(models.Model):
@@ -31,7 +31,7 @@ class RemotePageWithManyFields(models.Model):
     image_field = models.ImageField(upload_to="images", blank=True, null=True)
     
     def __unicode__(self):
-        return u'%s (%s)' % (self.__class__.__name__, self.id)
+        return u'%s (%s)' % (self.__class__.__name__, self.pk)
 
 
 class RemotePageWithBooleanFields(models.Model):
@@ -44,7 +44,7 @@ class RemotePageWithCustomSlug(models.Model):
     slug = models.SlugField()
     
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
 
 class RemotePageWithOverriddenUrls(models.Model):
@@ -52,7 +52,7 @@ class RemotePageWithOverriddenUrls(models.Model):
     slug = models.SlugField()
     
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
 
 class RemotePageWithRelationsThrough(models.Model):
@@ -61,7 +61,7 @@ class RemotePageWithRelationsThrough(models.Model):
     remote_page_with_many_fields = models.ForeignKey("RemotePageWithManyFields", blank=True, null=True)
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
 
 class RemotePageWithRelations(models.Model):
@@ -70,7 +70,7 @@ class RemotePageWithRelations(models.Model):
     remote_page_fields = models.ManyToManyField(RemotePageWithManyFields, through=RemotePageWithRelationsThrough, blank=True, null=True)
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
 
 class RemotePageWithNamedRelations(models.Model):
@@ -79,4 +79,4 @@ class RemotePageWithNamedRelations(models.Model):
     last_page = models.ForeignKey(RemotePage, blank=True, null=True, related_name="from_last")
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)

@@ -20,30 +20,30 @@ class ROAHandler(BaseHandler):
 
     def flatten_dict(self, dct):
         return dict([ (str(k), dct.get(k)) for k in dct.keys() \
-            if (k, dct.get(k)) != (u'id', u'None')])
+            if (k, dct.get(k)) != (u'id', u'None') and (k, dct.get(k)) != (u'pk', u'None')])
 
     @staticmethod
     def _get_object(model, *args, **kwargs):
-        return get_object_or_404(model, id=kwargs['id'])
-        
+        return get_object_or_404(model, pk=kwargs['pk'])
+
     def read(self, request, *args, **kwargs):
         """
         Retrieves an object or a list of objects.
         """
         if not self.has_model():
             return rc.NOT_IMPLEMENTED
-        
+
         logger.debug('Args: %s' % str(args))
         logger.debug('Kwargs: %s' % str(kwargs))
-        
+
         if kwargs.values() != [None]:
             # Returns a single object
             return [self._get_object(self.model, *args, **kwargs)]
-        
+
         # Initialization
         queryset = _get_queryset(self.model)
         logger.debug('Before filters: %s' % str(queryset))
-        
+
         # Filtering
         filters, excludes = {}, {}
         for k, v in request.GET.iteritems():
@@ -52,42 +52,42 @@ class ROAHandler(BaseHandler):
             if k.startswith('exclude_'):
                 excludes[k[8:]] = v
         queryset = queryset.filter(*filters.items()).exclude(*excludes.items())
-        
+
         logger.debug('Filters: %s' % str(filters))
         logger.debug('Excludes: %s' % str(excludes))
         logger.debug('After filters: %s' % str(queryset))
-        
+
         # Ordering (test custom parameters' name)
         if 'order' in request.GET:
             order_bys = request.GET['order'].split(',')
             queryset = queryset.order_by(*order_bys)
-        
+
         # Slicing
         limit_start = int(request.GET.get('limit_start', 0))
         limit_stop = request.GET.get('limit_stop', False) and int(request.GET['limit_stop']) or None
         queryset = queryset[limit_start:limit_stop]
-        
+
         obj_list = list(queryset)
         if not obj_list:
             raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
         logger.debug(u'Objects: %s retrieved' % [unicode(obj) for obj in obj_list])
         return queryset
-        
+
     def create(self, request, *args, **kwargs):
         """
         Creates an object given request args, returned as a list.
         """
         if not self.has_model():
             return rc.NOT_IMPLEMENTED
-        
+
         data = request.POST.copy()
-        
+
         values = {}
         for field in self.model._meta.local_fields:
             field_value = data.get(field.name, None)
-            
+
             if field_value not in (u'', u'None'):
-                
+
                 # Handle FK fields
                 if field.rel and isinstance(field.rel, models.ManyToOneRel):
                     field_value = data.get(field.attname, None)
@@ -95,7 +95,7 @@ class ROAHandler(BaseHandler):
                         values[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
                     else:
                         values[field.attname] = None
-                
+
                 # Handle all other fields
                 else:
                     if isinstance(field, models.fields.BooleanField):
@@ -106,8 +106,8 @@ class ROAHandler(BaseHandler):
                     values[field.name] = field_value
 
         obj = self.model.objects.create(**values)
-        
-        response = [self.model.objects.get(id=obj.id)]
+
+        response = [self.model.objects.get(pk=obj.pk)]
         logger.debug(u'Object "%s" created' % unicode(obj))
         return response
 
@@ -117,14 +117,14 @@ class ROAHandler(BaseHandler):
         """
         if not self.has_model():
             return rc.NOT_IMPLEMENTED
-        
+
         data = request.PUT.copy()
         logger.debug(u'Received: %s as PUT data' % data)
         obj = self._get_object(self.model, *args, **kwargs)
-        
+
         for field in self.model._meta.local_fields:
             field_name = field.name
-            
+
             # Handle FK fields
             if field.rel and isinstance(field.rel, models.ManyToOneRel):
                 field_value = data.get(field.attname, None)
@@ -133,7 +133,7 @@ class ROAHandler(BaseHandler):
                 else:
                     field_value = None
                 setattr(obj, field.attname, field_value)
-            
+
             # Handle all other fields
             elif field_name in data:
                 field_value = data[field_name]
@@ -150,10 +150,10 @@ class ROAHandler(BaseHandler):
                     if field_value is None:
                         field_value = u''
                 setattr(obj, field_name, field_value)
-        
+
         obj.save()
-        
-        response = [self.model.objects.get(id=obj.id)]
+
+        response = [self.model.objects.get(pk=obj.pk)]
         logger.debug(u'Object "%s" modified with %s' % (
             unicode(obj), unicode(data.items())))
         return response
@@ -164,7 +164,7 @@ class ROAHandler(BaseHandler):
         """
         if not self.has_model():
             raise NotImplementedError
-        
+
         try:
             obj = self._get_object(self.model, *args, **kwargs)
             obj.delete()
@@ -188,10 +188,10 @@ class ROACountHandler(BaseHandler):
         """
         if not self.has_model():
             return rc.NOT_IMPLEMENTED
-        
+
         # Initialization
         queryset = _get_queryset(self.model)
-        
+
         # Filtering
         filters, excludes = {}, {}
         for k, v in request.GET.iteritems():
@@ -200,12 +200,12 @@ class ROACountHandler(BaseHandler):
             if k.startswith('exclude_'):
                 excludes[k[8:]] = v
         queryset = queryset.filter(*filters.items()).exclude(*excludes.items())
-        
+
         # Ordering
         if 'order_by' in request.GET:
             order_bys = request.GET['order_by'].split(',')
             queryset = queryset.order_by(*order_bys)
-        
+
         # Counting
         counter = queryset.count()
         logger.debug(u'Count: %s objects' % counter)
@@ -213,15 +213,15 @@ class ROACountHandler(BaseHandler):
 
 
 class ROAWithSlugHandler(ROAHandler):
-    
+
     @staticmethod
     def _get_object(model, *args, **kwargs):
         """Returns an object from a slug.
-        
+
         Useful when the slug is a combination of many fields.
         """
         pk, slug = kwargs['object_slug'].split('-', 1)
-        obj = get_object_or_404(model, id=pk)
+        obj = get_object_or_404(model, pk=pk)
         return obj
 
 

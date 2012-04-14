@@ -8,7 +8,7 @@ class RemotePage(Model):
     title = models.CharField(max_length=50, blank=True, null=True)
     
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
     @staticmethod
     def get_resource_url_list():
@@ -39,7 +39,7 @@ class RemotePageWithManyFields(Model):
     image_field = models.ImageField(upload_to="images", blank=True, null=True)
     
     def __unicode__(self):
-        return u'%s (%s)' % (self.__class__.__name__, self.id)
+        return u'%s (%s)' % (self.__class__.__name__, self.pk)
 
     @staticmethod
     def get_resource_url_list():
@@ -60,7 +60,7 @@ class RemotePageWithCustomSlug(Model):
     slug = models.SlugField()
     
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
     def save(self, force_insert=False, force_update=False, using=None):
         if not self.slug:
@@ -72,7 +72,7 @@ class RemotePageWithCustomSlug(Model):
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithcustomslug/'
 
     def get_resource_url_detail(self):
-        return u"%s%s-%s/" % (self.get_resource_url_list(), self.id, self.slug)
+        return u"%s%s-%s/" % (self.get_resource_url_list(), self.pk, self.slug)
 
 
 class RemotePageWithOverriddenUrls(Model):
@@ -80,7 +80,7 @@ class RemotePageWithOverriddenUrls(Model):
     slug = models.SlugField()
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
 
     def save(self, force_insert=False, force_update=False, using=None):
         if not self.slug:
@@ -98,7 +98,7 @@ class RemotePageWithRelationsThrough(Model):
     remote_page_with_many_fields = models.ForeignKey("RemotePageWithManyFields", blank=True, null=True)
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
     
     @staticmethod
     def get_resource_url_list():
@@ -111,7 +111,7 @@ class RemotePageWithRelations(Model):
     remote_page_fields = models.ManyToManyField(RemotePageWithManyFields, through=RemotePageWithRelationsThrough, blank=True, null=True)
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
     
     @staticmethod
     def get_resource_url_list():
@@ -124,7 +124,7 @@ class RemotePageWithNamedRelations(Model):
     last_page = models.ForeignKey(RemotePage, blank=True, null=True, related_name="from_last")
 
     def __unicode__(self):
-        return u'%s (%s)' % (self.title, self.id)
+        return u'%s (%s)' % (self.title, self.pk)
     
     @staticmethod
     def get_resource_url_list():
