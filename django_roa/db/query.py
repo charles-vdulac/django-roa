@@ -217,7 +217,6 @@ class RemoteQuerySet(query.QuerySet):
         except Exception, e:
             raise ROAException(e)
 
-        # TODO: create a test for the following code
         cnt = 0
         try:
             cnt = int(response.body_string())
@@ -289,11 +288,9 @@ class RemoteQuerySet(query.QuerySet):
             return self._get_from_id_or_pk(pk=kwargs['pk'])
         # check the case of PK attribute with custom name
         elif kwargs.keys() == [custom_pk]:
-            # TODO: create a test for this case
             return self._get_from_id_or_pk(pk=kwargs[custom_pk])
         # check if there's an exact match filter
         elif len(exact_match) == 1:
-            # TODO: create a test for this case
             # use the value of exact match filter to retrieve object by PK
             return self._get_from_id_or_pk(pk=kwargs[exact_match[0]])
         else:

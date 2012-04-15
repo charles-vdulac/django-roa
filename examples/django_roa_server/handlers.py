@@ -11,7 +11,8 @@ from piston.utils import rc
 from django_roa_server.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithCustomSlug, \
     RemotePageWithOverriddenUrls, RemotePageWithRelations, \
-    RemotePageWithNamedRelations, RemotePageWithRelationsThrough
+    RemotePageWithNamedRelations, RemotePageWithRelationsThrough, \
+    RemotePageWithCustomPrimaryKey
 
 logger = logging.getLogger("django_roa_server")
 
@@ -251,6 +252,18 @@ class RemotePageWithCustomSlugHandler(ROAWithSlugHandler):
 
 class RemotePageWithCustomSlugCountHandler(ROACountHandler):
     model = RemotePageWithCustomSlug
+
+class RemotePageWithCustomPrimaryKeyHandler(ROAHandler):
+    model = RemotePageWithCustomPrimaryKey
+
+class RemotePageWithCustomPrimaryKeyCountHandler(ROACountHandler):
+    model = RemotePageWithCustomPrimaryKey
+
+class RemotePageWithCustomPrimaryKeyCount2Handler(ROACountHandler):
+    model = RemotePageWithCustomPrimaryKey
+
+    def read(self, request, *args, **kwargs):
+        return 'invalid counter'
 
 
 class RemotePageWithOverriddenUrlsHandler(ROAWithSlugHandler):

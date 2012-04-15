@@ -80,3 +80,11 @@ class RemotePageWithNamedRelations(models.Model):
 
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
+
+
+class RemotePageWithCustomPrimaryKey(models.Model):
+    auto_field = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=50)
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.pk)

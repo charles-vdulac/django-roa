@@ -41,8 +41,10 @@ from django_roa_client.models import RemotePage, RemotePageWithManyFields, \
     RemotePageWithBooleanFields, RemotePageWithRelations, \
     RemotePageWithCustomSlug, RemotePageWithOverriddenUrls, \
     RemotePageWithNamedRelations, RemotePageWithProxy, \
-    RemotePageWithRelationsThrough
+    RemotePageWithRelationsThrough, RemotePageWithCustomPrimaryKey, \
+    RemotePageWithCustomPrimaryKeyCountOverridden
 from django_roa_client.forms import TestForm, RemotePageForm
+from django_roa.db.exceptions import ROAException
 
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
@@ -50,9 +52,11 @@ class ROATestCase(TestCase):
 
     def setUp(self):
         RemotePage.objects.all().delete()
+        RemotePageWithCustomPrimaryKey.objects.all().delete()
 
     def tearDown(self):
         RemotePage.objects.all().delete()
+        RemotePageWithCustomPrimaryKey.objects.all().delete()
 
 class ROAUserTestCase(ROATestCase):
 
@@ -444,6 +448,8 @@ class ROAQuerysetTests(ROATestCase):
         self.remote_page2 = RemotePage.objects.create(title='Another remote page')
         self.remote_page3 = RemotePage.objects.create(title='Yet another remote page')
         self.remote_page4 = RemotePage.objects.create(title='Still another remote page')
+        self.remote_page_with_custom_primary_key1 = RemotePageWithCustomPrimaryKey.objects.create(title=u'Remote test page with custom primary')
+        self.remote_page_with_custom_primary_key2 = RemotePageWithCustomPrimaryKey.objects.create(title=u'Another remote test page with custom primary')
 
     def test_getorcreate(self):
         self.assertEqual(repr(RemotePage.objects.get_or_create(title='A remote page')), '(<RemotePage: A remote page (1)>, False)')
@@ -474,6 +480,40 @@ class ROAQuerysetTests(ROATestCase):
 
     def test_combined(self):
         self.assertEqual(repr(RemotePage.objects.exclude(title__contains='yet').order_by('title', '-id')[:2]), '[<RemotePage: A remote page (1)>, <RemotePage: Another remote page (2)>]')
+
+    def test_get(self):
+        # test get by pk, id directly
+        self.assertEqual(repr(RemotePage.objects.get(id=1)), '<RemotePage: A remote page (1)>')
+        self.assertEqual(repr(RemotePage.objects.get(pk=2)), '<RemotePage: Another remote page (2)>')
+        # test get by pk, id with exact filter
+        self.assertEqual(repr(RemotePage.objects.get(id__exact=3)), '<RemotePage: Yet another remote page (3)>')
+        self.assertEqual(repr(RemotePage.objects.get(pk__exact=4)), '<RemotePage: Still another remote page (4)>')
+
+        # test get by custom primary key attribute name
+        self.assertEqual(repr(RemotePageWithCustomPrimaryKey.objects.get(auto_field=1)), '<RemotePageWithCustomPrimaryKey: Remote test page with custom primary (1)>')
+        self.assertEqual(repr(RemotePageWithCustomPrimaryKey.objects.get(auto_field=2)), '<RemotePageWithCustomPrimaryKey: Another remote test page with custom primary (2)>')
+        with self.assertRaisesRegexp(ROAException, 'Not Found'):
+            RemotePageWithCustomPrimaryKey.objects.get(auto_field=999)
+
+        # test get by custom primary key with exact filter
+        self.assertEqual(repr(RemotePageWithCustomPrimaryKey.objects.get(auto_field__exact=1)), '<RemotePageWithCustomPrimaryKey: Remote test page with custom primary (1)>')
+        self.assertEqual(repr(RemotePageWithCustomPrimaryKey.objects.get(auto_field__exact=2)), '<RemotePageWithCustomPrimaryKey: Another remote test page with custom primary (2)>')
+        with self.assertRaisesRegexp(ROAException, 'Not Found'):
+            RemotePageWithCustomPrimaryKey.objects.get(auto_field__exact=999)
+
+        # test get by multiple attributes
+        self.assertEqual(repr(RemotePageWithCustomPrimaryKey.objects.get(title='Another remote test page with custom primary', auto_field=2)), '<RemotePageWithCustomPrimaryKey: Another remote test page with custom primary (2)>')
+        self.assertEqual(repr(RemotePageWithCustomPrimaryKey.objects.get(title__exact='Another remote test page with custom primary', auto_field__exact=2)), '<RemotePageWithCustomPrimaryKey: Another remote test page with custom primary (2)>')
+        with self.assertRaisesRegexp(ROAException, 'Not Found'):
+            RemotePageWithCustomPrimaryKey.objects.get(title__exact='Another remote test page with custom primary', auto_field__exact=999)
+
+    def test_count(self):
+        self.assertEqual(RemotePageWithCustomPrimaryKey.objects.count(), 2)
+        RemotePageWithCustomPrimaryKey.objects.all().delete()
+        self.assertEqual(RemotePageWithCustomPrimaryKey.objects.count(), 0)
+
+        RemotePageWithCustomPrimaryKey.objects.create(title=u'Remote test page with custom primary')
+        self.assertEqual(RemotePageWithCustomPrimaryKeyCountOverridden.objects.count(), 0)
 
 class ROAAdminTests(ROAUserTestCase):
 

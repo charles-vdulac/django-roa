@@ -11,7 +11,9 @@ from django_roa_server.handlers import RemotePageHandler, \
     RemotePageWithManyFieldsCountHandler, RemotePageWithBooleanFieldsCountHandler, \
     RemotePageWithCustomSlugCountHandler, RemotePageWithOverriddenUrlsCountHandler, \
     RemotePageWithRelationsHandler, RemotePageWithNamedRelationsHandler, \
-    RemotePageWithNamedRelationsCountHandler, RemotePageWithRelationsThroughHandler
+    RemotePageWithNamedRelationsCountHandler, RemotePageWithRelationsThroughHandler, \
+    RemotePageWithCustomPrimaryKeyHandler, RemotePageWithCustomPrimaryKeyCountHandler, \
+    RemotePageWithCustomPrimaryKeyCount2Handler
 
 # Enable HTTP authentication through django-piston
 ad = { 'authentication': HttpBasicAuthentication(
@@ -32,6 +34,10 @@ remote_pages_with_boolean_fields_count = Resource(handler=RemotePageWithBooleanF
 
 remote_pages_with_custom_slug = Resource(handler=RemotePageWithCustomSlugHandler, **ad)
 remote_pages_with_custom_slug_count = Resource(handler=RemotePageWithCustomSlugCountHandler, **ad)
+
+remote_pages_with_custom_primary_key = Resource(handler=RemotePageWithCustomPrimaryKeyHandler, **ad)
+remote_pages_with_custom_primary_key_count = Resource(handler=RemotePageWithCustomPrimaryKeyCountHandler, **ad)
+remote_pages_with_custom_primary_key_count2 = Resource(handler=RemotePageWithCustomPrimaryKeyCount2Handler, **ad)
 
 remote_pages_with_overridden_urls = Resource(handler=RemotePageWithOverriddenUrlsHandler, **ad)
 remote_pages_with_overridden_urls_count = Resource(handler=RemotePageWithOverriddenUrlsCountHandler, **ad)
@@ -56,6 +62,8 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithmanyfields/count/$', remote_pages_with_many_fields_count),
     url(r'^django_roa_server/remotepagewithbooleanfields/count/$', remote_pages_with_boolean_fields_count),
     url(r'^django_roa_server/remotepagewithcustomslug/count/$', remote_pages_with_custom_slug_count),
+    url(r'^django_roa_server/remotepagewithcustomprimarykey/count/$', remote_pages_with_custom_primary_key_count),
+    url(r'^django_roa_server/remotepagewithcustomprimarykey/count2/$', remote_pages_with_custom_primary_key_count2),
     url(r'^django_roa_server/remotepagewithoverriddenurls/count/$', remote_pages_with_overridden_urls_count),
     url(r'^django_roa_server/remotepagewithrelations/count/$', remote_pages_with_relations_count),
     url(r'^django_roa_server/remotepagewithrelationsthrough/count/$', remote_pages_with_relations_through_count),
@@ -67,6 +75,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithmanyfields/?(?P<pk>\d+)?/?$', remote_pages_with_many_fields),
     url(r'^django_roa_server/remotepagewithbooleanfields/?(?P<pk>\d+)?/?$', remote_pages_with_boolean_fields),
     url(r'^django_roa_server/remotepagewithcustomslug/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_custom_slug),
+    url(r'^django_roa_server/remotepagewithcustomprimarykey/?(?P<pk>[-\w]+)?/?$', remote_pages_with_custom_primary_key),
     url(r'^django_roa_server/remotepagewithoverriddenurls/?(?P<object_slug>[-\w]+)?/?$', remote_pages_with_overridden_urls),
     url(r'^django_roa_server/remotepagewithrelations/?(?P<pk>\d+)?/?$', remote_pages_with_relations),
     url(r'^django_roa_server/remotepagewithrelationsthrough/?(?P<pk>\d+)?/?$', remote_pages_with_relations_through),

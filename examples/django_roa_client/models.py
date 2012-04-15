@@ -139,3 +139,22 @@ class RemotePageWithProxy(RemotePage):
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithproxy/'
+
+class RemotePageWithCustomPrimaryKey(Model):
+    auto_field = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=50)
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.title, self.pk)
+
+    @staticmethod
+    def get_resource_url_list():
+        return u'http://127.0.0.1:8081/django_roa_server/remotepagewithcustomprimarykey/'
+
+class RemotePageWithCustomPrimaryKeyCountOverridden(RemotePageWithCustomPrimaryKey):
+
+    class Meta:
+        proxy = True
+
+    def get_resource_url_count(self):
+        return u'http://127.0.0.1:8081/django_roa_server/remotepagewithcustomprimarykey/count2/'
