@@ -15,7 +15,7 @@ from django_roa_server.handlers import RemotePageHandler, \
 
 # Enable HTTP authentication through django-piston
 ad = { 'authentication': HttpBasicAuthentication(
-   realm="django-roa-server", 
+   realm="django-roa-server",
    auth_func = lambda username, password: username == 'django-roa' and password == 'roa'
 )}
 # Disable authentication through django-piston
@@ -61,7 +61,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithrelationsthrough/count/$', remote_pages_with_relations_through_count),
     url(r'^django_roa_server/remotepagewithnamedrelations/count/$', remote_pages_with_named_relations_count),
     url(r'^django_roa_server/remotepagewithproxy/count/$', remote_pages_count),
-    
+
     # Remote pages
     url(r'^django_roa_server/remotepage/?(?P<pk>\d+)?/?$', remote_pages),
     url(r'^django_roa_server/remotepagewithmanyfields/?(?P<pk>\d+)?/?$', remote_pages_with_many_fields),
@@ -72,7 +72,7 @@ urlpatterns = patterns('',
     url(r'^django_roa_server/remotepagewithrelationsthrough/?(?P<pk>\d+)?/?$', remote_pages_with_relations_through),
     url(r'^django_roa_server/remotepagewithnamedrelations/?(?P<pk>\d+)?/?$', remote_pages_with_named_relations),
     url(r'^django_roa_server/remotepagewithproxy/?(?P<pk>\d+)?/?$', remote_pages),
-    
+
     # Auth application
     url(r'^auth/user/?(?P<pk>\d+)?/?$', users),
     url(r'^auth/message/?(?P<pk>\d+)?/?$', messages),

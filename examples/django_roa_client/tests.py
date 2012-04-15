@@ -5,13 +5,13 @@ Unit tests for django-roa.
 These tests assume that you've completed all the prerequisites for
 getting django-roa running in the default setup, to wit:
 
-1.  You have created the remote database: go to ``examples/django_roa_server`` 
-    and run ``syncdb`` command with ``--noinput`` option in order to create 
+1.  You have created the remote database: go to ``examples/django_roa_server``
+    and run ``syncdb`` command with ``--noinput`` option in order to create
     a superuser named "roa_user" from fixtures:
 
         $ python manage.py syncdb --noinput
 
-2.  You have launched the project's server on port 8081 in order to test this 
+2.  You have launched the project's server on port 8081 in order to test this
     suite against it with this command:
 
         $ python manage.py runserver 8081
@@ -23,8 +23,8 @@ Now, you can go to ``examples/django_roa_client`` and run this command:
 It should return no error and you will be able to see logs from the test
 server which confirm that it works as expected: remote requests are done.
 
-Note: do not try to launch tests' projects if you put ``django_roa`` 
-application into your own project, otherwise it will fail. Django do not 
+Note: do not try to launch tests' projects if you put ``django_roa``
+application into your own project, otherwise it will fail. Django do not
 handle very well projects inside projects.
 """
 from datetime import time, date, datetime
@@ -47,7 +47,7 @@ from django_roa_client.forms import TestForm, RemotePageForm
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
 class ROATestCase(TestCase):
-    
+
     def setUp(self):
         RemotePage.objects.all().delete()
 
@@ -55,7 +55,7 @@ class ROATestCase(TestCase):
         RemotePage.objects.all().delete()
 
 class ROAUserTestCase(ROATestCase):
-    
+
     def setUp(self):
         super(ROAUserTestCase, self).setUp()
         User.objects.all().delete()
@@ -67,17 +67,17 @@ class ROAUserTestCase(ROATestCase):
         Message.objects.all().delete()
         Group.objects.all().delete()
         Permission.objects.all().delete()
- 
+
 
 class ROAInitializationTests(ROATestCase):
-    
+
     def test_inheritance(self):
         self.assertEqual(str(RemotePage.objects.__class__), "<class 'django_roa.db.managers.ROAManager'>")
         self.assertEqual(str(RemotePage.__class__), "<class 'django_roa.db.models.ROAModelBase'>")
 
 
 class ROABaseTests(ROATestCase):
-    
+
     def test_basic_crud(self):
         page = RemotePage.objects.create(title=u'A first remote page')
         self.assertEqual(repr(page), '<RemotePage: A first remote page (1)>')
@@ -91,7 +91,7 @@ class ROABaseTests(ROATestCase):
         self.assertEqual(repr(RemotePage.objects.all()), '[]')
         # test custom mapping of arguments too
         self.assertEqual(RemotePage.objects.count(), 0)
-        
+
     def test_complex_crud(self):
         page = RemotePage.objects.create(title=u'')
         self.assertEqual(page.title, u'')
@@ -110,7 +110,7 @@ class ROABaseTests(ROATestCase):
 
 
 class ROAUnicodeTests(ROATestCase):
-    
+
     def test_remotepage(self):
         emilie = RemotePage.objects.create(title=u"Émilie")
         self.assertEqual(emilie.title, u'Émilie')
@@ -126,7 +126,7 @@ class ROAUnicodeTests(ROATestCase):
 
 
 class ROAFieldsTests(ROATestCase):
-    
+
     def tearDown(self):
         super(ROAFieldsTests, self).tearDown()
         RemotePageWithManyFields.objects.all().delete()
@@ -176,7 +176,7 @@ class ROAFieldsTests(ROATestCase):
         self.assertEqual(repr(default_page.file_field), repr(retrieved_default_page.file_field))
         self.assertEqual(repr(default_page.image_field), repr(retrieved_default_page.image_field))
         default_page.delete()
-            
+
     def test_empty_boolean_values(self):
         boolean_page = RemotePageWithBooleanFields.objects.create(boolean_field=True)
         self.assertEqual(boolean_page.id, 1)
@@ -344,7 +344,7 @@ class ROAFieldsTests(ROATestCase):
 
 
 class ROARelationsTests(ROATestCase):
-    
+
     def tearDown(self):
         super(ROARelationsTests, self).tearDown()
         RemotePageWithManyFields.objects.all().delete()
@@ -361,7 +361,7 @@ class ROARelationsTests(ROATestCase):
         self.assertEqual(relations_page.title, retrieved_relations_page.title)
         self.assertEqual(relations_page.remote_page, retrieved_relations_page.remote_page)
         relations_page.delete()
-    
+
     def test_foreignkey_relation(self):
         remote_page = RemotePage.objects.create(title=u'A remote page')
         another_remote_page = RemotePage.objects.create(title=u'Another remote page')
@@ -377,18 +377,18 @@ class ROARelationsTests(ROATestCase):
         relations_page.delete()
         another_remote_page.delete()
         remote_page.delete()
-        
+
     def test_manytomany_relation(self):
         remote_page = RemotePageWithManyFields.objects.create(char_field=u'A remote page')
         another_remote_page = RemotePageWithManyFields.objects.create(char_field=u'Another remote page')
         relations_page = RemotePageWithRelations.objects.create(title=u'A remote relation page')
-        relations_page_through = RemotePageWithRelationsThrough.objects.create(title=u'A remote relation page through', 
+        relations_page_through = RemotePageWithRelationsThrough.objects.create(title=u'A remote relation page through',
                                                                                remote_page_with_relations=relations_page,
                                                                                remote_page_with_many_fields=remote_page)
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[<RemotePageWithManyFields: RemotePageWithManyFields (1)>]')
         relations_page = RemotePageWithRelations.objects.get(id=relations_page.id)
         self.assertEqual(repr(relations_page.remote_page_fields.all()), '[<RemotePageWithManyFields: RemotePageWithManyFields (1)>]')
-        another_relations_page_through = RemotePageWithRelationsThrough.objects.create(title=u'Another remote relation page through', 
+        another_relations_page_through = RemotePageWithRelationsThrough.objects.create(title=u'Another remote relation page through',
                                                                                        remote_page_with_relations=relations_page,
                                                                                        remote_page_with_many_fields=another_remote_page)
         relations_page = RemotePageWithRelations.objects.get(id=relations_page.id)
@@ -401,11 +401,11 @@ class ROARelationsTests(ROATestCase):
         relations_page.delete()
         another_remote_page.delete()
         remote_page.delete()
-        
+
     def test_named_relation(self):
         remote_page = RemotePage.objects.create(title=u'A remote page')
         another_remote_page = RemotePage.objects.create(title=u'Another remote page')
-        named_relations_page = RemotePageWithNamedRelations.objects.create(first_page=remote_page, 
+        named_relations_page = RemotePageWithNamedRelations.objects.create(first_page=remote_page,
                                                                            last_page=another_remote_page)
         self.assertEqual(repr(named_relations_page.first_page), '<RemotePage: A remote page (1)>')
         named_relations_page = RemotePageWithNamedRelations.objects.get(id=named_relations_page.id)
@@ -437,7 +437,7 @@ class ROARelationsTests(ROATestCase):
 
 
 class ROAQuerysetTests(ROATestCase):
-    
+
     def setUp(self):
         super(ROAQuerysetTests, self).setUp()
         self.remote_page1 = RemotePage.objects.create(title='A remote page')
@@ -462,19 +462,18 @@ class ROAQuerysetTests(ROATestCase):
     def test_ordering(self):
         self.assertEqual(repr(RemotePage.objects.order_by('title')), '[<RemotePage: A remote page (1)>, <RemotePage: Another remote page (2)>, <RemotePage: Still another remote page (4)>, <RemotePage: Yet another remote page (3)>]')
         self.assertEqual(repr(RemotePage.objects.order_by('-title', '-id')), '[<RemotePage: Yet another remote page (3)>, <RemotePage: Still another remote page (4)>, <RemotePage: Another remote page (2)>, <RemotePage: A remote page (1)>]')
-        
+
     def test_slicing(self):
         self.assertEqual(repr(RemotePage.objects.all()[1:3]), '[<RemotePage: Another remote page (2)>, <RemotePage: Yet another remote page (3)>]')
         self.assertEqual(repr(RemotePage.objects.all()[0]), '<RemotePage: A remote page (1)>')
-        
+
     def test_extra(self):
         self.assertEqual(bool(RemotePage.objects.all().extra(select={'a': 1}).values('a').order_by()), True)
         RemotePage.objects.all().delete()
         self.assertEqual(bool(RemotePage.objects.all().extra(select={'a': 1}).values('a').order_by()), False)
-        
+
     def test_combined(self):
         self.assertEqual(repr(RemotePage.objects.exclude(title__contains='yet').order_by('title', '-id')[:2]), '[<RemotePage: A remote page (1)>, <RemotePage: Another remote page (2)>]')
-
 
 class ROAAdminTests(ROAUserTestCase):
 
@@ -490,7 +489,7 @@ class ROAAdminTests(ROAUserTestCase):
         response = c.login(username=u'bob', password=u'secret')
         self.assertEqual(response, True)
         response = c.get('/admin/')
-        # ._wrapped necessary because we compare string, comparison should 
+        # ._wrapped necessary because we compare string, comparison should
         # work with User.objects.get(username="bob") but slower...
         self.assertEqual(repr(response.context[-1]["user"]._wrapped), '<User: bob>')
         response = c.get('/admin/django_roa_client/remotepage/')
@@ -507,7 +506,7 @@ class ROAFormsTests(ROATestCase):
         self.assertEqual(form.is_valid(), False)
         form = TestForm(data={u'test_field': u'Test data', u'remote_page': remote_page1.id})
         self.assertEqual(form.is_valid(), True)
-        
+
     def test_modelform_validation(self):
         form = RemotePageForm()
         self.assertEqual(form.is_valid(), False)
@@ -515,13 +514,13 @@ class ROAFormsTests(ROATestCase):
         self.assertEqual(form.is_valid(), True)
         remote_page = form.save()
         self.assertEqual(repr(remote_page), '<RemotePage: Test data (1)>')
-        
+
     def test_modelform_rendering(self):
         c = Client()
         remote_page1 = RemotePage.objects.create(title='A remote page')
         response = c.get('/')
         self.assertEqual('<select name="remote_page" id="id_remote_page">\n<option value="" selected="selected">---------</option>\n<option value="1">A remote page (1)</option>\n</select>' in response.content, True)
-        
+
 
 class ROARemoteAuthTests(ROAUserTestCase):
 
@@ -544,7 +543,7 @@ class ROARemoteAuthTests(ROAUserTestCase):
         message = Message.objects.create(user=alice, message=u'Test message')
         self.assertEqual(repr(Message.objects.all().select_related()), '[<Message: Test message>]')
         self.assertEqual(repr(Message.objects.all().select_related('user')), '[<Message: Test message>]')
-    
+
     def test_groups(self):
         bob = User.objects.create_superuser(username=u'bob', password=u'secret', email=u'bob@example.com')
         self.assertEqual(repr(Group.objects.all()), '[]')
@@ -581,14 +580,14 @@ class ROARemoteAuthTests(ROAUserTestCase):
         #self.assertEqual(bob.get_all_permissions(), set([u'remoteauth.custom_group_permission', u'remoteauth.custom_user_permission']))
         self.assertEqual(bob.get_group_permissions(), set([]))
         self.assertEqual(bob.get_all_permissions(), set([]))
-        
+
 
 class ROAExceptionsTests(ROAUserTestCase):
 
     def test_roa_errors(self):
         """
         FIXME: Find a way to do the same test with unittests:
-        
+
         > User.objects.create_user(username="alice", password="secret", email="alice@example.com")
         Traceback (most recent call last):
         ...
@@ -622,14 +621,14 @@ class ROASettingsTests(ROATestCase):
         page_custom = RemotePageWithCustomSlug.objects.get(title=u"Test custom page")
         self.assertEqual(repr(page_custom), '<RemotePageWithCustomSlug: Test custom page (1)>')
         page_custom.delete()
-    
+
     def test_roa_url_overrides(self):
         page_overridden = RemotePageWithOverriddenUrls.objects.create(title=u"Test overridden urls")
         self.assertEqual(page_overridden.slug, u'test-overridden-urls')
         page_overridden = RemotePageWithOverriddenUrls.objects.get(title=u"Test overridden urls")
         self.assertEqual(repr(page_overridden), '<RemotePageWithOverriddenUrls: Test overridden urls (1)>')
         self.assertEqual(RemotePageWithOverriddenUrls.objects.all()._as_url(), (u'http://127.0.0.1:8081/django_roa_server/remotepagewithoverriddenurls/', {'format': 'django'}))
-        
+
     def test_custom_serializer(self):
         register_serializer('custom', 'examples.django_roa_client.serializers')
         initial_roa_format_setting = settings.ROA_FORMAT

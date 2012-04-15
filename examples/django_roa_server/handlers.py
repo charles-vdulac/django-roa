@@ -169,7 +169,7 @@ class ROAHandler(BaseHandler):
             obj = self._get_object(self.model, *args, **kwargs)
             obj.delete()
             logger.debug(u'Object "%s" deleted, remains %s' % (
-                unicode(obj), 
+                unicode(obj),
                 [unicode(obj) for obj in self.model.objects.all()]))
 
             return rc.DELETED

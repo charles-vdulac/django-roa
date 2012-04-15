@@ -34,27 +34,27 @@ class Query(object):
         self.select_related = False
         self.max_depth = None
         self.extra_select = {}
-    
+
     def can_filter(self):
         return self.filterable
-    
+
     def clone(self):
         return self
-    
+
     def clear_ordering(self):
         self.order_by = []
-    
+
     def filter(self, *args, **kwargs):
         self.filters.update(kwargs)
 
     def exclude(self, *args, **kwargs):
         self.excludes.update(kwargs)
-    
+
     def set_limits(self, start=None, stop=None):
         self.limit_start = start
         self.limit_stop = stop
         self.filterable = False
-    
+
     def add_select_related(self, fields):
         """
         Sets up the select_related data structure so that we only select
@@ -76,7 +76,7 @@ class Query(object):
         Returns useful parameters as a dictionary.
         """
         parameters = {}
-        
+
         # Filtering
         for k, v in self.filters.iteritems():
             key = '%s%s' % (ROA_ARGS_NAMES_MAPPING.get('FILTER_', 'filter_'), k)
@@ -90,36 +90,36 @@ class Query(object):
                 parameters[ROA_ARGS_NAMES_MAPPING[key]] = v
             else:
                 parameters[key] = v
-        
+
         # Ordering
         if self.order_by:
             order_by = ','.join(self.order_by)
             parameters[ROA_ARGS_NAMES_MAPPING.get('ORDER_BY', 'order_by')] = order_by
-        
+
         # Slicing
         if self.limit_start:
             parameters[ROA_ARGS_NAMES_MAPPING.get('LIMIT_START', 'limit_start')] = self.limit_start
         if self.limit_stop:
             parameters[ROA_ARGS_NAMES_MAPPING.get('LIMIT_STOP', 'limit_stop')] = self.limit_stop
-        
+
         # Format
         parameters[ROA_ARGS_NAMES_MAPPING.get('FORMAT', 'format')] = ROA_FORMAT
-        
+
         parameters.update(getattr(settings, 'ROA_CUSTOM_ARGS', {}))
         return parameters
-    
+
     ##########################################
     # Fake methods required by admin options #
     ##########################################
-    
+
     def add_fields(self, field_names, allow_m2m=True):
         """ Fake method. """
         pass
-    
+
     def trim_extra_select(self, names):
         """ Fake method. """
         pass
-    
+
     def results_iter(self):
         """ Fake method. """
         return []
@@ -140,9 +140,9 @@ class RemoteQuerySet(query.QuerySet):
         self._iter = None
         self._sticky_filter = False
         self._db = False
-        
+
         self.params = {}
-    
+
     ########################
     # PYTHON MAGIC METHODS #
     ########################
@@ -172,8 +172,8 @@ class RemoteQuerySet(query.QuerySet):
             parameters = self.query.parameters
             logger.debug(u"""Requesting: "%s" through %s
                           with parameters "%s" """ % (
-                          self.model.__name__, 
-                          resource.uri, 
+                          self.model.__name__,
+                          resource.uri,
                           force_unicode(parameters)))
             response = resource.get(**parameters)
         except ResourceNotFound:
@@ -185,20 +185,20 @@ class RemoteQuerySet(query.QuerySet):
 
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
-        
+
         for res in serializers.deserialize(ROA_FORMAT, response):
             obj = res.object
             yield obj
-        
+
     def count(self):
         """
         Returns the number of records as an integer.
-        
+
         The result is not cached nor comes from cache, cache must be handled
         by the server.
         """
         clone = self._clone()
-        
+
         # Instantiation of clone.model is necessary because we can't set
         # a staticmethod for get_resource_url_count and avoid to set it
         # for all model without relying on get_resource_url_list
@@ -210,8 +210,8 @@ class RemoteQuerySet(query.QuerySet):
             parameters = clone.query.parameters
             logger.debug(u"""Counting  : "%s" through %s
                           with parameters "%s" """ % (
-                clone.model.__name__, 
-                resource.uri, 
+                clone.model.__name__,
+                resource.uri,
                 force_unicode(parameters)))
             response = resource.get(**parameters)
         except Exception, e:
@@ -249,8 +249,8 @@ class RemoteQuerySet(query.QuerySet):
             parameters = clone.query.parameters
             logger.debug(u"""Retrieving : "%s" through %s
                           with parameters "%s" """ % (
-                clone.model.__name__, 
-                resource.uri, 
+                clone.model.__name__,
+                resource.uri,
                 force_unicode(parameters)))
             response = resource.get(**parameters)
         except Exception, e:
@@ -279,7 +279,7 @@ class RemoteQuerySet(query.QuerySet):
 
         # keep the custom attribute name of model for later use
         custom_pk = self.model._meta.pk.attname
-        # check PK, ID or custom PK attribute name for exact match filters 
+        # check PK, ID or custom PK attribute name for exact match filters
         exact_match = [attr for attr in ['id__exact', 'pk__exact', '%s__exact' % custom_pk] if attr in kwargs.keys()]
         # common way of getting particular object
         if kwargs.keys() == ['id']:
@@ -307,7 +307,7 @@ class RemoteQuerySet(query.QuerySet):
         """
         latest_by = field_name or self.model._meta.get_latest_by
         assert bool(latest_by), "latest() requires either a field_name parameter or 'get_latest_by' in the model"
-        
+
         self.query.order_by.append('-%s' % latest_by)
         return self.iterator().next()
 
@@ -401,7 +401,7 @@ class RemoteQuerySet(query.QuerySet):
         """
         assert self.query.can_filter(), \
                 "Cannot reorder a query once a slice has been taken."
-        
+
         clone = self._clone()
         for field_name in field_names:
             clone.query.order_by.append(field_name)
@@ -412,9 +412,9 @@ class RemoteQuerySet(query.QuerySet):
         """
         Only to handle the case of the "cute trick" used in ModelForms (and
         per extension admin) for unique and date constraints.
-        
+
         Example: ``.extra(select={'a': 1}).values('a').order_by()``.
-        
+
         http://code.djangoproject.com/browser/django/trunk/django/forms/models.py#L322
         is an interesting documentation for details.
         """
@@ -427,14 +427,14 @@ class RemoteQuerySet(query.QuerySet):
             class FakeInt(object):
                 def __init__(self, count):
                     self.count = count
-                
+
                 def values(self, *fields):
                     if fields == ('a',): # double check that it's our case
                         return self
-                
+
                 def order_by(self):
                     return self.count
-            
+
             return FakeInt(self.count())
         raise ROANotImplementedYetException, 'extra is not yet fully implemented.'
 
@@ -456,8 +456,8 @@ class RemoteQuerySet(query.QuerySet):
 
     def _as_url(self):
         """
-        Returns the internal query's URL and parameters 
-        
+        Returns the internal query's URL and parameters
+
         as (u'url', {'arg_key': 'arg_value'}).
         """
         return self.model.get_resource_url_list(), self.query.parameters

@@ -260,7 +260,7 @@ class ROAModel(models.Model):
     Model which access remote resources.
     """
     __metaclass__ = ROAModelBase
-    
+
     @staticmethod
     def get_resource_url_list():
         raise Exception, "Static method get_resource_url_list is not defined."

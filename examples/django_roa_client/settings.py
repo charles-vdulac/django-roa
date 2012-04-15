@@ -54,7 +54,7 @@ ROA_FORMAT = 'django' # json or xml
 # specify the headers sent to the ws from restkit
 ROA_HEADERS = {
     'Content-Type': 'application/x-www-form-urlencoded',
-} 
+}
 ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
 
 ROA_URL_OVERRIDES_LIST = {

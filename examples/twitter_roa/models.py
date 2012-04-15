@@ -14,7 +14,7 @@ class User(Model):
     @staticmethod
     def get_resource_url_list():
         return u'http://api.twitter.com/1/users/lookup.json?screen_name=twitterapi,twitter,twittersearch,twittermedia,twittermobile'
-    
+
     def get_resource_url_count(self):
         return User.get_resource_url_list()
 
@@ -36,9 +36,9 @@ class Tweet(Model):
     text = models.TextField()
     source = models.CharField(max_length=50)
     user = models.ForeignKey(User)
-    
+
     objects = TweetManager()
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.text, self.id)
 

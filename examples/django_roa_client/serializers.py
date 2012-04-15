@@ -11,7 +11,7 @@ class Serializer(XMLSerializer):
     A test serializer which removes ``django-objects`` xml tag from default
     Django's xml serializer, adapt it to your own usage.
     """
-    
+
     def start_serialization(self):
         """
         Start serialization -- open the XML document and the root element.

@@ -6,7 +6,7 @@ from django_roa import Model
 
 class RemotePage(Model):
     title = models.CharField(max_length=50, blank=True, null=True)
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
 
@@ -34,10 +34,10 @@ class RemotePageWithManyFields(Model):
     time_field = models.TimeField(blank=True, null=True)
     url_field = models.URLField(blank=True, null=True)
     xml_field = models.XMLField(blank=True, null=True)
-    
+
     file_field = models.FileField(upload_to="files", blank=True, null=True)
     image_field = models.ImageField(upload_to="images", blank=True, null=True)
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.__class__.__name__, self.pk)
 
@@ -58,7 +58,7 @@ class RemotePageWithBooleanFields(Model):
 class RemotePageWithCustomSlug(Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField()
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
 
@@ -99,7 +99,7 @@ class RemotePageWithRelationsThrough(Model):
 
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
-    
+
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithrelationsthrough/'
@@ -112,7 +112,7 @@ class RemotePageWithRelations(Model):
 
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
-    
+
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithrelations/'
@@ -125,17 +125,17 @@ class RemotePageWithNamedRelations(Model):
 
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
-    
+
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithnamedrelations/'
 
 
 class RemotePageWithProxy(RemotePage):
-    
+
     class Meta:
         proxy = True
-    
+
     @staticmethod
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/django_roa_server/remotepagewithproxy/'

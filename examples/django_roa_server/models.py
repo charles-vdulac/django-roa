@@ -26,10 +26,10 @@ class RemotePageWithManyFields(models.Model):
     time_field = models.TimeField(blank=True, null=True)
     url_field = models.URLField(blank=True, null=True)
     xml_field = models.XMLField(blank=True, null=True)
-    
+
     file_field = models.FileField(upload_to="files", blank=True, null=True)
     image_field = models.ImageField(upload_to="images", blank=True, null=True)
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.__class__.__name__, self.pk)
 
@@ -42,7 +42,7 @@ class RemotePageWithBooleanFields(models.Model):
 class RemotePageWithCustomSlug(models.Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField()
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
 
@@ -50,7 +50,7 @@ class RemotePageWithCustomSlug(models.Model):
 class RemotePageWithOverriddenUrls(models.Model):
     title = models.CharField(max_length=50)
     slug = models.SlugField()
-    
+
     def __unicode__(self):
         return u'%s (%s)' % (self.title, self.pk)
 

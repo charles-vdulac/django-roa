@@ -28,4 +28,3 @@ def ensure_roa_manager(sender, **kwargs):
         cls.add_to_class('_default_manager', Manager())
 
 signals.class_prepared.connect(ensure_roa_manager)
-
