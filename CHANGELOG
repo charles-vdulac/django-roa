@@ -2,6 +2,18 @@
 Django-ROA's changelog
 ======================
 
+Version 1.7, 11 May 2012:
+--------------------------
+
+* @neokeeper aka Martin Skala updated the code in many ways: introduced an
+  ROA_FILTERS setting to provide authentication on resources' access,
+  improved single instance retrieval, dealt with pks instead of ids when 
+  possible, updated requirements, code clean up, documentation and 
+  example updates. Many thanks!
+* @NikhilChelliah fixed a bug related to object saving and non-int ids. 
+  Thanks!
+
+
 Version 1.6, 16 July 2010:
 --------------------------
 
