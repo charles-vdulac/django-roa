@@ -71,6 +71,12 @@ ROA_MODEL_NAME_MAPPING = (
 ROA_ARGS_NAMES_MAPPING = {
     'ORDER_BY': 'order',
 }
+ROA_MODEL_CREATE_MAPPING = {
+    'package.somemodel': ['attribute1', 'attribute2', 'attribute3', 'attribute4'],
+}
+ROA_MODEL_UPDATE_MAPPING = {
+    'package.somemodel': ['attribute2', 'attribute3'],
+}
 # Enable HTTP authentication through django-piston
 from restkit import BasicAuth
 ROA_FILTERS = [ BasicAuth('django-roa', 'roa'), ]

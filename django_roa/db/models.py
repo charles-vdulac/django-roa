@@ -21,10 +21,12 @@ from django_roa.db.exceptions import ROAException
 
 logger = logging.getLogger("django_roa")
 
-ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
+ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
+ROA_MODEL_CREATE_MAPPING = getattr(settings, 'ROA_MODEL_CREATE_MAPPING', {})
+ROA_MODEL_UPDATE_MAPPING = getattr(settings, 'ROA_MODEL_UPDATE_MAPPING', {})
 ROA_CUSTOM_ARGS = getattr(settings, "ROA_CUSTOM_ARGS", {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
@@ -292,6 +294,8 @@ class ROAModel(models.Model):
         if origin and not getattr(meta, "auto_created", False):
             signals.pre_save.send(sender=origin, instance=self, raw=raw)
 
+        model_name = str(meta)
+
         # If we are in a raw save, save the object exactly as presented.
         # That means that we don't try to be smart about saving attributes
         # that might have come from the parent class - we just save the
@@ -330,7 +334,25 @@ class ROAModel(models.Model):
                 payload = serializer().serialize_object(self)
             else:
                 payload = {}
-                for field in meta.local_fields:
+                local_fields = []
+                m2m_fields = []
+                attribute_map = ROA_MODEL_CREATE_MAPPING
+
+                if force_update or pk_is_set and not self.pk is None:
+                    attribute_map = ROA_MODEL_UPDATE_MAPPING
+
+                if attribute_map.has_key(model_name):
+                    for field in meta.local_fields:
+                        if field.attname in attribute_map.get(model_name):
+                            local_fields.append(field)
+                    for field in m2m_fields:
+                        if field.attname in attribute_map.get(model_name):
+                            m2m_fields.append(field)
+                else:
+                    local_fields = meta.local_fields
+                    m2m_fields = meta.many_to_many
+
+                for field in local_fields:
                     # Handle FK fields
                     if isinstance(field, models.ForeignKey):
                         field_attr = getattr(self, field.name)
