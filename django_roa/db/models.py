@@ -407,13 +407,16 @@ class ROAModel(models.Model):
             if hasattr(deserializer, 'deserialize_object'):
                 result = deserializer(response).deserialize_object(response)
             else:
-                result = deserializer(response).next()
+                # API might respond with HTTP status code only so check first if
+                # response is not empty
+                result = len(response) and deserializer(response).next() or None
 
-            try:
-                self.pk = int(result.object.pk)
-            except ValueError:
-                self.pk = result.object.pk
-            self = result.object
+            if result:
+                try:
+                    self.pk = int(result.object.pk)
+                except ValueError:
+                    self.pk = result.object.pk
+                self = result.object
 
         if origin:
             signals.post_save.send(sender=origin, instance=self,
