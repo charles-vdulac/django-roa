@@ -283,8 +283,10 @@ class RemoteQuerySet(query.QuerySet):
 
         # keep the custom attribute name of model for later use
         custom_pk = self.model._meta.pk.attname
-        # check PK, ID or custom PK attribute name for exact match filters
-        exact_match = [attr for attr in ['id__exact', 'pk__exact', '%s__exact' % custom_pk] if attr in kwargs.keys()]
+        # search PK, ID or custom PK attribute name for exact match and get set
+        # of unique matches
+        attributes_set = set(attr for attr in ['id__exact', 'pk__exact', '%s__exact' % custom_pk] if attr in kwargs.keys())
+        exact_match = list(attributes_set)
         # common way of getting particular object
         if kwargs.keys() == ['id']:
             return self._get_from_id_or_pk(id=kwargs['id'])
