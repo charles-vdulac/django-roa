@@ -178,7 +178,7 @@ class RemoteQuerySet(query.QuerySet):
             response = resource.get(**parameters)
         except ResourceNotFound:
             return
-        except Exception, e:
+        except Exception as e:
             raise ROAException(e)
 
         response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
@@ -214,7 +214,7 @@ class RemoteQuerySet(query.QuerySet):
                 resource.uri,
                 force_unicode(parameters)))
             response = resource.get(**parameters)
-        except Exception, e:
+        except Exception as e:
             raise ROAException(e)
 
         cnt = 0
@@ -252,7 +252,7 @@ class RemoteQuerySet(query.QuerySet):
                 resource.uri,
                 force_unicode(parameters)))
             response = resource.get(**parameters)
-        except Exception, e:
+        except Exception as e:
             raise ROAException(e)
 
         response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)

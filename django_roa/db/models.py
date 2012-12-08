@@ -364,7 +364,7 @@ class ROAModel(models.Model):
                                   force_unicode(payload),
                                   force_unicode(get_args)))
                     response = resource.put(payload=payload, **get_args)
-                except RequestFailed, e:
+                except RequestFailed as e:
                     raise ROAException(e)
             else:
                 record_exists = False
@@ -379,7 +379,7 @@ class ROAModel(models.Model):
                                   force_unicode(payload),
                                   force_unicode(get_args)))
                     response = resource.post(payload=payload, **get_args)
-                except RequestFailed, e:
+                except RequestFailed as e:
                     raise ROAException(e)
 
             response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
