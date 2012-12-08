@@ -16,7 +16,7 @@ from django.db.models.fields.related import OneToOneField
 from django.utils.functional import curry, update_wrapper
 from django.utils.encoding import force_unicode, smart_unicode
 
-from restkit import Resource, RequestFailed
+from restkit import Resource, RequestFailed, ResourceNotFound
 from django_roa.db.exceptions import ROAException
 
 logger = logging.getLogger("django_roa")
@@ -351,6 +351,21 @@ class ROAModel(models.Model):
                         else:
                             field_pks = [obj.pk for obj in field.value_from_object(self)]
                         payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_pks)
+
+            # check if resource use custom primary key
+            if not meta.pk.attname in ['pk', 'id']:
+                # consider it might be inserting so check it first
+                # @todo: try to improve this block to check if custom pripary key is not None first
+                resource = Resource(self.get_resource_url_detail(),
+                                    headers=ROA_HEADERS,
+                                    filters=ROA_FILTERS)
+                try:
+                    response = resource.get(payload=None, **get_args)
+                except ResourceNotFound:
+                    # since such resource does not exist, it's actually creating
+                    pk_is_set = False
+                except RequestFailed:
+                    pk_is_set = False
 
             if force_update or pk_is_set and not self.pk is None:
                 record_exists = True
