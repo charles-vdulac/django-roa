@@ -25,6 +25,7 @@ ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
+ROA_CUSTOM_ARGS = getattr(settings, "ROA_CUSTOM_ARGS", {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -322,7 +323,7 @@ class ROAModel(models.Model):
             pk_is_set = pk_val is not None
 
             get_args = {'format': ROA_FORMAT}
-            get_args.update(getattr(settings, "ROA_CUSTOM_ARGS", {}))
+            get_args.update(ROA_CUSTOM_ARGS)
 
             serializer = serializers.get_serializer(ROA_FORMAT)
             if hasattr(serializer, 'serialize_object'):
@@ -418,8 +419,7 @@ class ROAModel(models.Model):
         logger.debug(u"""Deleting  : "%s" through %s""" % \
             (unicode(self), unicode(resource.uri)))
 
-        delete_args = getattr(settings, "ROA_CUSTOM_ARGS", {})
-        resource.delete(**delete_args)
+        resource.delete(**ROA_CUSTOM_ARGS)
 
     delete.alters_data = True
 
