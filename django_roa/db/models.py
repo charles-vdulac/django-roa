@@ -319,7 +319,7 @@ class ROAModel(models.Model):
 
         if not meta.proxy:
             pk_val = self._get_pk_val(meta)
-            pk_set = pk_val is not None
+            pk_is_set = pk_val is not None
 
             get_args = {'format': ROA_FORMAT}
             get_args.update(getattr(settings, "ROA_CUSTOM_ARGS", {}))
@@ -342,7 +342,7 @@ class ROAModel(models.Model):
                         payload[field.name] = field.value_to_string(self)
 
                 # Handle M2M relations in case of update
-                if force_update or pk_set and not self.pk is None:
+                if force_update or pk_is_set and not self.pk is None:
                     for field in meta.many_to_many:
                         # First try to get ids from var set in query's add/remove/clear
                         if hasattr(self, '%s_updated_ids' % field.attname):
@@ -351,7 +351,7 @@ class ROAModel(models.Model):
                             field_pks = [obj.pk for obj in field.value_from_object(self)]
                         payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_pks)
 
-            if force_update or pk_set and not self.pk is None:
+            if force_update or pk_is_set and not self.pk is None:
                 record_exists = True
                 resource = Resource(self.get_resource_url_detail(),
                                     headers=ROA_HEADERS,
