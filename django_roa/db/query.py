@@ -128,6 +128,10 @@ class Query(object):
         """ Fake method. """
         pass
 
+    def has_results(self, *args, **kwargs):
+        """ Fake method. """
+        return True
+
 
 class RemoteQuerySet(query.QuerySet):
     """
@@ -140,6 +144,7 @@ class RemoteQuerySet(query.QuerySet):
         self._iter = None
         self._sticky_filter = False
         self._db = False
+        self._for_write = False
 
         self.params = {}
 
