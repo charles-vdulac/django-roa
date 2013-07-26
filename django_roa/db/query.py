@@ -3,11 +3,16 @@ import logging
 from django.conf import settings
 from django.db.models import query
 from django.core import serializers
-from django.db.models.sql.constants import LOOKUP_SEP
+# Django >= 1.5
+try:
+	from django.db.models.constants import LOOKUP_SEP
+#Django < 1.4
+except:
+	from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.query_utils import Q
 from django.utils.encoding import force_unicode
 
-from restkit import Resource, ResourceNotFound, RequestFailed
+from restkit import Resource, ResourceNotFound
 from django_roa.db.exceptions import ROAException, ROANotImplementedYetException
 
 logger = logging.getLogger("django_roa")

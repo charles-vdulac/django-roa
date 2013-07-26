@@ -13,7 +13,9 @@ from django.db.models.loading import register_models, get_model
 from django.db.models.base import ModelBase, subclass_exception, \
     get_absolute_url, method_get_order, method_set_order
 from django.db.models.fields.related import OneToOneField
-from django.utils.functional import curry, update_wrapper
+from django.utils.functional import curry
+from functools import update_wrapper
+	
 from django.utils.encoding import force_unicode, smart_unicode
 
 from restkit import Resource, RequestFailed, ResourceNotFound
