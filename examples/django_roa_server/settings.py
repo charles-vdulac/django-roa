@@ -5,6 +5,12 @@ TEMPLATE_DEBUG = DEBUG = True
 MANAGERS = ADMINS = ()
 DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = os.path.join(ROOT_PATH, 'testdb.sqlite')
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(ROOT_PATH, 'testdb.sqlite'),
+    }
+}
 
 TIME_ZONE = 'America/Chicago'
 LANGUAGE_CODE = 'en-us'
