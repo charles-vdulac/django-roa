@@ -5,10 +5,10 @@ from django.db.models import query
 from django.core import serializers
 # Django >= 1.5
 try:
-	from django.db.models.constants import LOOKUP_SEP
+    from django.db.models.constants import LOOKUP_SEP
 #Django < 1.4
 except:
-	from django.db.models.sql.constants import LOOKUP_SEP
+    from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models.query_utils import Q
 from django.utils.encoding import force_unicode
 
@@ -24,6 +24,7 @@ ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
+
 
 class Query(object):
     def __init__(self):
@@ -198,7 +199,12 @@ class RemoteQuerySet(query.QuerySet):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
 
-        for res in serializers.deserialize(ROA_FORMAT, response):
+        try:
+            deserialize = self.model.deserialize
+        except AttributeError:
+            deserialize = serializers.deserialize
+        iterator = deserialize(ROA_FORMAT, response)
+        for res in iterator:
             obj = res.object
             yield obj
 
@@ -272,11 +278,14 @@ class RemoteQuerySet(query.QuerySet):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
 
-        deserializer = serializers.get_deserializer(ROA_FORMAT)
-        if hasattr(deserializer, 'deserialize_object'):
-            result = deserializer(response).deserialize_object(response)
-        else:
-            result = deserializer(response).next()
+        try:
+            return self.model.deserialize(ROA_FORMAT, response)
+        except AttributeError:
+            deserializer = serializers.get_deserializer(ROA_FORMAT)
+            if hasattr(deserializer, 'deserialize_object'):
+                result = deserializer(response).deserialize_object(response)
+            else:
+                result = deserializer(response).next()
 
         return result.object
 
