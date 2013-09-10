@@ -1,6 +1,10 @@
 import logging
 
-from django.contrib.auth.models import User, Message, Group, Permission
+from django.contrib.auth.models import User, Group, Permission
+try:
+    from django.contrib.auth.models import Message
+except ImportError:
+    Message = None
 from django.db import models
 from django.http import Http404
 from django.shortcuts import get_object_or_404, _get_queryset
@@ -297,8 +301,10 @@ class RemotePageWithNamedRelationsCountHandler(ROACountHandler):
 class UserHandler(ROAHandler):
     model = User
 
-class MessageHandler(ROAHandler):
-    model = Message
+MessageHandler = None
+if Message:
+    class MessageHandler(ROAHandler):
+        model = Message
 
 class PermissionHandler(ROAHandler):
     model = Permission

@@ -52,7 +52,9 @@ remote_pages_with_named_relations = Resource(handler=RemotePageWithNamedRelation
 remote_pages_with_named_relations_count = Resource(handler=RemotePageWithNamedRelationsCountHandler, **ad)
 
 users = Resource(handler=UserHandler, **ad)
-messages = Resource(handler=MessageHandler, **ad)
+messages = None
+if MessageHandler:
+    messages = Resource(handler=MessageHandler, **ad)
 permissions = Resource(handler=PermissionHandler, **ad)
 groups = Resource(handler=GroupHandler, **ad)
 
