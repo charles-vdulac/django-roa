@@ -3,8 +3,15 @@ ROOT_PATH = os.path.dirname(__file__)
 
 TEMPLATE_DEBUG = DEBUG = True
 MANAGERS = ADMINS = ()
+
 DATABASE_ENGINE = 'sqlite3'
 DATABASE_NAME = os.path.join(ROOT_PATH, 'testdb.sqlite')
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(ROOT_PATH, 'testdb.sqlite'),
+    }
+}
 
 TIME_ZONE = 'America/Chicago'
 LANGUAGE_CODE = 'en-us'
@@ -35,7 +42,7 @@ INSTALLED_APPS = (
     'django_roa',
     'django_roa.remoteauth',
     'django_roa_client',
-    #'django.contrib.auth',
+    'django.contrib.auth',
     'django.contrib.admin',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -45,17 +52,17 @@ AUTHENTICATION_BACKENDS = (
 )
 SESSION_ENGINE = "django.contrib.sessions.backends.file"
 SERIALIZATION_MODULES = {
-    'django' : 'examples.django_roa_client.serializers',
+    'django': 'examples.django_roa_client.serializers',
 }
 
 ## ROA custom settings
-ROA_MODELS = True # set to False if you'd like to develop/test locally
-ROA_FORMAT = 'django' # json or xml
+ROA_MODELS = True  # set to False if you'd like to develop/test locally
+ROA_FORMAT = 'django'  # json or xml
 # specify the headers sent to the ws from restkit
 ROA_HEADERS = {
     'Content-Type': 'application/x-www-form-urlencoded',
 }
-ROA_DJANGO_ERRORS = True # useful to ease debugging if you use test server
+ROA_DJANGO_ERRORS = True  # useful to ease debugging if you use test server
 
 ROA_URL_OVERRIDES_LIST = {
     'django_roa_client.remotepagewithoverriddenurls': u'http://127.0.0.1:8081/django_roa_server/remotepagewithoverriddenurls/',

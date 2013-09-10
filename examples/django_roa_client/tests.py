@@ -68,9 +68,10 @@ class ROAUserTestCase(ROATestCase):
     def tearDown(self):
         super(ROAUserTestCase, self).tearDown()
         User.objects.all().delete()
-        Message.objects.all().delete()
         Group.objects.all().delete()
         Permission.objects.all().delete()
+        if Message:
+            Message.objects.all().delete()
 
 
 class ROAInitializationTests(ROATestCase):
@@ -570,19 +571,21 @@ class ROARemoteAuthTests(ROAUserTestCase):
         self.assertEqual(alice.is_superuser, False)
         self.assertEqual(repr(User.objects.all()), '[<User: admin>, <User: alice>]')
         self.assertEqual(alice.id, 2)
-        self.assertEqual(repr(Message.objects.all()), '[]')
-        message = Message.objects.create(user=alice, message=u'Test message')
-        self.assertEqual(message.message, u'Test message')
-        self.assertEqual(repr(message.user), '<User: alice>')
-        self.assertEqual(repr(Message.objects.all()), '[<Message: Test message>]')
-        self.assertEqual(repr(alice.message_set.all()), '[<Message: Test message>]')
+        if Message:
+            self.assertEqual(repr(Message.objects.all()), '[]')
+            message = Message.objects.create(user=alice, message=u'Test message')
+            self.assertEqual(message.message, u'Test message')
+            self.assertEqual(repr(message.user), '<User: alice>')
+            self.assertEqual(repr(Message.objects.all()), '[<Message: Test message>]')
+            self.assertEqual(repr(alice.message_set.all()), '[<Message: Test message>]')
 
     def test_select_related(self):
         # Not supported, we just verify that it doesn't break anything
-        alice = User.objects.create_user(username=u'alice', password=u'secret', email=u'alice@example.com')
-        message = Message.objects.create(user=alice, message=u'Test message')
-        self.assertEqual(repr(Message.objects.all().select_related()), '[<Message: Test message>]')
-        self.assertEqual(repr(Message.objects.all().select_related('user')), '[<Message: Test message>]')
+        if Message:
+            alice = User.objects.create_user(username=u'alice', password=u'secret', email=u'alice@example.com')
+            message = Message.objects.create(user=alice, message=u'Test message')
+            self.assertEqual(repr(Message.objects.all().select_related()), '[<Message: Test message>]')
+            self.assertEqual(repr(Message.objects.all().select_related('user')), '[<Message: Test message>]')
 
     def test_groups(self):
         bob = User.objects.create_superuser(username=u'bob', password=u'secret', email=u'bob@example.com')

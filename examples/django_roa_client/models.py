@@ -33,7 +33,7 @@ class RemotePageWithManyFields(Model):
     text_field = models.TextField(blank=True, null=True)
     time_field = models.TimeField(blank=True, null=True)
     url_field = models.URLField(blank=True, null=True)
-    xml_field = models.XMLField(blank=True, null=True)
+    xml_field = models.CharField(max_length=128, blank=True, null=True)
 
     file_field = models.FileField(upload_to="files", blank=True, null=True)
     image_field = models.ImageField(upload_to="images", blank=True, null=True)
