@@ -15,7 +15,7 @@ from django.db.models.base import ModelBase, subclass_exception, \
 from django.db.models.fields.related import OneToOneField
 from django.utils.functional import curry
 from functools import update_wrapper
-	
+
 from django.utils.encoding import force_unicode, smart_unicode
 
 from restkit import Resource, RequestFailed, ResourceNotFound
@@ -93,10 +93,8 @@ class ROAModelBase(ModelBase):
             else:
                 # Proxy classes do inherit parent's default manager, if none is
                 # set explicitly.
-                new_class._default_manager = \
-                        new_class._default_manager._copy_to_model(new_class)
-                new_class._base_manager = \
-                        new_class._base_manager._copy_to_model(new_class)
+                new_class._default_manager = new_class._default_manager._copy_to_model(new_class)
+                new_class._base_manager = new_class._base_manager._copy_to_model(new_class)
 
         # Bail out early if we have already created this class.
         m = get_model(new_class._meta.app_label, name, False)
@@ -119,22 +117,18 @@ class ROAModelBase(ModelBase):
             for parent in [cls for cls in parents if hasattr(cls, '_meta')]:
                 if parent._meta.abstract:
                     if parent._meta.fields:
-                        raise TypeError("Abstract base class containing model "\
-                                        "fields not permitted for proxy model '%s'." % name)
+                        raise TypeError("Abstract base class containing model fields not permitted for proxy model '%s'." % name)
                     else:
                         continue
                 if base is not None:
-                    raise TypeError("Proxy model '%s' has more than one " \
-                                    "non-abstract model base class." % name)
+                    raise TypeError("Proxy model '%s' has more than one non-abstract model base class." % name)
                 else:
                     base = parent
             if base is None:
-                    raise TypeError("Proxy model '%s' has no non-abstract " \
-                                    "model base class." % name)
+                    raise TypeError("Proxy model '%s' has no non-abstract model base class." % name)
             if (new_class._meta.local_fields or
                     new_class._meta.local_many_to_many):
-                raise FieldError("Proxy model '%s' contains model fields."
-                        % name)
+                raise FieldError("Proxy model '%s' contains model fields." % name)
             while base._meta.proxy:
                 base = base._meta.proxy_for_model
             new_class._meta.setup_proxy(base)
