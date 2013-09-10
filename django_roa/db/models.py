@@ -304,14 +304,20 @@ class ROAModel(models.Model):
         return u"%s%s/" % (self.get_resource_url_list(), self.pk)
 
     def save_base(self, raw=False, cls=None, origin=None, force_insert=False,
-            force_update=False, using=None):
+                  force_update=False, using=None, update_fields=None):
         """
         Does the heavy-lifting involved in saving. Subclasses shouldn't need to
         override this method. It's separate from save() in order to hide the
         need for overrides of save() to pass around internal-only parameters
         ('raw', 'cls', and 'origin').
         """
-        assert not (force_insert and force_update)
+
+        # rm cls, origin
+        assert not (force_insert and (force_update or update_fields))
+        assert update_fields is None or len(update_fields) > 0
+        cls = cls or self.__class__
+        origin = origin or self.__class__
+
         if cls is None:
             cls = self.__class__
             meta = cls._meta
@@ -340,11 +346,10 @@ class ROAModel(models.Model):
                 # At this point, parent's primary key field may be unknown
                 # (for example, from administration form which doesn't fill
                 # this field). If so, fill it.
-                if field and getattr(self, parent._meta.pk.attname) is None \
-                   and getattr(self, field.attname) is not None:
+                if field and getattr(self, parent._meta.pk.attname) is None and getattr(self, field.attname) is not None:
                     setattr(self, parent._meta.pk.attname, getattr(self, field.attname))
 
-                self.save_base(cls=parent, origin=org)
+                self.save_base(cls=parent, origin=org, using=using)
 
                 if field:
                     setattr(self, field.attname, self._get_pk_val(parent._meta))

@@ -153,6 +153,8 @@ class RemoteQuerySet(query.QuerySet):
 
         self.params = {}
 
+        self._prefetch_related_lookups = False
+
     ########################
     # PYTHON MAGIC METHODS #
     ########################
@@ -445,7 +447,7 @@ class RemoteQuerySet(query.QuerySet):
                     return self.count
 
             return FakeInt(self.count())
-        raise ROANotImplementedYetException, 'extra is not yet fully implemented.'
+        raise ROANotImplementedYetException('extra is not yet fully implemented.')
 
     ###################
     # PRIVATE METHODS #

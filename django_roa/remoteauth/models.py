@@ -3,11 +3,16 @@ import datetime
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission as DjangoPermission, \
     User as DjangoUser, Group as DjangoGroup, \
-    UserManager as DjangoUserManager, Message as DjangoMessage
+    UserManager as DjangoUserManager
+try:
+    from django.contrib.auth.models import Message as DjangoMessage
+except ImportError:
+    DjangoMessage = None
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 
 from django_roa import Model, Manager
+
 
 class Permission(Model, DjangoPermission):
     """
@@ -61,6 +66,7 @@ class UserManager(Manager, DjangoUserManager):
     Inherits methods from Django's UserManager manager.
     """
 
+
 class User(Model, DjangoUser):
     """
     Inherits methods from Django's User model.
@@ -91,14 +97,16 @@ class User(Model, DjangoUser):
     def get_resource_url_list():
         return u'http://127.0.0.1:8081/auth/user/'
 
+Message = None
 
-class Message(Model, DjangoMessage):
-    """
-    Inherits methods from Django's Message model.
-    """
-    user = models.ForeignKey(User)
-    message = models.TextField(_('message'))
+if DjangoMessage:
+    class Message(Model, DjangoMessage):
+        """
+        Inherits methods from Django's Message model.
+        """
+        user = models.ForeignKey(User)
+        message = models.TextField(_('message'))
 
-    @staticmethod
-    def get_resource_url_list():
-        return u'http://127.0.0.1:8081/auth/message/'
+        @staticmethod
+        def get_resource_url_list():
+            return u'http://127.0.0.1:8081/auth/message/'
