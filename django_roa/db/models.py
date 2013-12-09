@@ -1,6 +1,8 @@
 import sys
 import copy
 import logging
+import json
+from django.utils import six
 
 from django.conf import settings
 from django.core import serializers
@@ -14,6 +16,9 @@ from django.db.models.base import ModelBase, subclass_exception, \
     get_absolute_url, method_get_order, method_set_order
 from django.db.models.fields.related import (OneToOneField, add_lazy_relation)
 from django.utils.functional import curry
+from django.core.serializers.base import DeserializationError
+from django.core.serializers.python import Deserializer as PythonDeserializer, _get_model
+
 from functools import update_wrapper
 
 from django.utils.encoding import force_unicode, smart_unicode
@@ -293,6 +298,84 @@ class ROAModel(models.Model):
     """
     __metaclass__ = ROAModelBase
 
+    @classmethod
+    def get_model_name(cls):
+        """
+        Return 'app.model'
+        """
+        return "{}.{}".format(cls.__module__.split('.')[-2], cls.__name__).lower()
+
+    @classmethod
+    def prepare_object_data(cls, object_data, ignore_non_existent=True):
+        """
+        Transform object data (for example, a dict of fields/value) to Django PythonDeserializer dict expected format.
+        May be override.
+        ignore_non_existent: ignore all API fields which are not defined in local model
+        """
+        model_name = cls.get_model_name()
+        Model = _get_model(model_name)
+        model_fields = Model._meta.get_all_field_names()
+
+        fields = {}
+        pk = None
+        for field_name, value in object_data.items():
+            if ignore_non_existent and field_name not in model_fields:
+                continue
+            field = Model._meta.get_field(field_name)
+            # For FK and M2M, try to retrieve 'id' key, else consider value is already id
+            if field.rel and isinstance(field.rel, models.ManyToOneRel):  # Handle FK fields
+                fields[field_name] = value.get('id', value)
+            elif field.rel and isinstance(field.rel, models.ManyToManyRel):  # Handle M2M relations
+                fields[field_name] = set([item.get('id', item) for item in value])
+            elif field_name not in ['pk', 'id']:
+                fields[field_name] = value
+            else:
+                pk = value
+
+        return {
+            'model': model_name,
+            'pk': pk,
+            'fields': fields
+        }
+
+    @classmethod
+    def retrieve_response_data(cls, format, stream_or_string, **kwargs):
+        """
+        Return is_list boolean and extracted data.
+        May be override.
+        """
+        # By default this method is compatible with json Django Rest Framework response
+        if format == 'json':
+            data = json.loads(stream_or_string)
+        else:
+            raise NotImplementedError('Not implemented format ({})'.format(format))
+        if 'results' in data:
+            return True, [cls.prepare_object_data(item, **kwargs) for item in data['results']]
+        else:
+            return False, [cls.prepare_object_data(data, **kwargs)]
+
+    @classmethod
+    def deserialize(cls, format, stream_or_string, force_return_iterator=False, **kwargs):
+        """
+        Transform API response to Django model objects.
+        """
+        if not isinstance(stream_or_string, (bytes, six.string_types)):
+            stream_or_string = stream_or_string.read()
+        if isinstance(stream_or_string, bytes):
+            stream_or_string = stream_or_string.decode('utf-8')
+        try:
+            is_list, data = cls.retrieve_response_data(format, stream_or_string, **kwargs)
+            iterator = PythonDeserializer(data, **kwargs)
+            if is_list or force_return_iterator:
+                return iterator
+            else:
+                return iterator.next().object  # return model object
+        except GeneratorExit:
+            raise
+        except Exception as e:
+            # Map to deserializer error
+            six.reraise(DeserializationError, DeserializationError(e), sys.exc_info()[2])
+
     @staticmethod
     def get_resource_url_list():
         raise Exception("Static method get_resource_url_list is not defined.")
@@ -459,13 +542,18 @@ class ROAModel(models.Model):
             for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
                 response = response.replace(remote_name, local_name)
 
-            deserializer = serializers.get_deserializer(ROA_FORMAT)
-            if hasattr(deserializer, 'deserialize_object'):
-                result = deserializer(response).deserialize_object(response)
-            else:
-                # API might respond with HTTP status code only so check first if
-                # response is not empty
-                result = len(response) and deserializer(response).next() or None
+            try:
+                result = len(response) and self.deserialize(ROA_FORMAT, response, force_return_iterator=True).next() \
+                    or None
+            except:
+                deserializer = serializers.get_deserializer(ROA_FORMAT)
+
+                if hasattr(deserializer, 'deserialize_object'):
+                    result = deserializer(response).deserialize_object(response)
+                else:
+                    # API might respond with HTTP status code only so check first if
+                    # response is not empty
+                    result = len(response) and deserializer(response).next() or None
 
             if result:
                 try:
