@@ -339,16 +339,25 @@ class ROAModel(models.Model):
         }
 
     @classmethod
+    def _read_stream_or_string(cls, format, stream_or_string):
+        if not isinstance(stream_or_string, (bytes, six.string_types)):
+            stream_or_string = stream_or_string.read()
+        if isinstance(stream_or_string, bytes):
+            stream_or_string = stream_or_string.decode('utf-8')
+
+        if format == 'json':
+            return json.loads(stream_or_string)
+        else:
+            raise NotImplementedError('Not implemented format ({})'.format(format))
+
+    @classmethod
     def retrieve_response_data(cls, format, stream_or_string, **kwargs):
         """
         Return is_list boolean and extracted data.
         May be override.
         """
         # By default this method is compatible with json Django Rest Framework response
-        if format == 'json':
-            data = json.loads(stream_or_string)
-        else:
-            raise NotImplementedError('Not implemented format ({})'.format(format))
+        data = cls._read_stream_or_string(format, stream_or_string)
         if 'results' in data:
             return True, [cls.prepare_object_data(item, **kwargs) for item in data['results']]
         else:
@@ -359,10 +368,6 @@ class ROAModel(models.Model):
         """
         Transform API response to Django model objects.
         """
-        if not isinstance(stream_or_string, (bytes, six.string_types)):
-            stream_or_string = stream_or_string.read()
-        if isinstance(stream_or_string, bytes):
-            stream_or_string = stream_or_string.decode('utf-8')
         try:
             is_list, data = cls.retrieve_response_data(format, stream_or_string, **kwargs)
             iterator = PythonDeserializer(data, **kwargs)
@@ -380,7 +385,22 @@ class ROAModel(models.Model):
     def get_resource_url_list():
         raise Exception("Static method get_resource_url_list is not defined.")
 
+    @classmethod
+    def deserialize_count_response(cls, format, stream_or_string, **kwargs):
+        """
+        Read count query response and return result
+        """
+        data = cls._read_stream_or_string(format, stream_or_string)
+
+        if 'count' in data:
+            count = int(data['count'])
+        else:
+            count = int(data)
+        return count
+
     def get_resource_url_count(self):
+        # By default this method is not with compatible with json Django Rest Framework standard viewset urls
+        # In this case, you just have to override it and return self.get_resource_url_list()
         return u"%scount/" % (self.get_resource_url_list(),)
 
     def get_resource_url_detail(self):

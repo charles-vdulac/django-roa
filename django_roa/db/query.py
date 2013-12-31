@@ -235,12 +235,8 @@ class RemoteQuerySet(query.QuerySet):
         except Exception as e:
             raise ROAException(e)
 
-        cnt = 0
-        try:
-            cnt = int(response.body_string())
-        except ValueError: pass
-
-        return cnt
+        response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
+        return self.model.deserialize_count_response(ROA_FORMAT, response)
 
     def _get_from_id_or_pk(self, id=None, pk=None, **kwargs):
         """
