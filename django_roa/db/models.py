@@ -324,13 +324,13 @@ class ROAModel(models.Model):
             field = Model._meta.get_field(field_name)
             # For FK and M2M, try to retrieve 'id' key, else consider value is already id
             if field.rel and isinstance(field.rel, models.ManyToOneRel):  # Handle FK fields
-                fields[field_name] = value.get('id', value)
+                fields[field_name] = value.get(field.rel.field_name, value)
             elif field.rel and isinstance(field.rel, models.ManyToManyRel):  # Handle M2M relations
-                fields[field_name] = set([item.get('id', item) for item in value])
-            elif field_name not in ['pk', 'id']:
-                fields[field_name] = value
-            else:
+                fields[field_name] = set([item.get('id', item) for item in value])  # TODO: custom pk ?
+            elif field_name == Model._meta.pk.attname:  # custom pk.
                 pk = value
+            else:
+                fields[field_name] = value
 
         return {
             'model': model_name,
