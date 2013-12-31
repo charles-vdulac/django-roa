@@ -183,8 +183,7 @@ class RemoteQuerySet(query.QuerySet):
                             filters=ROA_FILTERS)
         try:
             parameters = self.query.parameters
-            logger.debug(u"""Requesting: "%s" through %s
-                          with parameters "%s" """ % (
+            logger.debug(u"""Requesting: "%s" through %s with parameters "%s" """ % (
                           self.model.__name__,
                           resource.uri,
                           force_unicode(parameters)))
@@ -226,8 +225,7 @@ class RemoteQuerySet(query.QuerySet):
                             filters=ROA_FILTERS)
         try:
             parameters = clone.query.parameters
-            logger.debug(u"""Counting  : "%s" through %s
-                          with parameters "%s" """ % (
+            logger.debug(u"""Counting  : "%s" through %s with parameters "%s" """ % (
                 clone.model.__name__,
                 resource.uri,
                 force_unicode(parameters)))
@@ -260,8 +258,7 @@ class RemoteQuerySet(query.QuerySet):
                             **kwargs)
         try:
             parameters = clone.query.parameters
-            logger.debug(u"""Retrieving : "%s" through %s
-                          with parameters "%s" """ % (
+            logger.debug(u"""Retrieving : "%s" through %s with parameters "%s" """ % (
                 clone.model.__name__,
                 resource.uri,
                 force_unicode(parameters)))

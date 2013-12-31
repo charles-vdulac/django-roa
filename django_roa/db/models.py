@@ -532,8 +532,7 @@ class ROAModel(models.Model):
                                     headers=ROA_HEADERS,
                                     filters=ROA_FILTERS)
                 try:
-                    logger.debug(u"""Modifying : "%s" through %s
-                                  with payload "%s" and GET args "%s" """ % (
+                    logger.debug(u"""Modifying : "%s" through %s with payload "%s" and GET args "%s" """ % (
                                   force_unicode(self),
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
@@ -547,8 +546,7 @@ class ROAModel(models.Model):
                                     headers=ROA_HEADERS,
                                     filters=ROA_FILTERS)
                 try:
-                    logger.debug(u"""Creating  : "%s" through %s
-                                  with payload "%s" and GET args "%s" """ % (
+                    logger.debug(u"""Creating  : "%s" through %s with payload "%s" and GET args "%s" """ % (
                                   force_unicode(self),
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
