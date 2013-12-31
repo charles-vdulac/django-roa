@@ -1,0 +1,11 @@
+*.log
+*.pot
+*.pyc
+settings_local.py
+local_settings.py
+.idea/
+*.sql
+*.db
+.cache
+/static/
+.vagrant/
