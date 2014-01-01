@@ -321,7 +321,10 @@ class ROAModel(models.Model):
         for field_name, value in object_data.items():
             if ignore_non_existent and field_name not in model_fields:
                 continue
-            field = Model._meta.get_field(field_name)
+            try:
+                field = Model._meta.get_field(field_name)
+            except:
+                continue
             # For FK and M2M, try to retrieve 'id' key, else consider value is already id
             if field.rel and isinstance(field.rel, models.ManyToOneRel):  # Handle FK fields
                 fields[field_name] = value.get(field.rel.field_name, value) if value is not None else None
