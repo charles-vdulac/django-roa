@@ -13,6 +13,9 @@ from django.db import models
 
 from django_roa import Model, Manager
 
+# declare signals
+from .signals import logged_out_handler
+
 
 class Permission(Model, DjangoPermission):
     """
