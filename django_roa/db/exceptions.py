@@ -7,13 +7,17 @@ ROA_DJANGO_ERRORS = getattr(settings, 'ROA_DJANGO_ERRORS', False)
 
 class ROAException(Exception):
     def __init__(self, exception):
-        if ROA_DJANGO_ERRORS and 'message' in exception \
-                             and 'status_code' in exception:
-            self.msg = force_unicode(exception.message)
+
+        status_int = hasattr(exception, 'status_int')
+        status_code = hasattr(exception, 'status_code')
+        if status_code:
             self.status_code = exception.status_code
+        elif status_int:
+            self.status_code = exception.status_int
         else:
-            self.msg = force_unicode(exception)
-            self.status_code = 'XXX'
+            self.status_code = "XXX"
+
+        self.msg = force_unicode(exception.message)
 
     def __str__(self):
         if ROA_DJANGO_ERRORS and '<body>' in self.msg:
