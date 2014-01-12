@@ -17,7 +17,10 @@ class ROAException(Exception):
         else:
             self.status_code = "XXX"
 
-        self.msg = force_unicode(exception.message)
+        if hasattr(exception, 'message'):
+            self.msg = force_unicode(exception.message)
+        else:
+            self.msg = force_unicode(exception)
 
     def __str__(self):
         if ROA_DJANGO_ERRORS and '<body>' in self.msg:
