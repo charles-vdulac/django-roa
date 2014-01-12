@@ -512,7 +512,10 @@ class ROAModel(models.Model):
                             field_pks = getattr(self, '%s_updated_ids' % field.attname)
                         else:
                             field_pks = [obj.pk for obj in field.value_from_object(self)]
-                        payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_pks)
+                        if ROA_FORMAT == 'json':
+                            payload[field.attname] = [{'id': item} for item in field_pks]
+                        else:
+                            payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_pks)
 
             # check if resource use custom primary key
             if not meta.pk.attname in ['pk', 'id']:
@@ -540,7 +543,12 @@ class ROAModel(models.Model):
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
                                   force_unicode(get_args)))
-                    response = resource.put(payload=payload, **get_args)
+                    if ROA_FORMAT == 'json':
+                        response = resource.put(payload=json.dumps(payload),
+                                                headers={'Content-Type': 'application/json'},
+                                                **get_args)
+                    else:
+                        response = resource.put(payload=payload, **get_args)
                 except RequestFailed as e:
                     raise ROAException(e)
             else:
@@ -554,7 +562,12 @@ class ROAModel(models.Model):
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
                                   force_unicode(get_args)))
-                    response = resource.post(payload=payload, **get_args)
+                    if ROA_FORMAT == 'json':
+                        response = resource.post(payload=json.dumps(payload),
+                                                 headers={'Content-Type': 'application/json'},
+                                                 **get_args)
+                    else:
+                        response = resource.post(payload=json.dumps(payload), **get_args)
                 except RequestFailed as e:
                     raise ROAException(e)
 
