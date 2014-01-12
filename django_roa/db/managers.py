@@ -15,3 +15,6 @@ class ROAManager(Manager):
         Returns a QuerySet which access remote resources.
         """
         return RemoteQuerySet(self.model)
+
+    def search(self, *args, **kwargs):
+        return self.get_queryset().search(*args, **kwargs)

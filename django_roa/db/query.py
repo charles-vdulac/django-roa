@@ -33,6 +33,7 @@ class Query(object):
         self.default_ordering = []
         self.filters = {}
         self.excludes = {}
+        self.search_term = None
         self.filterable = True
         self.limit_start = None
         self.limit_stop = None
@@ -52,6 +53,11 @@ class Query(object):
 
     def filter(self, *args, **kwargs):
         self.filters.update(kwargs)
+
+    def search(self, search_term, limit_start=None, limit_stop=None):
+        self.search_term = search_term
+        self.limit_start = limit_start
+        self.limit_stop = limit_stop
 
     def exclude(self, *args, **kwargs):
         self.excludes.update(kwargs)
@@ -96,6 +102,8 @@ class Query(object):
                 parameters[ROA_ARGS_NAMES_MAPPING[key]] = v
             else:
                 parameters[key] = v
+        if self.search_term:
+            parameters[ROA_ARGS_NAMES_MAPPING.get('SEARCH_', 'search')] = self.search_term
 
         # Ordering
         if self.order_by:
@@ -370,6 +378,16 @@ class RemoteQuerySet(query.QuerySet):
 
         clone = self._clone()
         clone.query.exclude(*args, **kwargs)
+        return clone
+
+    def search(self, search_term, limit_start=None, limit_stop=None, *args, **kwargs):
+        """
+        Returns a filtered QuerySet instance.
+        """
+        assert not(args or kwargs), "Search accept only one arg (search_term) and limit_start/limit_stop kwargs"
+
+        clone = self._clone()
+        clone.query.search(search_term, limit_start=limit_start, limit_stop=limit_stop)
         return clone
 
     def complex_filter(self, filter_obj):
