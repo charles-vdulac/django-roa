@@ -1,7 +1,7 @@
 import sys
 import copy
 import logging
-import json
+from StringIO import StringIO
 from django.utils import six
 
 from django.conf import settings
@@ -22,6 +22,8 @@ from django.core.serializers.python import Deserializer as PythonDeserializer, _
 from functools import update_wrapper
 
 from django.utils.encoding import force_unicode, smart_unicode
+from rest_framework.parsers import JSONParser, XMLParser, YAMLParser
+from rest_framework.renderers import JSONRenderer, XMLRenderer, YAMLRenderer
 
 from restkit import Resource, RequestFailed, ResourceNotFound
 from django_roa.db.exceptions import ROAException
@@ -299,90 +301,54 @@ class ROAModel(models.Model):
     __metaclass__ = ROAModelBase
 
     @classmethod
-    def get_model_name(cls):
+    def serializer(cls):
         """
-        Return 'app.model'
+        Return a like Django Rest Framework serializer class
         """
-        return "{}.{}".format(cls.__module__.split('.')[-2], cls.__name__).lower()
+        raise NotImplementedError
 
-    @classmethod
-    def prepare_object_data(cls, object_data, ignore_non_existent=True):
+    def get_renderer(self):
         """
-        Transform object data (for example, a dict of fields/value) to Django PythonDeserializer dict expected format.
-        May be override.
-        ignore_non_existent: ignore all API fields which are not defined in local model
+        Cf from rest_framework.renderers import JSONRenderer
         """
-        model_name = cls.get_model_name()
-        Model = _get_model(model_name)
-        model_fields = Model._meta.get_all_field_names()
-
-        fields = {}
-        pk = None
-        for field_name, value in object_data.items():
-            if ignore_non_existent and field_name not in model_fields:
-                continue
-            try:
-                field = Model._meta.get_field(field_name)
-            except:
-                continue
-            # For FK and M2M, try to retrieve 'id' key, else consider value is already id
-            if field.rel and isinstance(field.rel, models.ManyToOneRel):  # Handle FK fields
-                fields[field_name] = value.get(field.rel.field_name, value) if value is not None else None
-            elif field.rel and isinstance(field.rel, models.ManyToManyRel):  # Handle M2M relations
-                fields[field_name] = set([item.get('id', item) for item in value])  # TODO: custom pk ?
-            elif field_name == Model._meta.pk.attname:  # custom pk.
-                pk = value
-            else:
-                fields[field_name] = value
-
-        return {
-            'model': model_name,
-            'pk': pk,
-            'fields': fields
-        }
-
-    @classmethod
-    def _read_stream_or_string(cls, format, stream_or_string):
-        if not isinstance(stream_or_string, (bytes, six.string_types)):
-            stream_or_string = stream_or_string.read()
-        if isinstance(stream_or_string, bytes):
-            stream_or_string = stream_or_string.decode('utf-8')
-
-        if format == 'json':
-            return json.loads(stream_or_string)
+        if ROA_FORMAT == 'json':
+            return JSONRenderer()
+        elif ROA_FORMAT == 'xml':
+            return XMLRenderer()
+        elif ROAException == 'yaml':
+            return YAMLRenderer()
         else:
-            raise NotImplementedError('Not implemented format ({})'.format(format))
+            raise NotImplementedError
 
     @classmethod
-    def retrieve_response_data(cls, format, stream_or_string, **kwargs):
+    def get_parser(cls):
         """
-        Return is_list boolean and extracted data.
-        May be override.
+        Cf from rest_framework.parsers import JSONParser
         """
-        # By default this method is compatible with json Django Rest Framework response
-        data = cls._read_stream_or_string(format, stream_or_string)
-        if 'results' in data:
-            return True, [cls.prepare_object_data(item, **kwargs) for item in data['results']]
+        if ROA_FORMAT == 'json':
+            return JSONParser()
+        elif ROA_FORMAT == 'xml':
+            return XMLParser()
+        elif ROAException == 'yaml':
+            return YAMLParser()
         else:
-            return False, [cls.prepare_object_data(data, **kwargs)]
+            raise NotImplementedError
 
     @classmethod
-    def deserialize(cls, format, stream_or_string, force_return_iterator=False, **kwargs):
+    def get_serializer(cls, instance=None, data=None, partial=False, **kwargs):
         """
         Transform API response to Django model objects.
         """
-        try:
-            is_list, data = cls.retrieve_response_data(format, stream_or_string, **kwargs)
-            iterator = PythonDeserializer(data, **kwargs)
-            if is_list or force_return_iterator:
-                return iterator
-            else:
-                return iterator.next().object  # return model object
-        except GeneratorExit:
-            raise
-        except Exception as e:
-            # Map to deserializer error
-            six.reraise(DeserializationError, DeserializationError(e), sys.exc_info()[2])
+        serializer_class = cls.serializer()
+        serializer = None
+
+        if instance:
+            serializer = serializer_class(instance, partial=partial, **kwargs)
+        elif data:
+            data = data['results'] if 'results' in data else data
+            serializer = serializer_class(data=data, many=isinstance(data, list), **kwargs)
+
+        return serializer
 
     @staticmethod
     def get_resource_url_list():
@@ -418,11 +384,7 @@ class ROAModel(models.Model):
         ('raw', 'cls', and 'origin').
         """
 
-        # rm cls, origin
-        assert not (force_insert and (force_update or update_fields))
-        assert update_fields is None or len(update_fields) > 0
-        cls = cls or self.__class__
-        origin = origin or self.__class__
+        assert not (force_insert and force_update)
 
         if cls is None:
             cls = self.__class__
@@ -535,7 +497,6 @@ class ROAModel(models.Model):
             if force_update or pk_is_set and not self.pk is None:
                 record_exists = True
                 resource = Resource(self.get_resource_url_detail(),
-                                    headers=ROA_HEADERS,
                                     filters=ROA_FILTERS)
                 try:
                     logger.debug(u"""Modifying : "%s" through %s with payload "%s" and GET args "%s" """ % (
@@ -543,18 +504,12 @@ class ROAModel(models.Model):
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
                                   force_unicode(get_args)))
-                    if ROA_FORMAT == 'json':
-                        response = resource.put(payload=json.dumps(payload),
-                                                headers={'Content-Type': 'application/json'},
-                                                **get_args)
-                    else:
-                        response = resource.put(payload=payload, **get_args)
+                    response = resource.put(payload=payload, headers=ROA_HEADERS, **get_args)
                 except RequestFailed as e:
                     raise ROAException(e)
             else:
                 record_exists = False
                 resource = Resource(self.get_resource_url_list(),
-                                    headers=ROA_HEADERS,
                                     filters=ROA_FILTERS)
                 try:
                     logger.debug(u"""Creating  : "%s" through %s with payload "%s" and GET args "%s" """ % (
@@ -562,39 +517,17 @@ class ROAModel(models.Model):
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
                                   force_unicode(get_args)))
-                    if ROA_FORMAT == 'json':
-                        response = resource.post(payload=json.dumps(payload),
-                                                 headers={'Content-Type': 'application/json'},
-                                                 **get_args)
-                    else:
-                        response = resource.post(payload=json.dumps(payload), **get_args)
+                    response = resource.post(payload=payload, headers=ROA_HEADERS, **get_args)
                 except RequestFailed as e:
                     raise ROAException(e)
 
             response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
 
-            for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
-                response = response.replace(remote_name, local_name)
-
-            try:
-                result = len(response) and self.deserialize(ROA_FORMAT, response, force_return_iterator=True).next() \
-                    or None
-            except:
-                deserializer = serializers.get_deserializer(ROA_FORMAT)
-
-                if hasattr(deserializer, 'deserialize_object'):
-                    result = deserializer(response).deserialize_object(response)
-                else:
-                    # API might respond with HTTP status code only so check first if
-                    # response is not empty
-                    result = len(response) and deserializer(response).next() or None
-
-            if result:
-                try:
-                    self.pk = int(result.object.pk)
-                except ValueError:
-                    self.pk = result.object.pk
-                self = result.object
+            data = self.get_parser().parse(StringIO(response))
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                raise ROAException(u'Invalid deserialization for {} model: {}'.format(self, serializer.errors))
+            self = serializer.object
 
         if origin:
             signals.post_save.send(sender=origin, instance=self,

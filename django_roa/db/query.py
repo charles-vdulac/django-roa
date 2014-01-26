@@ -1,4 +1,5 @@
 import logging
+from StringIO import StringIO
 
 from django.conf import settings
 from django.db.models import query
@@ -195,7 +196,7 @@ class RemoteQuerySet(query.QuerySet):
                           self.model.__name__,
                           resource.uri,
                           force_unicode(parameters)))
-            response = resource.get(**parameters)
+            response = resource.get(headers=ROA_HEADERS, **parameters)
         except ResourceNotFound:
             return
         except Exception as e:
@@ -203,16 +204,13 @@ class RemoteQuerySet(query.QuerySet):
 
         response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
 
-        for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
-            response = response.replace(remote_name, local_name)
+        # Deserializing objects:
+        data = self.model.get_parser().parse(StringIO(response))
+        serializer = self.model.get_serializer(data=data)
+        if not serializer.is_valid():
+            raise ROAException(u'Invalid deserialization for {} model: {}'.format(self.model, serializer.errors))
 
-        try:
-            deserialize = self.model.deserialize
-        except AttributeError:
-            deserialize = serializers.deserialize
-        iterator = deserialize(ROA_FORMAT, response)
-        for res in iterator:
-            obj = res.object
+        for obj in serializer.object:
             yield obj
 
     def count(self):
@@ -237,7 +235,7 @@ class RemoteQuerySet(query.QuerySet):
                 clone.model.__name__,
                 resource.uri,
                 force_unicode(parameters)))
-            response = resource.get(**parameters)
+            response = resource.get(headers=ROA_HEADERS, **parameters)
         except Exception as e:
             raise ROAException(e)
 
@@ -270,7 +268,7 @@ class RemoteQuerySet(query.QuerySet):
                 clone.model.__name__,
                 resource.uri,
                 force_unicode(parameters)))
-            response = resource.get(**parameters)
+            response = resource.get(headers=ROA_HEADERS, **parameters)
         except Exception as e:
             raise ROAException(e)
 
@@ -279,16 +277,13 @@ class RemoteQuerySet(query.QuerySet):
         for local_name, remote_name in ROA_MODEL_NAME_MAPPING:
             response = response.replace(remote_name, local_name)
 
-        try:
-            return self.model.deserialize(ROA_FORMAT, response)
-        except AttributeError:
-            deserializer = serializers.get_deserializer(ROA_FORMAT)
-            if hasattr(deserializer, 'deserialize_object'):
-                result = deserializer(response).deserialize_object(response)
-            else:
-                result = deserializer(response).next()
+        # Deserializing objects:
+        data = self.model.get_parser().parse(StringIO(response))
+        serializer = self.model.get_serializer(data=data)
+        if not serializer.is_valid():
+            raise ROAException(u'Invalid deserialization for {} model: {}'.format(self.model, serializer.errors))
 
-        return result.object
+        return serializer.object
 
     def get(self, *args, **kwargs):
         """
