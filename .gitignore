@@ -9,3 +9,5 @@ local_settings.py
 .cache
 /static/
 .vagrant/
+examples/django_rest_framework/backend/admin
+examples/django_rest_framework/backend/db.sqlite3

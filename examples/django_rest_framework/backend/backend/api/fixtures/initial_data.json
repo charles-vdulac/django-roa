@@ -1,0 +1,85 @@
+[
+    {
+        "model": "api.account",
+        "pk": 1,
+        "fields": {
+            "email": "john@example.com"
+        }
+    },
+    {
+        "model": "api.account",
+        "pk": 2,
+        "fields": {
+            "email": "paul@example.com"
+        }
+    },
+    {
+        "model": "api.reporter",
+        "pk": 1,
+        "fields": {
+            "first_name": "John",
+            "last_name": "Smith",
+            "account": 1
+        }
+    },
+    {
+        "model": "api.reporter",
+        "pk": 2,
+        "fields": {
+            "first_name": "Paul",
+            "last_name": "Jones",
+            "account": 2
+        }
+    },
+    {
+        "model": "api.article",
+        "pk": 1,
+        "fields": {
+            "headline": "John's first story",
+            "pub_date": "2013-01-04",
+            "reporter": 1
+        }
+    },
+    {
+        "model": "api.article",
+        "pk": 2,
+        "fields": {
+            "headline": "John's second story",
+            "pub_date": "2013-01-31",
+            "reporter": 1
+        }
+    },
+    {
+        "model": "api.article",
+        "pk": 3,
+        "fields": {
+            "headline": "Paul's story",
+            "pub_date": "2013-02-15",
+            "reporter": 2
+        }
+    },
+    {
+        "model": "api.tag",
+        "pk": 1,
+        "fields": {
+            "label": "news",
+            "articles": [1, 2, 3]
+        }
+    },
+    {
+        "model": "api.tag",
+        "pk": 2,
+        "fields": {
+            "label": "january",
+            "articles": [1,2]
+        }
+    },
+    {
+        "model": "api.tag",
+        "pk": 3,
+        "fields": {
+            "label": "february",
+            "articles": [3]
+        }
+    }
+]
