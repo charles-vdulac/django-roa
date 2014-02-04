@@ -1,6 +1,8 @@
-Django==1.3.1
-PIL==1.1.7
-django-piston==0.2.3
-restkit==4.1.2
-wsgiref==0.1.2
-simplejson==2.4.0
+Django
+PIL
+django-piston
+restkit
+wsgiref
+simplejson
+djangorestframework
+django-filter
