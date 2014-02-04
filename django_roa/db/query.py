@@ -93,6 +93,12 @@ class Query(object):
         # Filtering
         for k, v in self.filters.iteritems():
             key = '%s%s' % (ROA_ARGS_NAMES_MAPPING.get('FILTER_', 'filter_'), k)
+            # v could be an object
+            try:
+                v = v.id
+            except:
+                pass
+
             if key in ROA_ARGS_NAMES_MAPPING:
                 parameters[ROA_ARGS_NAMES_MAPPING[key]] = v
             else:
@@ -240,7 +246,8 @@ class RemoteQuerySet(query.QuerySet):
             raise ROAException(e)
 
         response = force_unicode(response.body_string()).encode(DEFAULT_CHARSET)
-        return self.model.deserialize_count_response(ROA_FORMAT, response)
+        data = self.model.get_parser().parse(StringIO(response))
+        return self.model.count_response(data)
 
     def _get_from_id_or_pk(self, id=None, pk=None, **kwargs):
         """

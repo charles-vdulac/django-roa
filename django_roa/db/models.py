@@ -355,12 +355,10 @@ class ROAModel(models.Model):
         raise Exception("Static method get_resource_url_list is not defined.")
 
     @classmethod
-    def deserialize_count_response(cls, format, stream_or_string, **kwargs):
+    def count_response(cls, data, **kwargs):
         """
         Read count query response and return result
         """
-        data = cls._read_stream_or_string(format, stream_or_string)
-
         if 'count' in data:
             count = int(data['count'])
         else:
