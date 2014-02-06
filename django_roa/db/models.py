@@ -334,6 +334,16 @@ class ROAModel(models.Model):
         else:
             raise NotImplementedError
 
+    def get_serializer_content_type(self):
+        if ROA_FORMAT == 'json':
+            return {'Content-Type' : 'application/json'}
+        elif ROA_FORMAT == 'xml':
+            return {'Content-Type' : 'application/xml'}
+        elif ROAException == 'yaml':
+            return {'Content-Type' : 'text/x-yaml'}
+        else:
+            raise NotImplementedError
+
     @classmethod
     def get_serializer(cls, instance=None, data=None, partial=False, **kwargs):
         """
@@ -384,6 +394,8 @@ class ROAModel(models.Model):
 
         assert not (force_insert and force_update)
 
+        record_exists = False
+
         if cls is None:
             cls = self.__class__
             meta = cls._meta
@@ -429,53 +441,12 @@ class ROAModel(models.Model):
             get_args = {'format': ROA_FORMAT}
             get_args.update(ROA_CUSTOM_ARGS)
 
-            serializer = serializers.get_serializer(ROA_FORMAT)
-            if hasattr(serializer, 'serialize_object'):
-                payload = serializer().serialize_object(self)
-            else:
-                payload = {}
-                local_fields = []
-                m2m_fields = []
-                attribute_map = ROA_MODEL_CREATE_MAPPING
+            # Construct Json payload
+            serializer = self.get_serializer(self)
+            payload = self.get_renderer().render(serializer.data)
 
-                if force_update or pk_is_set and not self.pk is None:
-                    attribute_map = ROA_MODEL_UPDATE_MAPPING
-
-                if model_name in attribute_map:
-                    for field in meta.local_fields:
-                        if field.attname in attribute_map.get(model_name):
-                            local_fields.append(field)
-                    for field in m2m_fields:
-                        if field.attname in attribute_map.get(model_name):
-                            m2m_fields.append(field)
-                else:
-                    local_fields = meta.local_fields
-                    m2m_fields = meta.many_to_many
-
-                for field in local_fields:
-                    # Handle FK fields
-                    if isinstance(field, models.ForeignKey):
-                        field_attr = getattr(self, field.name)
-                        if field_attr is None:
-                            payload[field.attname] = None
-                        else:
-                            payload[field.attname] = field_attr.pk
-                    # Handle all other fields
-                    else:
-                        payload[field.name] = field.value_to_string(self)
-
-                # Handle M2M relations in case of update
-                if force_update or pk_is_set and not self.pk is None:
-                    for field in meta.many_to_many:
-                        # First try to get ids from var set in query's add/remove/clear
-                        if hasattr(self, '%s_updated_ids' % field.attname):
-                            field_pks = getattr(self, '%s_updated_ids' % field.attname)
-                        else:
-                            field_pks = [obj.pk for obj in field.value_from_object(self)]
-                        if ROA_FORMAT == 'json':
-                            payload[field.attname] = [{'id': item} for item in field_pks]
-                        else:
-                            payload[field.attname] = ','.join(smart_unicode(pk) for pk in field_pks)
+            # Add serializer content_type
+            ROA_HEADERS.update(self.get_serializer_content_type())
 
             # check if resource use custom primary key
             if not meta.pk.attname in ['pk', 'id']:
@@ -525,6 +496,10 @@ class ROAModel(models.Model):
             serializer = self.get_serializer(data=data)
             if not serializer.is_valid():
                 raise ROAException(u'Invalid deserialization for {} model: {}'.format(self, serializer.errors))
+            try:
+                self.pk = int(serializer.object.pk)
+            except ValueError:
+                self.pk = serializer.object.pk
             self = serializer.object
 
         if origin:
@@ -546,7 +521,9 @@ class ROAModel(models.Model):
         logger.debug(u"""Deleting  : "%s" through %s""" % \
             (unicode(self), unicode(resource.uri)))
 
-        resource.delete(**ROA_CUSTOM_ARGS)
+        result = resource.delete(**ROA_CUSTOM_ARGS)
+        if result.status_int in [200, 202, 204]:
+            self.pk = None
 
     delete.alters_data = True
 
