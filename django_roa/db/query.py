@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db.models import query
 from django.core import serializers
 # Django >= 1.5
+from django_roa.db import get_roa_headers
+
 try:
     from django.db.models.constants import LOOKUP_SEP
 #Django < 1.4
@@ -20,7 +22,6 @@ logger = logging.getLogger("django_roa")
 
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
-ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 
@@ -194,7 +195,7 @@ class RemoteQuerySet(query.QuerySet):
         remote web service.
         """
         resource = Resource(self.model.get_resource_url_list(),
-                            headers=ROA_HEADERS,
+                            headers=get_roa_headers(),
                             filters=ROA_FILTERS)
         try:
             parameters = self.query.parameters
@@ -202,7 +203,7 @@ class RemoteQuerySet(query.QuerySet):
                           self.model.__name__,
                           resource.uri,
                           force_unicode(parameters)))
-            response = resource.get(headers=ROA_HEADERS, **parameters)
+            response = resource.get(headers=get_roa_headers(), **parameters)
         except ResourceNotFound:
             return
         except Exception as e:
@@ -233,7 +234,7 @@ class RemoteQuerySet(query.QuerySet):
         # for all model without relying on get_resource_url_list
         instance = clone.model()
         resource = Resource(instance.get_resource_url_count(),
-                            headers=ROA_HEADERS,
+                            headers=get_roa_headers(),
                             filters=ROA_FILTERS)
         try:
             parameters = clone.query.parameters
@@ -241,7 +242,7 @@ class RemoteQuerySet(query.QuerySet):
                 clone.model.__name__,
                 resource.uri,
                 force_unicode(parameters)))
-            response = resource.get(headers=ROA_HEADERS, **parameters)
+            response = resource.get(headers=get_roa_headers(), **parameters)
         except Exception as e:
             raise ROAException(e)
 
@@ -266,7 +267,7 @@ class RemoteQuerySet(query.QuerySet):
         else:
             instance.pk = pk
         resource = Resource(instance.get_resource_url_detail(),
-                            headers=ROA_HEADERS,
+                            headers=get_roa_headers(),
                             filters=ROA_FILTERS,
                             **kwargs)
         try:
@@ -275,7 +276,7 @@ class RemoteQuerySet(query.QuerySet):
                 clone.model.__name__,
                 resource.uri,
                 force_unicode(parameters)))
-            response = resource.get(headers=ROA_HEADERS, **parameters)
+            response = resource.get(headers=get_roa_headers(), **parameters)
         except Exception as e:
             raise ROAException(e)
 

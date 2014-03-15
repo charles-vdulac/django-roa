@@ -26,11 +26,11 @@ from rest_framework.parsers import JSONParser, XMLParser, YAMLParser
 from rest_framework.renderers import JSONRenderer, XMLRenderer, YAMLRenderer
 
 from restkit import Resource, RequestFailed, ResourceNotFound
+from django_roa.db import get_roa_headers
 from django_roa.db.exceptions import ROAException
 
 logger = logging.getLogger("django_roa")
 
-ROA_HEADERS = getattr(settings, 'ROA_HEADERS', {})
 ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
@@ -446,14 +446,15 @@ class ROAModel(models.Model):
             payload = self.get_renderer().render(serializer.data)
 
             # Add serializer content_type
-            ROA_HEADERS.update(self.get_serializer_content_type())
+            headers = get_roa_headers()
+            headers.update(self.get_serializer_content_type())
 
             # check if resource use custom primary key
             if not meta.pk.attname in ['pk', 'id']:
                 # consider it might be inserting so check it first
                 # @todo: try to improve this block to check if custom pripary key is not None first
                 resource = Resource(self.get_resource_url_detail(),
-                                    headers=ROA_HEADERS,
+                                    headers=headers,
                                     filters=ROA_FILTERS)
                 try:
                     response = resource.get(payload=None, **get_args)
@@ -473,7 +474,7 @@ class ROAModel(models.Model):
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
                                   force_unicode(get_args)))
-                    response = resource.put(payload=payload, headers=ROA_HEADERS, **get_args)
+                    response = resource.put(payload=payload, headers=headers, **get_args)
                 except RequestFailed as e:
                     raise ROAException(e)
             else:
@@ -486,7 +487,7 @@ class ROAModel(models.Model):
                                   force_unicode(resource.uri),
                                   force_unicode(payload),
                                   force_unicode(get_args)))
-                    response = resource.post(payload=payload, headers=ROA_HEADERS, **get_args)
+                    response = resource.post(payload=payload, headers=headers, **get_args)
                 except RequestFailed as e:
                     raise ROAException(e)
 
@@ -515,7 +516,7 @@ class ROAModel(models.Model):
 
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail(),
-                            headers=ROA_HEADERS,
+                            headers=get_roa_headers(),
                             filters=ROA_FILTERS)
 
         logger.debug(u"""Deleting  : "%s" through %s""" % \
