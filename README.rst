@@ -7,7 +7,7 @@ Django-ROA (Resource Oriented Architecture)
 Fork of original `David Larlet Django ROA lib <http://code.larlet.fr/django-roa/src>`_.
 Now ROA works directly with an API like `Django Rest Framework <http://www.django-rest-framework.org/>`_
 
-**How does it works :**
+**How does it works:**
 Each time a request is passed to the database, the request is intercepted and transformed to an HTTP request to the remote server with the right
 method (GET, POST, PUT or DELETE) given the get_resource_url_* methods specified in the model's definition.
 
@@ -32,6 +32,41 @@ Installation
 
 Fork getting started
 ====================
+
+If you have an API output like this (typical DRF output):
+
+.. code:: python
+
+  # GET http://api.example.com/articles/
+  # HTTP 200 OK
+  # Content-Type: application/json
+  # Vary: Accept
+  # Allow: GET, POST, HEAD, OPTIONS
+
+  {
+    "count": 3,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "headline": "John's first story",
+            "pub_date": "2013-01-04",
+            "reporter": {
+                "id": 1,
+                "account": {
+                    "id": 1,
+                    "email": "john@example.com"
+                },
+                "first_name": "John",
+                "last_name": "Smith"
+            }
+        },
+        ...
+    ]
+  }
+
+Your code will look like this:
 
 .. code:: python
 
