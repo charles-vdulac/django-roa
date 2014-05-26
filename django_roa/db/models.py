@@ -369,8 +369,10 @@ class ROAModel(models.Model):
         """
         Read count query response and return result
         """
-        if 'count' in data:
+        if 'count' in data:            # with default DRF : with pagination
             count = int(data['count'])
+        elif isinstance(data, (list, tuple)):
+            count = len(data)          # with default DRF : without pagination
         else:
             count = int(data)
         return count
