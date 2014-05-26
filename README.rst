@@ -17,9 +17,9 @@ Documentation
 
 Initial documentation:
 
- * `Wiki home <http://code.larlet.fr/django-roa/wiki/Home>`_
- * `Getting started with Django-ROA <http://code.larlet.fr/django-roa/wiki/GettingStarted#!getting-started-with-django-roa>`_
- * `Developing with Django-ROA <http://code.larlet.fr/django-roa/wiki/Development#!developing-with-django-roa>`_
+- `Wiki home <http://code.larlet.fr/django-roa/wiki/Home>`_
+- `Getting started with Django-ROA <http://code.larlet.fr/django-roa/wiki/GettingStarted#!getting-started-with-django-roa>`_
+- `Developing with Django-ROA <http://code.larlet.fr/django-roa/wiki/Development#!developing-with-django-roa>`_
 
 
 Installation
@@ -37,34 +37,34 @@ If you have an API output like this (typical DRF output):
 
 .. code:: python
 
-  # GET http://api.example.com/articles/
-  # HTTP 200 OK
-  # Content-Type: application/json
-  # Vary: Accept
-  # Allow: GET, POST, HEAD, OPTIONS
+    # GET http://api.example.com/articles/
+    # HTTP 200 OK
+    # Content-Type: application/json
+    # Vary: Accept
+    # Allow: GET, POST, HEAD, OPTIONS
 
-  {
-    "count": 3,
-    "next": null,
-    "previous": null,
-    "results": [
-        {
-            "id": 1,
-            "headline": "John's first story",
-            "pub_date": "2013-01-04",
-            "reporter": {
+    {
+        "count": 3,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
                 "id": 1,
-                "account": {
+                "headline": "John's first story",
+                "pub_date": "2013-01-04",
+                "reporter": {
                     "id": 1,
-                    "email": "john@example.com"
-                },
-                "first_name": "John",
-                "last_name": "Smith"
-            }
-        },
-        ...
-    ]
-  }
+                    "account": {
+                        "id": 1,
+                        "email": "john@example.com"
+                    },
+                    "first_name": "John",
+                    "last_name": "Smith"
+                }
+            },
+            ...
+        ]
+    }
 
 Your code will look like this:
 
@@ -111,7 +111,59 @@ Refer to `tests <examples/django_rest_framework/>`_ for full example.
 Running tests
 =============
 
- * Initial tests: read `documentation <http://code.larlet.fr/django-roa/wiki/GettingStarted#!running-tests>`_
- * Fork tests: read `README <examples/django_rest_framework/README.md>`_
+- Initial tests: read `documentation <http://code.larlet.fr/django-roa/wiki/GettingStarted#!running-tests>`_
+- Fork tests: read `README <examples/django_rest_framework/README.md>`_
+
+
+Caveats
+=======
+
+For the moment, the library doesn't work in this case:
+
+One to one (reversed)
+---------------------
+
+.. code:: python
+
+  class Reporter(CommonROAModel):
+      account = models.OneToOneField(Account)
+      ...
+
+with fixtures:
+
+.. code:: json
+
+    {
+        "model": "api.reporter",
+        "pk": 1,
+        "fields": {
+            "first_name": "John",
+            "last_name": "Smith",
+            "account": 1
+        }
+    },
+    {
+        "model": "api.account",
+        "pk": 1,
+        "fields": {
+            "email": "john@example.com"
+        }
+    },
+
+This works:
+
+.. code:: python
+
+    reporter = Reporter.objects.get(id=1)
+    assertEqual(reporter.account.id, 1)
+    assertEqual(reporter.account.email, 'john@example.com')
+
+But not this way:
+
+.. code:: python
+
+    account = Account.objects.get(id=1)
+    assertEqual(account.reporter.id, 1)
+    assertEqual(account.reporter.first_name, "John")
 
 
