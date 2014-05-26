@@ -1,8 +1,0 @@
-Django
-PIL
-django-piston
-restkit
-wsgiref
-simplejson
-djangorestframework
-django-filter
