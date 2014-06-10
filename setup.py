@@ -34,9 +34,9 @@ setup(
         'restkit',
         'wsgiref',
         'simplejson',
+        'djangorestframework'
     ],
     tests_require={
         'Piston-tests': ['django-piston'],
-        'DRF-tests': ['djangorestframework']
     }
 )
