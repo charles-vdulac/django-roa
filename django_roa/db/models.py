@@ -37,6 +37,7 @@ ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_MODEL_CREATE_MAPPING = getattr(settings, 'ROA_MODEL_CREATE_MAPPING', {})
 ROA_MODEL_UPDATE_MAPPING = getattr(settings, 'ROA_MODEL_UPDATE_MAPPING', {})
 ROA_CUSTOM_ARGS = getattr(settings, "ROA_CUSTOM_ARGS", {})
+ROA_SSL_ARGS = getattr(settings, 'ROA_SSL_ARGS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -456,7 +457,7 @@ class ROAModel(models.Model):
                 # consider it might be inserting so check it first
                 # @todo: try to improve this block to check if custom pripary key is not None first
                 resource = Resource(self.get_resource_url_detail(),
-                                    filters=ROA_FILTERS)
+                                    filters=ROA_FILTERS, **ROA_SSL_ARGS)
                 try:
                     response = resource.get(payload=None, **get_args)
                 except ResourceNotFound:
@@ -468,7 +469,7 @@ class ROAModel(models.Model):
             if force_update or pk_is_set and not self.pk is None:
                 record_exists = True
                 resource = Resource(self.get_resource_url_detail(),
-                                    filters=ROA_FILTERS)
+                                    filters=ROA_FILTERS, **ROA_SSL_ARGS)
                 try:
                     logger.debug(u"""Modifying : "%s" through %s with payload "%s" and GET args "%s" """ % (
                                   force_unicode(self),
@@ -481,7 +482,7 @@ class ROAModel(models.Model):
             else:
                 record_exists = False
                 resource = Resource(self.get_resource_url_list(),
-                                    filters=ROA_FILTERS)
+                                    filters=ROA_FILTERS, **ROA_SSL_ARGS)
                 try:
                     logger.debug(u"""Creating  : "%s" through %s with payload "%s" and GET args "%s" """ % (
                                   force_unicode(self),
@@ -517,7 +518,7 @@ class ROAModel(models.Model):
 
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail(),
-                            filters=ROA_FILTERS)
+                            filters=ROA_FILTERS, **ROA_SSL_ARGS)
 
         logger.debug(u"""Deleting  : "%s" through %s""" % \
             (unicode(self), unicode(resource.uri)))
