@@ -149,3 +149,13 @@ class ROATestCase(APITestCase):
         article = Article.objects.get(headline="James's story")
         self.assertEqual(article.reporter.first_name, 'James')
         self.assertEqual(article.reporter.account.email, 'james@example.com')
+
+
+    def test_empty_list_no_pagination(self):
+        tags = Tag.objects.filter(label='idonetexist')
+
+        # To check that iterating over the empty queryset works
+        for i in tags:
+            pass
+
+        self.assertEqual(tags.count(), 0)

@@ -26,6 +26,8 @@ class ArticleViewSet(ModelViewSet):
 class TagViewSet(ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    # Do not paginate the tags, for unpaginated testing
+    paginate_by = None
 
 
 # Reversed

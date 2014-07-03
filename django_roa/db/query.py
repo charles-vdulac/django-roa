@@ -213,12 +213,15 @@ class RemoteQuerySet(query.QuerySet):
 
         # Deserializing objects:
         data = self.model.get_parser().parse(StringIO(response))
-        serializer = self.model.get_serializer(data=data)
-        if not serializer.is_valid():
-            raise ROAException(u'Invalid deserialization for {} model: {}'.format(self.model, serializer.errors))
 
-        for obj in serializer.object:
-            yield obj
+        # [] is the case of empty no-paginated result
+        if data != []:
+            serializer = self.model.get_serializer(data=data)
+            if not serializer.is_valid():
+                raise ROAException(u'Invalid deserialization for {} model: {}'.format(self.model, serializer.errors))
+
+            for obj in serializer.object:
+                yield obj
 
     def count(self):
         """
