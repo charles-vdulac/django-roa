@@ -195,7 +195,6 @@ class RemoteQuerySet(query.QuerySet):
         remote web service.
         """
         resource = Resource(self.model.get_resource_url_list(),
-                            headers=self._get_http_headers(),
                             filters=ROA_FILTERS)
         try:
             parameters = self.query.parameters
@@ -237,7 +236,6 @@ class RemoteQuerySet(query.QuerySet):
         # for all model without relying on get_resource_url_list
         instance = clone.model()
         resource = Resource(instance.get_resource_url_count(),
-                            headers=self._get_http_headers(),
                             filters=ROA_FILTERS)
         try:
             parameters = clone.query.parameters
@@ -270,7 +268,6 @@ class RemoteQuerySet(query.QuerySet):
         else:
             instance.pk = pk
         resource = Resource(instance.get_resource_url_detail(),
-                            headers=self._get_http_headers(),
                             filters=ROA_FILTERS,
                             **kwargs)
         try:

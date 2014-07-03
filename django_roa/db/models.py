@@ -456,7 +456,6 @@ class ROAModel(models.Model):
                 # consider it might be inserting so check it first
                 # @todo: try to improve this block to check if custom pripary key is not None first
                 resource = Resource(self.get_resource_url_detail(),
-                                    headers=headers,
                                     filters=ROA_FILTERS)
                 try:
                     response = resource.get(payload=None, **get_args)
@@ -518,7 +517,6 @@ class ROAModel(models.Model):
 
         # Deletion in cascade should be done server side.
         resource = Resource(self.get_resource_url_detail(),
-                            headers=get_roa_headers(),
                             filters=ROA_FILTERS)
 
         logger.debug(u"""Deleting  : "%s" through %s""" % \
