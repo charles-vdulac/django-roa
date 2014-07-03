@@ -167,3 +167,20 @@ But not this way:
     assertEqual(account.reporter.first_name, "John")
 
 
+HTTPS certificate pinning
+=========================
+
+You can pass ssl args (see `ssl.wrap_socket()`) via the `ROA_SSL_ARGS` of your
+``settings.py``.
+
+
+To pin the server certificate, save the public certificate(s) you want to
+pin in *pinned-ca.pem* and add the following to your *settings.py* :
+
+.. code:: python
+
+    from os.path import dirname, join
+    ROA_SSL_ARGS = {
+        'ca_certs': join(dirname(dirname(__file__)), 'pinned-ca.pem'),
+        'cert_reqs': True
+    }

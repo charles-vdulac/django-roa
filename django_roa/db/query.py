@@ -24,6 +24,7 @@ ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
+ROA_SSL_ARGS = getattr(settings, 'ROA_SSL_ARGS', {})
 
 DEFAULT_CHARSET = getattr(settings, 'DEFAULT_CHARSET', 'utf-8')
 
@@ -195,7 +196,7 @@ class RemoteQuerySet(query.QuerySet):
         remote web service.
         """
         resource = Resource(self.model.get_resource_url_list(),
-                            filters=ROA_FILTERS)
+                            filters=ROA_FILTERS, **ROA_SSL_ARGS)
         try:
             parameters = self.query.parameters
             logger.debug(u"""Requesting: "%s" through %s with parameters "%s" """ % (
@@ -236,7 +237,7 @@ class RemoteQuerySet(query.QuerySet):
         # for all model without relying on get_resource_url_list
         instance = clone.model()
         resource = Resource(instance.get_resource_url_count(),
-                            filters=ROA_FILTERS)
+                            filters=ROA_FILTERS, **ROA_SSL_ARGS)
         try:
             parameters = clone.query.parameters
             logger.debug(u"""Counting  : "%s" through %s with parameters "%s" """ % (
@@ -267,9 +268,12 @@ class RemoteQuerySet(query.QuerySet):
             instance.id = id
         else:
             instance.pk = pk
+        extra_args = {}
+        extra_args.update(kwargs)
+        extra_args.update(ROA_SSL_ARGS)
         resource = Resource(instance.get_resource_url_detail(),
                             filters=ROA_FILTERS,
-                            **kwargs)
+                            **extra_args)
         try:
             parameters = clone.query.parameters
             logger.debug(u"""Retrieving : "%s" through %s with parameters "%s" """ % (
