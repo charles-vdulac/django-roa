@@ -10,9 +10,9 @@ except ImportError:
 
 setup(
     name='django-roa',
-    version='1.7.2',
-    url='http://code.welldev.org/django-roa/wiki/Home',
-    download_url='http://code.welldev.org/django-roa/downloads/',
+    version='1.8',
+    url='https://github.com/charles-vdulac/django-roa',
+    download_url='https://github.com/charles-vdulac/django-roa/archive/master.zip',
     license='BSD',
     description="Turn your models into remote resources that you can access through Django's ORM.",
     author='David Larlet',
