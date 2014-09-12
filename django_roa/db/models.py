@@ -31,6 +31,7 @@ from django_roa.db.exceptions import ROAException
 
 logger = logging.getLogger("django_roa")
 
+ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
 ROA_FORMAT = getattr(settings, 'ROA_FORMAT', 'json')
 ROA_FILTERS = getattr(settings, 'ROA_FILTERS', {})
 ROA_MODEL_NAME_MAPPING = getattr(settings, 'ROA_MODEL_NAME_MAPPING', [])
@@ -441,7 +442,8 @@ class ROAModel(models.Model):
             pk_val = self._get_pk_val(meta)
             pk_is_set = pk_val is not None
 
-            get_args = {'format': ROA_FORMAT}
+            get_args = {}
+            get_args[ROA_ARGS_NAMES_MAPPING.get('FORMAT', 'format')] = ROA_FORMAT
             get_args.update(ROA_CUSTOM_ARGS)
 
             # Construct Json payload
@@ -459,7 +461,7 @@ class ROAModel(models.Model):
                 resource = Resource(self.get_resource_url_detail(),
                                     filters=ROA_FILTERS, **ROA_SSL_ARGS)
                 try:
-                    response = resource.get(payload=None, **get_args)
+                    response = resource.get(payload=None, headers=headers, **get_args)
                 except ResourceNotFound:
                     # since such resource does not exist, it's actually creating
                     pk_is_set = False
@@ -523,7 +525,11 @@ class ROAModel(models.Model):
         logger.debug(u"""Deleting  : "%s" through %s""" % \
             (unicode(self), unicode(resource.uri)))
 
-        result = resource.delete(**ROA_CUSTOM_ARGS)
+        # Add serializer content_type
+        headers = get_roa_headers()
+        headers.update(self.get_serializer_content_type())
+
+        result = resource.delete(headers=headers, **ROA_CUSTOM_ARGS)
         if result.status_int in [200, 202, 204]:
             self.pk = None
 
