@@ -35,6 +35,7 @@ logger = logging.getLogger("django_roa")
 
 
 DJANGO_LT_1_7 = django.VERSION[:2] < (1, 7)
+DJANGO_GT_1_4 = django.VERSION[:2] > (1, 4)
 
 
 ROA_ARGS_NAMES_MAPPING = getattr(settings, 'ROA_ARGS_NAMES_MAPPING', {})
@@ -295,7 +296,7 @@ class ROAModelBase(ModelBase):
     @classmethod
     def _new_old_django(cls, name, bases, attrs):
         """
-        Exactly the same except the line with ``isinstance(b, ROAModelBase)``.
+        Exactly the same except the line with ``isinstance(b, ROAModelBase)`` and part delimited by 'ROA HACK'
         """
         super_new = super(ModelBase, cls).__new__
 
@@ -336,16 +337,32 @@ class ROAModelBase(ModelBase):
 
         new_class.add_to_class('_meta', Options(meta, **kwargs))
         if not abstract:
-            new_class.add_to_class('DoesNotExist', subclass_exception(str('DoesNotExist'),
-                    tuple(x.DoesNotExist
-                          for x in parents if hasattr(x, '_meta') and not x._meta.abstract)
+            # ROA HACK:
+
+            subclass_kwargs = {
+                'name': str('DoesNotExist'),
+                'parents': tuple(x.DoesNotExist for x in parents if hasattr(x, '_meta') and not x._meta.abstract)
                     or (ObjectDoesNotExist,),
-                    module, attached_to=new_class))
-            new_class.add_to_class('MultipleObjectsReturned', subclass_exception(str('MultipleObjectsReturned'),
-                    tuple(x.MultipleObjectsReturned
-                          for x in parents if hasattr(x, '_meta') and not x._meta.abstract)
+                'module': module
+            }
+            if DJANGO_GT_1_4:
+                subclass_kwargs['attached_to'] = new_class
+
+            new_class.add_to_class('DoesNotExist', subclass_exception(**subclass_kwargs))
+
+            subclass_kwargs = {
+                'name': str('MultipleObjectsReturned'),
+                'parents': tuple(x.MultipleObjectsReturned for x in parents if hasattr(x, '_meta') and not x._meta.abstract)
                     or (MultipleObjectsReturned,),
-                    module, attached_to=new_class))
+                'module': module
+            }
+            if DJANGO_GT_1_4:
+                subclass_kwargs['attached_to'] = new_class
+
+            new_class.add_to_class('MultipleObjectsReturned', subclass_exception(**subclass_kwargs))
+
+            # END HACK
+
             if base_meta and not base_meta.abstract:
                 # Non-abstract child classes inherit some attributes from their
                 # non-abstract parent (unless an ABC comes before it in the
