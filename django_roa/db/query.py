@@ -44,6 +44,7 @@ class Query(object):
         self.select_related = False
         self.max_depth = None
         self.extra_select = {}
+        self.select_for_update = False
 
     def can_filter(self):
         return self.filterable
@@ -168,6 +169,7 @@ class RemoteQuerySet(query.QuerySet):
         self._sticky_filter = False
         self._db = False
         self._for_write = False
+        self._hints = {}
 
         self.params = {}
 

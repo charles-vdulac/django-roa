@@ -16,5 +16,8 @@ class ROAManager(Manager):
         """
         return RemoteQuerySet(self.model)
 
+    def get_queryset(self):
+        return RemoteQuerySet(self.model)
+
     def search(self, *args, **kwargs):
         return self.get_queryset().search(*args, **kwargs)
