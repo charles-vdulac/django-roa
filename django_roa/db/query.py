@@ -220,7 +220,7 @@ class RemoteQuerySet(query.QuerySet):
         if data != []:
             serializer = self.model.get_serializer(data=data)
             if not serializer.is_valid():
-                raise ROAException(u'Invalid deserialization for {} model: {}'.format(self.model, serializer.errors))
+                raise ROAException(u'Invalid deserialization for %s model: %s' % (self.model, serializer.errors))
 
             for obj in serializer.object:
                 yield obj
@@ -295,7 +295,7 @@ class RemoteQuerySet(query.QuerySet):
         data = self.model.get_parser().parse(StringIO(response))
         serializer = self.model.get_serializer(data=data)
         if not serializer.is_valid():
-            raise ROAException(u'Invalid deserialization for {} model: {}'.format(self.model, serializer.errors))
+            raise ROAException(u'Invalid deserialization for %s model: %s' % (self.model, serializer.errors))
 
         return serializer.object
 

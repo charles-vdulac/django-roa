@@ -9,9 +9,7 @@ class CommonROAModel(ROAModel):
 
     @classmethod
     def get_resource_url_list(cls):
-        return u'http://127.0.0.1:8000/{base_name}/'.format(
-            base_name=cls.api_base_name,
-        )
+        return u'http://127.0.0.1:8000/%s/' % (cls.api_base_name)
 
     def get_resource_url_count(self):
         return self.get_resource_url_list()

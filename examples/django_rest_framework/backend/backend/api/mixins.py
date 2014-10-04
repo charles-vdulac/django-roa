@@ -41,7 +41,7 @@ class FilterByKeyMixin(object):
                 key_ = param.split(self.filter_param_prefix)[1]
                 value_ = self.request.QUERY_PARAMS[param]
                 if value_ is not None:
-                    queryset = queryset.filter(**{'{}'.format(key_): value_})
+                    queryset = queryset.filter(**{'%s' % (key_): value_})
 
             # order by ?
             elif param == self.order_param:

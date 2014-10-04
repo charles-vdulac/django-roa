@@ -749,7 +749,7 @@ class ROAModel(models.Model):
             data = self.get_parser().parse(StringIO(response))
             serializer = self.get_serializer(data=data)
             if not serializer.is_valid():
-                raise ROAException(u'Invalid deserialization for {} model: {}'.format(self, serializer.errors))
+                raise ROAException(u'Invalid deserialization for %s model: %s' % (self, serializer.errors))
             try:
                 self.pk = int(serializer.object.pk)
             except ValueError:
