@@ -22,6 +22,17 @@ Initial documentation:
 - `Developing with Django-ROA <http://code.larlet.fr/django-roa/wiki/Development#!developing-with-django-roa>`_
 
 
+Supported versions
+==================
+
+.. image:: https://travis-ci.org/charles-vdulac/django-roa.png?branch=master
+    :target: https://travis-ci.org/charles-vdulac/django-roa
+    :alt: Build Status
+
+- Django 1.4, 1.5, 1.6, 1.7
+- Python 2.6, 2.7
+
+
 Installation
 ============
 

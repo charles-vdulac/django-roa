@@ -1,0 +1,8 @@
+django-filter
+django-piston
+djangorestframework
+http-parser
+restkit
+simplejson
+socketpool
+wsgiref
