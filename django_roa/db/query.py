@@ -216,6 +216,16 @@ class RemoteQuerySet(query.QuerySet):
         # Deserializing objects:
         data = self.model.get_parser().parse(StringIO(response))
 
+        # Check limit_start and limit_stop arguments for pagination and only
+        # slice data if they are both numeric and there are results left to go.
+        # We only perform this check on lists.
+        limit_start = getattr(self.query, 'limit_start', None)
+        limit_stop = getattr(self.query, 'limit_stop', None)
+        if (isinstance(limit_start, int) and isinstance(limit_stop, int) and
+           limit_stop - limit_start < len(data) and limit_stop <= len(data) and
+           isinstance(data, list)):
+                data = data[limit_start:limit_stop]
+
         # [] is the case of empty no-paginated result
         if data != []:
             serializer = self.model.get_serializer(data=data)
