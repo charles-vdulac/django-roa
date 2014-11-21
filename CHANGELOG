@@ -2,6 +2,13 @@
 Django-ROA's changelog
 ======================
 
+Version 1.8.1, 21 Nov 2014:
+--------------------------
+
+* Fix pagination in remote querysets (checking limit_start/limit_stop)
+  Thanks to @jathanism
+
+
 Version 1.8, 12 Sep 2014:
 --------------------------
 
@@ -14,10 +21,10 @@ Version 1.7, 11 May 2012:
 
 * @neokeeper aka Martin Skala updated the code in many ways: introduced an
   ROA_FILTERS setting to provide authentication on resources' access,
-  improved single instance retrieval, dealt with pks instead of ids when 
-  possible, updated requirements, code clean up, documentation and 
+  improved single instance retrieval, dealt with pks instead of ids when
+  possible, updated requirements, code clean up, documentation and
   example updates. Many thanks!
-* @NikhilChelliah fixed a bug related to object saving and non-int ids. 
+* @NikhilChelliah fixed a bug related to object saving and non-int ids.
   Thanks!
 
 
@@ -96,7 +103,7 @@ Version 1.0, 23 January 2009:
 -----------------------------
 
 * Add support for many-to-many relations.
-* Warning: Many-to-many relations depends on Django's issue #10109, apply the 
+* Warning: Many-to-many relations depends on Django's issue #10109, apply the
   attached patch if you need it.
 * Update py-restclient to 1.1.4.
 
@@ -126,8 +133,8 @@ Version 0.7, 2 January 2009:
 
 * Add support for most useful fields (see specifications).
 * Warning: there are some Django bugs (hopefully with patches) which are
-  required in order to use BooleanFields with None values and JSON 
-  serialization (#5563) or FloatFields which are considered as unicode 
+  required in order to use BooleanFields with None values and JSON
+  serialization (#5563) or FloatFields which are considered as unicode
   (#9942). Patch your Django installation if you need those ones, that's why
   actual tests failed.
 
@@ -156,9 +163,9 @@ Version 0.5, 27 December 2008:
 Version 0.4, 27 December 2008:
 ------------------------------
 
-* Backward incompatible change: resource_url_list is no more defined in Meta 
+* Backward incompatible change: resource_url_list is no more defined in Meta
   class, now you must define your own get_resource_url_list static method in
-  your Model class. resource_url_detail has been renamed as 
+  your Model class. resource_url_detail has been renamed as
   get_resource_url_detail for consistency and is no more a property.
 * Add support for ForeignKeys and XML serialization.
 * Bugfixes: DateTimeField and BooleanField should work as expected.
@@ -170,9 +177,9 @@ Version 0.4, 27 December 2008:
 Version 0.3, 23 December 2008:
 ------------------------------
 
-* Backward incompatible change: resource_url_id is no more defined in Meta 
+* Backward incompatible change: resource_url_id is no more defined in Meta
   class, now you can define your own resource_url_detail property in your
-  Model class. resource_url Meta attribute has been renamed as 
+  Model class. resource_url Meta attribute has been renamed as
   resource_url_list for consistency.
 * Bugfixes: RemoteQuerySet.count() and BooleanField should work as expected.
 * Better documentation, still need improvements.

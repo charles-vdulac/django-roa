@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name='django-roa',
-    version='1.8',
+    version='1.8.1',
     url='https://github.com/charles-vdulac/django-roa',
     download_url='https://github.com/charles-vdulac/django-roa/archive/master.zip',
     license='BSD',
