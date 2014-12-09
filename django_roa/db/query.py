@@ -371,6 +371,20 @@ class RemoteQuerySet(query.QuerySet):
         self._result_cache = None
     delete.alters_data = True
 
+    def values_list(self, *fields, **kwargs):
+        flat = kwargs.pop('flat', False)
+        if kwargs:
+            raise TypeError('Unexpected keyword arguments to values_list')
+        if flat and len(fields) > 1:
+            raise TypeError("'flat' is not valid when values_list is called with more than one field.")
+
+        def parse_fields(instance):
+            if flat:
+                return getattr(instance, fields[0])
+            else:
+                return tuple([getattr(instance, field) for field in fields])
+        return map(parse_fields, self)
+
     ##################################################################
     # PUBLIC METHODS THAT ALTER ATTRIBUTES AND RETURN A NEW QUERYSET #
     ##################################################################
