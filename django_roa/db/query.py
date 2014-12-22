@@ -71,6 +71,9 @@ class Query(object):
         self.limit_stop = stop
         self.filterable = False
 
+    def has_filters(self):
+        return self.where
+
     def add_select_related(self, fields):
         """
         Sets up the select_related data structure so that we only select
