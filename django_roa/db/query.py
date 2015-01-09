@@ -17,6 +17,7 @@ from django.utils.encoding import force_unicode
 
 from restkit import Resource, ResourceNotFound
 from django_roa.db.exceptions import ROAException, ROANotImplementedYetException
+from copy import deepcopy
 
 logger = logging.getLogger("django_roa")
 
@@ -50,7 +51,7 @@ class Query(object):
         return self.filterable
 
     def clone(self):
-        return self
+        return deepcopy(self)
 
     def clear_ordering(self):
         self.order_by = []
