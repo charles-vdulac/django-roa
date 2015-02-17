@@ -159,3 +159,16 @@ class ROATestCase(APITestCase):
             pass
 
         self.assertEqual(tags.count(), 0)
+
+    def test_values_list(self):
+        tags = list(Tag.objects.values_list('id', 'label'))
+        expected = [(1, 'news'), (2, 'january'), (3, 'february')]
+        self.assertListEqual(tags, expected)
+
+        tags = list(Tag.objects.values_list('id'))
+        expected = [(1,), (2,), (3,)]
+        self.assertListEqual(tags, expected)
+
+        tags = list(Tag.objects.values_list('id', flat=True))
+        expected = [1, 2, 3]
+        self.assertListEqual(tags, expected)
